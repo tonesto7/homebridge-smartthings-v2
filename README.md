@@ -16,7 +16,8 @@ This is based off of @pdlove homebridge-smartthings and homebridge-smartthings-t
 
 #### Homebridge Plugin:
 
-***v2.0.0*** - Update to v2.0.0 to support Homebridges new dynamic plugin api.  So devices can be loaded from cache.
+
+***v2.0.0*** - Update to v2.0.0 to support Homebridge dynamic plugin api (Thanks @areson).  So devices can be loaded from cache.
 
 <br>
 
