@@ -1,14 +1,14 @@
 const pluginName = 'homebridge-smartthings-2.0';
 const platformName = 'SmartThings-2.0';
 const inherits = require('util').inherits;
-const he_st_api = require('./lib/he_st_api');
+const st_api = require('./lib/st_api');
 const http = require('http');
 const os = require('os');
 let Service,
     Characteristic,
     Accessory,
     uuid,
-    HE_ST_Accessory;
+    ST_Accessory;
 
 module.exports = function(homebridge) {
     console.log("Homebridge Version: " + homebridge.version);
@@ -17,11 +17,11 @@ module.exports = function(homebridge) {
     Accessory = homebridge.platformAccessory; //homebridge.hap.Accessory;
     uuid = homebridge.hap.uuid;
 
-    HE_ST_Accessory = require('./accessories/he_st_accessories')(Accessory, Service, Characteristic, uuid, platformName);
-    homebridge.registerPlatform(pluginName, platformName, HE_ST_Platform, true);
+    ST_Accessory = require('./accessories/st_accessories')(Accessory, Service, Characteristic, uuid, platformName);
+    homebridge.registerPlatform(pluginName, platformName, ST_Platform, true);
 };
 
-function HE_ST_Platform(log, config, api) {
+function ST_Platform(log, config, api) {
     this.temperature_unit = 'F';
 
     this.app_url = config['app_url'];
@@ -63,8 +63,8 @@ function HE_ST_Platform(log, config, api) {
         this.direct_ip = getIPAddress();
     }
     this.config = config;
-    this.api = he_st_api;
-    //this.he_st_api = he_st_api;
+    this.api = st_api;
+    //this.st_api = st_api;
     //this.api = api;
     this.homekit_api = api;
     this.log = log;
@@ -80,13 +80,13 @@ function HE_ST_Platform(log, config, api) {
     }.bind(this));
 }
 
-HE_ST_Platform.prototype = {
+ST_Platform.prototype = {
     reloadData: function(callback) {
         let that = this;
         // that.log('config: ', JSON.stringify(this.config));
         let foundAccessories = [];
         that.log('Refreshing All Device Data');
-        he_st_api.getDevices(function(myList) {
+        st_api.getDevices(function(myList) {
             that.log('Received All Device Data');
             // success
             if (myList && myList.deviceList && myList.deviceList instanceof Array) {
@@ -104,7 +104,7 @@ HE_ST_Platform.prototype = {
                             accessory.loadData(devices[i]);
                         } else {
                             that.log.debug("New Device, initializing...");
-                            accessory = new HE_ST_Accessory(that, device);
+                            accessory = new ST_Accessory(that, device);
                             // that.log(accessory);
                             if (accessory !== undefined) {
                                 if (accessory.services.length <= 1 || accessory.deviceGroup === 'unknown') {
@@ -124,7 +124,7 @@ HE_ST_Platform.prototype = {
                     that.temperature_unit = myList.location.temperature_scale;
                     if (myList.location.hubIP) {
                         that.local_hub_ip = myList.location.hubIP;
-                        he_st_api.updateGlobals(that.local_hub_ip, that.local_commands);
+                        st_api.updateGlobals(that.local_hub_ip, that.local_commands);
                     }
                 }
                 populateDevices(myList.deviceList);
@@ -203,7 +203,7 @@ HE_ST_Platform.prototype = {
             'Audio Mute'
         ];
 
-        he_st_api.init(this.app_url, this.app_id, this.access_token, this.local_hub_ip, this.local_commands, this.log);
+        st_api.init(this.app_url, this.app_id, this.access_token, this.local_hub_ip, this.local_commands, this.log);
         this.reloadData(function(foundAccessories) {
             that.log('Unknown Capabilities: ' + JSON.stringify(that.unknownCapabilities));
             callback.bind(that)(foundAccessories);
@@ -214,8 +214,8 @@ HE_ST_Platform.prototype = {
                 setInterval(that.doIncrementalUpdate.bind(that), that.update_seconds * 1000);
             } else if (that.update_method === 'direct') {
                 // The Hub sends updates to this module using http
-                he_st_api_SetupHTTPServer(that);
-                he_st_api.startDirect(null, that.direct_ip, that.direct_port);
+                st_api_SetupHTTPServer(that);
+                st_api.startDirect(null, that.direct_ip, that.direct_port);
             }
         });
     },
@@ -231,7 +231,7 @@ HE_ST_Platform.prototype = {
 
     doIncrementalUpdate: function() {
         var that = this;
-        he_st_api.getUpdates(function(data) {
+        st_api.getUpdates(function(data) {
             that.processIncrementalUpdate(data, that);
         });
     },
@@ -274,10 +274,10 @@ HE_ST_Platform.prototype = {
     }
 };
 
-HE_ST_Platform.prototype.configureAccessory = function(accessory) {
+ST_Platform.prototype.configureAccessory = function(accessory) {
     this.log("Configure Cached Accessory: " + accessory.displayName + ", UUID: " + accessory.UUID);
 
-    HE_ST_Accessory.prototype.CreateFromCachedAccessory(accessory, this);
+    ST_Accessory.prototype.CreateFromCachedAccessory(accessory, this);
     this.deviceLookup[accessory.deviceid] = accessory;
 }
 
@@ -295,34 +295,34 @@ function getIPAddress() {
     return '0.0.0.0';
 }
 
-function he_st_api_SetupHTTPServer(myHe_st_api) {
+function st_api_SetupHTTPServer(my_st_api) {
     // Get the IP address that we will send to the SmartApp. This can be overridden in the config file.
-    let ip = myHe_st_api.direct_ip || getIPAddress();
+    let ip = my_st_api.direct_ip || getIPAddress();
     // Start the HTTP Server
     const server = http.createServer(function(request, response) {
-        he_st_api_HandleHTTPResponse(request, response, myHe_st_api);
+        st_api_HandleHTTPResponse(request, response, my_st_api);
     });
 
-    server.listen(myHe_st_api.direct_port, err => {
+    server.listen(my_st_api.direct_port, err => {
         if (err) {
-            myHe_st_api.log('something bad happened', err);
+            my_st_api.log('something bad happened', err);
             return '';
         }
-        myHe_st_api.log(`Direct Connect Is Listening On ${ip}:${myHe_st_api.direct_port}`);
+        my_st_api.log(`Direct Connect Is Listening On ${ip}:${my_st_api.direct_port}`);
     });
     return 'good';
 }
 
-function he_st_api_HandleHTTPResponse(request, response, myHe_st_api) {
+function st_api_HandleHTTPResponse(request, response, my_st_api) {
     if (request.url === '/restart') {
         let delay = (10 * 1000);
-        myHe_st_api.log('Received request from ' + platformName + ' to restart homebridge service in (' + (delay / 1000) + ' seconds) | NOTICE: If you using PM2 or Systemd the Homebridge Service should start back up');
+        my_st_api.log('Received request from ' + platformName + ' to restart homebridge service in (' + (delay / 1000) + ' seconds) | NOTICE: If you using PM2 or Systemd the Homebridge Service should start back up');
         setTimeout(function() {
             process.exit(1);
         }, parseInt(delay));
     }
     if (request.url === '/updateprefs') {
-        myHe_st_api.log(platformName + ' Hub Sent Preference Updates');
+        my_st_api.log(platformName + ' Hub Sent Preference Updates');
         let body = [];
         request.on('data', (chunk) => {
             body.push(chunk);
@@ -330,23 +330,23 @@ function he_st_api_HandleHTTPResponse(request, response, myHe_st_api) {
             body = Buffer.concat(body).toString();
             let data = JSON.parse(body);
             let sendUpd = false;
-            if (data.local_commands && myHe_st_api.local_commands !== data.local_commands) {
+            if (data.local_commands && my_st_api.local_commands !== data.local_commands) {
                 sendUpd = true;
-                myHe_st_api.log(platformName + ' Updated Local Commands Preference | Before: ' + myHe_st_api.local_commands + ' | Now: ' + data.local_commands);
-                myHe_st_api.local_commands = data.local_commands;
+                my_st_api.log(platformName + ' Updated Local Commands Preference | Before: ' + my_st_api.local_commands + ' | Now: ' + data.local_commands);
+                my_st_api.local_commands = data.local_commands;
             }
-            if (data.local_hub_ip && myHe_st_api.local_hub_ip !== data.local_hub_ip) {
+            if (data.local_hub_ip && my_st_api.local_hub_ip !== data.local_hub_ip) {
                 sendUpd = true;
-                myHe_st_api.log(platformName + ' Updated Hub IP Preference | Before: ' + myHe_st_api.local_hub_ip + ' | Now: ' + data.local_hub_ip);
-                myHe_st_api.local_hub_ip = data.local_hub_ip;
+                my_st_api.log(platformName + ' Updated Hub IP Preference | Before: ' + my_st_api.local_hub_ip + ' | Now: ' + data.local_hub_ip);
+                my_st_api.local_hub_ip = data.local_hub_ip;
             }
             if (sendUpd) {
-                he_st_api.updateGlobals(myHe_st_api.local_hub_ip, myHe_st_api.local_commands);
+                st_api.updateGlobals(my_st_api.local_hub_ip, my_st_api.local_commands);
             }
         });
     }
     if (request.url === '/initial') {
-        myHe_st_api.log(platformName + ' Hub Communication Established');
+        my_st_api.log(platformName + ' Hub Communication Established');
     }
     if (request.url === '/update') {
         let body = [];
@@ -364,8 +364,8 @@ function he_st_api_HandleHTTPResponse(request, response, myHe_st_api) {
                     value: data.change_value,
                     date: data.change_date
                 };
-                myHe_st_api.log('Change Event:', '(' + data.change_name + ') [' + (data.change_attribute ? data.change_attribute.toUpperCase() : 'unknown') + '] is ' + data.change_value);
-                myHe_st_api.processFieldUpdate(newChange, myHe_st_api);
+                my_st_api.log('Change Event:', '(' + data.change_name + ') [' + (data.change_attribute ? data.change_attribute.toUpperCase() : 'unknown') + '] is ' + data.change_value);
+                my_st_api.processFieldUpdate(newChange, my_st_api);
             }
         });
     }

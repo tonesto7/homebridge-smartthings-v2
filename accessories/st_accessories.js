@@ -3,7 +3,7 @@ let Accessory, Service, Characteristic, uuid, CommunityTypes, platformName;
 
 
 /*
- *   HE_ST Accessory
+ *   ST_Accessory
  */
 module.exports = function(oAccessory, oService, oCharacteristic, ouuid, platName) {
     platformName = platName;
@@ -14,15 +14,15 @@ module.exports = function(oAccessory, oService, oCharacteristic, ouuid, platName
         CommunityTypes = require('../lib/communityTypes')(Service, Characteristic);
         uuid = ouuid;
 
-        inherits(HE_ST_Accessory, Accessory);
-        HE_ST_Accessory.prototype.loadData = loadData;
-        HE_ST_Accessory.prototype.getServices = getServices;
-        HE_ST_Accessory.prototype.CreateFromCachedAccessory = CreateFromCachedAccessory;
-        HE_ST_Accessory.prototype.initializeDeviceCharacteristics = initializeDeviceCharacteristics;
+        inherits(ST_Accessory, Accessory);
+        ST_Accessory.prototype.loadData = loadData;
+        ST_Accessory.prototype.getServices = getServices;
+        ST_Accessory.prototype.CreateFromCachedAccessory = CreateFromCachedAccessory;
+        ST_Accessory.prototype.initializeDeviceCharacteristics = initializeDeviceCharacteristics;
     }
-    return HE_ST_Accessory;
+    return ST_Accessory;
 };
-module.exports.HE_ST_Accessory = HE_ST_Accessory;
+module.exports.ST_Accessory = ST_Accessory;
 
 function toTitleCase(str) {
     return str.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
@@ -1017,8 +1017,8 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
     }
 }
 
-function HE_ST_Accessory(platform, device) {
-    // console.log("HE_ST_Accessory: ", platform, device);
+function ST_Accessory(platform, device) {
+    // console.log("ST_Accessory: ", platform, device);
     this.deviceid = device.deviceid;
     this.name = device.name;
     this.platform = platform;
