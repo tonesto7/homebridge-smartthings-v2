@@ -1,54 +1,59 @@
 {
     "pluginAlias": "SmartThings-2.0",
     "pluginType": "platform",
-    "headerDisplay": "Configure your settings below to get homebridge working with SmartThings.",
+    "singular": true,
     "footerDisplay": "For help/issues [issues](https://github.com/tonesto7/homebridge-smartthings-2.0/issues).",
     "schema": {
         "name": {
             "title": "Name",
+            "description": "This should default to SmartThings-2.0",
             "type": "string",
-            "default": "SmartThings 2.0",
+            "default": "SmartThings-2.0",
             "required": true
         },
         "app_url": {
-            "title": "Endpoint App Url",
+            "title": "App Url",
+            "description": "To get this information, open Homebridge (SmartThings) SmartApp in your SmartThings Classic Mobile App, and tap on 'View Configuration Data for Homebridge'",
             "type": "string",
-            "default": "",
-            "required": true
-        },
-        "app_id": {
-            "title": "Endpoint App Id",
-            "type": "string",
-            "default": "",
             "required": true
         },
         "access_token": {
-            "title": "Endpoint App Token",
+            "title": "App Token",
+            "description": "To get this information, open Homebridge (SmartThings) SmartApp in your SmartThings Classic Mobile App, and tap on 'View Configuration Data for Homebridge'",
             "type": "string",
-            "default": "",
             "required": true
         },
         "direct_ip": {
-            "title": "Endpoint App Url",
+            "title": "Direct IP",
+            "description": "Most installations won't need this, but if for any reason it can't identify your ip address correctly, use this setting to force the IP presented to SmartThings for the hub to send to.",
             "type": "string",
-            "default": "",
             "required": false
         },
         "direct_port": {
             "title": "Port",
+            "description": "This is the port that the plugin will listen on for traffic from your hub. Make sure your firewall allows incoming traffic on this port from your hub's IP address.",
             "type": "integer",
-            "default": 8000,
             "maximum": 65535,
             "required": false
         },
+        "debug": {
+            "title": "Send Commands Locally?",
+            "description": "This will allow the service to send homekit commands to hub locally (SmartThings only).",
+            "type": "boolean"
+        },
         "update_method": {
-            "title": "Auth Mode",
+            "title": "Update Method",
             "type": "string",
             "default": "direct",
             "oneOf": [{
                 "title": "direct",
                 "enum": [
                     "direct"
+                ]
+            }, {
+                "title": "api",
+                "enum": [
+                    "api"
                 ]
             }],
             "required": false
