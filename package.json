@@ -1,0 +1,28 @@
+{
+
+    "dependencies": {
+        "request": "^2.88.0",
+        "request-promise": "^4.2.5"
+    },
+
+    "description": "SmartThings plugin for HomeBridge",
+    "engines": {
+        "homebridge": ">=0.4.0",
+        "node": ">=0.12.0"
+    },
+    "homepage": "https://github.com/tonesto7/homebridge-smartthings-tonesto7#readme",
+    "keywords": [
+        "homebridge-plugin",
+        "smartthings",
+        "homekit",
+        "homebridge"
+    ],
+    "license": "ISC",
+    "name": "homebridge-smartthings-tonesto7",
+    "preferGlobal": true,
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/tonesto7/homebridge-smartthings-2.0.git"
+    },
+    "version": "2.0.0"
+}
