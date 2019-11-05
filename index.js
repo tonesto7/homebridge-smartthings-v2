@@ -1,10 +1,10 @@
 const pluginName = 'homebridge-smartthings-2.0';
 const platformName = 'SmartThings-2.0';
-var he_st_api = require('./lib/he_st_api');
-var http = require('http');
-var os = require('os');
-var inherits = require('util').inherits;
-var Service,
+const inherits = require('util').inherits;
+const he_st_api = require('./lib/he_st_api');
+const http = require('http');
+const os = require('os');
+const Service,
     Characteristic,
     Accessory,
     uuid,
@@ -55,7 +55,7 @@ function HE_ST_Platform(log, config, api) {
     }
     this.direct_port = config['direct_port'];
     if (this.direct_port === undefined || this.direct_port === '') {
-        this.direct_port = (platformName === 'SmartThings-2.0' ? 8000 : 8005);
+        this.direct_port = 8000;
     }
 
     this.direct_ip = config['direct_ip'];
@@ -202,13 +202,6 @@ HE_ST_Platform.prototype = {
             'Audio Volume',
             'Audio Mute'
         ];
-        if (platformName === 'Hubitat' || platformName === 'hubitat') {
-            let newList = [];
-            for (const item in this.knownCapabilities) {
-                newList.push(this.knownCapabilities[item].replace(/ /g, ''));
-            }
-            this.knownCapabilities = newList;
-        }
 
         he_st_api.init(this.app_url, this.app_id, this.access_token, this.local_hub_ip, this.local_commands, this.log);
         this.reloadData(function(foundAccessories) {
@@ -337,17 +330,15 @@ function he_st_api_HandleHTTPResponse(request, response, myHe_st_api) {
             body = Buffer.concat(body).toString();
             let data = JSON.parse(body);
             let sendUpd = false;
-            if (platformName === 'SmartThings-2.0') {
-                if (data.local_commands && myHe_st_api.local_commands !== data.local_commands) {
-                    sendUpd = true;
-                    myHe_st_api.log(platformName + ' Updated Local Commands Preference | Before: ' + myHe_st_api.local_commands + ' | Now: ' + data.local_commands);
-                    myHe_st_api.local_commands = data.local_commands;
-                }
-                if (data.local_hub_ip && myHe_st_api.local_hub_ip !== data.local_hub_ip) {
-                    sendUpd = true;
-                    myHe_st_api.log(platformName + ' Updated Hub IP Preference | Before: ' + myHe_st_api.local_hub_ip + ' | Now: ' + data.local_hub_ip);
-                    myHe_st_api.local_hub_ip = data.local_hub_ip;
-                }
+            if (data.local_commands && myHe_st_api.local_commands !== data.local_commands) {
+                sendUpd = true;
+                myHe_st_api.log(platformName + ' Updated Local Commands Preference | Before: ' + myHe_st_api.local_commands + ' | Now: ' + data.local_commands);
+                myHe_st_api.local_commands = data.local_commands;
+            }
+            if (data.local_hub_ip && myHe_st_api.local_hub_ip !== data.local_hub_ip) {
+                sendUpd = true;
+                myHe_st_api.log(platformName + ' Updated Hub IP Preference | Before: ' + myHe_st_api.local_hub_ip + ' | Now: ' + data.local_hub_ip);
+                myHe_st_api.local_hub_ip = data.local_hub_ip;
             }
             if (sendUpd) {
                 he_st_api.updateGlobals(myHe_st_api.local_hub_ip, myHe_st_api.local_commands);

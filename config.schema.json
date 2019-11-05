@@ -17,6 +17,12 @@
             "type": "string",
             "required": true
         },
+        "app_id": {
+            "title": "App ID",
+            "description": "To get this information, open Homebridge (SmartThings) SmartApp in your SmartThings Classic Mobile App, and tap on 'View Configuration Data for Homebridge'",
+            "type": "string",
+            "required": true
+        },
         "access_token": {
             "title": "App Token",
             "description": "To get this information, open Homebridge (SmartThings) SmartApp in your SmartThings Classic Mobile App, and tap on 'View Configuration Data for Homebridge'",

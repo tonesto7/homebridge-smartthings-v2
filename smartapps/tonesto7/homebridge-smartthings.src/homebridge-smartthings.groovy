@@ -6,19 +6,20 @@
 
 String appVersion() { return "2.0.0" }
 String appModified() { return "11-05-2019" }
-String platform() { return "SmartThings-2.0" }
-String appIconUrl() { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-tonesto7/master/images/hb_tonesto7@2x.png" }
+String platform() { return "SmartThings" }
+String pluginName() { return "${platform()}-2.0" }
+String appIconUrl() { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/hb_tonesto7@2x.png" }
 String getAppImg(imgName) { return "https://raw.githubusercontent.com/tonesto7/smartthings-tonesto7-public/master/resources/icons/$imgName" }
-Boolean isST() { return (platform() == "SmartThings") }
+
 definition(
     name: "Homebridge 2.0 (${platform()})",
     namespace: "tonesto7",
     author: "Anthony Santilli",
     description: "Provides the API interface between Homebridge (HomeKit) and ${platform()}",
     category: "My Apps",
-    iconUrl:   "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-tonesto7/master/images/hb_tonesto7@1x.png",
-    iconX2Url: "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-tonesto7/master/images/hb_tonesto7@2x.png",
-    iconX3Url: "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-tonesto7/master/images/hb_tonesto7@3x.png",
+    iconUrl:   "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/hb_tonesto7@1x.png",
+    iconX2Url: "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/hb_tonesto7@2x.png",
+    iconX3Url: "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/hb_tonesto7@3x.png",
     oauth: true)
 
 
@@ -29,24 +30,8 @@ preferences {
 
 def appInfoSect()	{
 	section() {
-        if(isST()) {
-            paragraph "${app?.name}\nv${appVersion()}", image: appIconUrl()
-            paragraph "Any Device Changes will require a restart of the Homebridge Service", required: true, state: null, image: getAppImg("error.png")
-        } else {
-            def str = """
-            <div class="appInfoSect" style="width: 300px; height: 70px; display: inline-table;">
-                <ul style=" margin: 0 auto; padding: 0; list-style-type: none;">
-                <img style="float: left; padding: 10px;" src="https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-tonesto7/master/images/hb_tonesto7@1x.png" width="70px"/>
-                <li style="padding-top: 2px;"><b>${app?.name}</b></li>
-                <li><small style="color: black !important;">Copyright\u00A9 2019 Anthony Santilli</small></li>
-                <li><small style="color: black !important;">Version: ${appVersion()}</small></li>
-                </ul>
-            </div>
-            <script>\$('.appInfoSect').parent().css("cssText", "font-family: Arial !important; white-space: inherit !important;")</script>
-            """
-            paragraph "${str}"
-            paragraph '<small style="color: red !important;"><i><b>Notice:</b></small><small style="color: red !important;"> Any Device Changes will require a restart of the Homebridge Service</i></small>'
-        }
+        paragraph "${app?.name}\nv${appVersion()}", image: appIconUrl()
+        paragraph "Any Device Changes will require a restart of the Homebridge Service", required: true, state: null, image: getAppImg("error.png")
     }
 }
 
@@ -55,130 +40,68 @@ def mainPage() {
         createAccessToken()
     }
     Boolean isInst = (state?.isInstalled == true)
-    if(isST()) {
-        return dynamicPage(name: "mainPage", title: "Homebridge Device Configuration", nextPage: (isInst ? "confirmPage" : ""), install: !isInst, uninstall:true) {
-            appInfoSect()
-            section("Define Specific Categories:") {
-                paragraph "Each category below will adjust the device attributes to make sure they are recognized as the desired device type under HomeKit", state: "complete"
-                input "lightList", "capability.switch", title: "Lights: (${lightList ? lightList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("light_on.png")
-                input "fanList", "capability.switch", title: "Fans: (${fanList ? fanList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on.png")
-                input "speakerList", "capability.switch", title: "Speakers: (${speakerList ? speakerList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("media_player.png")
-                input "shadesList", "capability.windowShade", title: "Window Shades: (${shadesList ? shadesList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("window_shade.png")
-            }
-            section("All Other Devices:") {
-                input "sensorList", "capability.sensor", title: "Sensor Devices: (${sensorList ? sensorList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("sensors.png")
-                input "switchList", "capability.switch", title: "Switch Devices: (${switchList ? switchList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("switch.png")
-                input "deviceList", "capability.refresh", title: "Other Devices: (${deviceList ? deviceList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("devices2.png")
-            }
-            section("Restrict Temp Device Creation") {
-                input "noTemp", "bool", title: "Remove Temp from All Contacts and Water Sensors?", required: false, defaultValue: false, submitOnChange: true
-                if(settings?.noTemp) {
-                    input "sensorAllowTemp", "capability.sensor", title: "Allow Temp on these Sensors", multiple: true, submitOnChange: true, required: false, image: getAppImg("temperature.png")
-                }
-            }
-            section("Remove Capabilities from Devices Creation", hideable: true, hidden: false) {
-                paragraph "This will allow you to filter out certain capabilities from creating unneeded devices under HomeKit"
-                input "removeTemp", "capability.temperatureMeasurement", title: "Remove Temp from these Sensors", multiple: true, submitOnChange: true, required: false, image: getAppImg("temperature.png")
-                input "removeSwitch", "capability.switch", title: "Remove Switch from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("switch.png")
-                input "removeContact", "capability.contactSensor", title: "Remove Contact from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("contact.png")
-                input "removeMotion", "capability.motionSensor", title: "Remove Motion from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("motion.png")
-                input "removeLevel", "capability.switchLevel", title: "Remove Level from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("speed_knob.png")
-                input "removeBattery", "capability.battery", title: "Remove Battery from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("battery.png")
-                input "removePower", "capability.powerMeter", title: "Remove Power Meter from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("power.png")
-                input "removePresence", "capability.presenceSensor", title: "Remove Presence from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("presence.png")
-                input "removeTamper", "capability.tamperAlert", title: "Remove Tamper from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("tamper.jpg")
-            }
-            section("Create Devices for Modes in HomeKit?") {
-                paragraph title: "What are these for?", "A virtual switch will be created for each mode in HomeKit.\nThe switch will be ON when that mode is active.", state: "complete", image: getAppImg("info.png")
-                def modes = location?.modes?.sort{it?.name}?.collect { [(it?.id):it?.name] }
-                input "modeList", "enum", title: "Create Devices for these Modes", required: false, multiple: true, options: modes, submitOnChange: true, image: getAppImg("mode.png")
-            }
-            section("Create Devices for Routines in HomeKit?") {
-                paragraph title: "What are these?", "A virtual device will be created for each routine in HomeKit.\nThese are very useful for use in Home Kit scenes", state: "complete", image: getAppImg("info.png")
-                def routines = location.helloHome?.getPhrases()?.sort { it?.label }?.collect { [(it?.id):it?.label] }
-                input "routineList", "enum", title: "Create Devices for these Routines", required: false, multiple: true, options: routines, submitOnChange: true, image: getAppImg("routine.png")
-            }
-            section("Smart Home Monitor Support (SHM):") {
-                input "addSecurityDevice", "bool", title: "Allow SHM Control in HomeKit?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("alarm_home.png")
-            }
-            section("Review Configuration:") {
-                href url: getAppEndpointUrl("config"), style: "embedded", required: false, title: "View the Configuration Data for Homebridge", description: "Tap, select, copy, then click \"Done\""
-                paragraph "Selected Device Count:\n${getDeviceCnt()}", image: getAppImg("info.png")
-            }
-            section("Options:") {
-                input "showLogs", "bool", title: "Show Events in Live Logs?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("debug.png")
-                input "allowLocalCmds", "bool", title: "Send HomeKit Commands Locally?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("command2.png")
-                label title: "SmartApp Label (optional)", description: "Rename this App", defaultValue: app?.name, required: false, image: getAppImg("name_tag.png")
+    return dynamicPage(name: "mainPage", title: "Homebridge Device Configuration", nextPage: (isInst ? "confirmPage" : ""), install: !isInst, uninstall:true) {
+        appInfoSect()
+        section("Define Specific Categories:") {
+            paragraph "Each category below will adjust the device attributes to make sure they are recognized as the desired device type under HomeKit", state: "complete"
+            input "lightList", "capability.switch", title: "Lights: (${lightList ? lightList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("light_on.png")
+            input "fanList", "capability.switch", title: "Fans: (${fanList ? fanList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on.png")
+            input "speakerList", "capability.switch", title: "Speakers: (${speakerList ? speakerList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("media_player.png")
+            input "shadesList", "capability.windowShade", title: "Window Shades: (${shadesList ? shadesList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("window_shade.png")
+        }
+        section("All Other Devices:") {
+            input "sensorList", "capability.sensor", title: "Sensor Devices: (${sensorList ? sensorList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("sensors.png")
+            input "switchList", "capability.switch", title: "Switch Devices: (${switchList ? switchList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("switch.png")
+            input "deviceList", "capability.refresh", title: "Other Devices: (${deviceList ? deviceList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("devices2.png")
+        }
+        section("Restrict Temp Device Creation") {
+            input "noTemp", "bool", title: "Remove Temp from All Contacts and Water Sensors?", required: false, defaultValue: false, submitOnChange: true
+            if(settings?.noTemp) {
+                input "sensorAllowTemp", "capability.sensor", title: "Allow Temp on these Sensors", multiple: true, submitOnChange: true, required: false, image: getAppImg("temperature.png")
             }
         }
-    } else {
-        return dynamicPage(name: "mainPage", title: "", nextPage: (isInst ? "confirmPage" : ""), install: !isInst, uninstall:true) {
-            appInfoSect()
-            section(sectionTitleStr("Define Specific Categories:")) {
-                paragraph '<h4 style="color: blue;">These Categories will add the necessary capabilities to make sure they are recognized by HomeKit as the specific device type</h4>'
-                input "lightList", "capability.switch", title: inputTitleStr("Lights: (${lightList ? lightList?.size() : 0} Selected)"), description: "<i>Tap to select</i>", multiple: true, submitOnChange: true, required: false
-                input "fanList", "capability.switch", title: inputTitleStr("Fans: (${fanList ? fanList?.size() : 0} Selected)"), description: "<i>Tap to select</i>", multiple: true, submitOnChange: true, required: false
-                input "speakerList", "capability.switch", title: inputTitleStr("Speakers: (${speakerList ? speakerList?.size() : 0} Selected)"), description: "<i>Tap to select</i>", multiple: true, submitOnChange: true, required: false
-                input "shadesList", "capability.windowShade", title: inputTitleStr("Window Shades: (${shadesList ? shadesList?.size() : 0} Selected)"), description: "<i>Tap to select</i>", multiple: true, submitOnChange: true, required: false
-            }
-
-            section(sectionTitleStr("All Other Devices:")) {
-                input "sensorList", "capability.sensor", title: inputTitleStr("Sensor Devices: (${sensorList ? sensorList?.size() : 0} Selected)"), description: "<i>Tap to select</i>", multiple: true, submitOnChange: true, required: false
-                input "switchList", "capability.switch", title: inputTitleStr("Switch Devices: (${switchList ? switchList?.size() : 0} Selected)"), description: "<i>Tap to select</i>", multiple: true, submitOnChange: true, required: false
-                input "deviceList", "capability.refresh", title: inputTitleStr("Other Devices: (${deviceList ? deviceList?.size() : 0} Selected)"), description: "<i>Tap to select</i>", multiple: true, submitOnChange: true, required: false
-            }
-            section(sectionTitleStr("Restrict Temp Device Creation")) {
-                input "noTemp", "bool", title: inputTitleStr("Remove Temp from Contacts and Water Sensors?"), required: false, defaultValue: false, submitOnChange: true
-                if(settings?.noTemp) {
-                    input "sensorAllowTemp", "capability.sensor", title: inputTitleStr("Allow Temp on these Sensors"), multiple: true, submitOnChange: true, required: false
-                }
-            }
-            section(sectionTitleStr("Remove Capabilities from Devices Creation"), hideable: true, hidden: (state?.isInstalled == true)) {
-                paragraph '<h4 style="color: blue;">This will allow you to filter out certain capabilities from creating unneeded devices under HomeKit</h4>'
-                input "removeTemp", "capability.temperatureMeasurement", title: inputTitleStr("Remove Temp from these Sensors"), multiple: true, submitOnChange: true, required: false
-                input "removeSwitch", "capability.switch", title: inputTitleStr("Remove Switch from these Devices"), multiple: true, submitOnChange: true, required: false
-                input "removeContact", "capability.contactSensor", title: inputTitleStr("Remove Contact from these Devices"), multiple: true, submitOnChange: true, required: false
-                input "removeMotion", "capability.motionSensor", title: inputTitleStr("Remove Motion from these Devices"), multiple: true, submitOnChange: true, required: false
-                input "removeLevel", "capability.switchLevel", title: inputTitleStr("Remove Level from these Devices"), multiple: true, submitOnChange: true, required: false
-                input "removeBattery", "capability.battery", title: inputTitleStr("Remove Battery from these Devices"), multiple: true, submitOnChange: true, required: false
-                input "removePresence", "capability.presenceSensor", title: inputTitleStr("Remove Presence from these Devices"), multiple: true, submitOnChange: true, required: false
-                input "removePower", "capability.powerMeter", title: inputTitleStr("Remove Power Meter from these Devices"), multiple: true, submitOnChange: true, required: false
-                input "removeTamper", "capability.tamperAlert", title: inputTitleStr("Remove Tamper from these Devices"), multiple: true, submitOnChange: true, required: false
-            }
-            section("</br>${sectionTitleStr("Create Mode Devices in HomeKit?")}") {
-                paragraph '<small style="color: blue !important;"><i><b>Description:</b></small><br/><small style="color: grey !important;">A virtual switch will be created for each mode in HomeKit.</br>The switch will be ON when that mode is active.</i></small>', state: "complete"
-                def modes = location?.modes?.sort{it?.name}?.collect { [(it?.id):it?.name] }
-                input "modeList", "enum", title: inputTitleStr("Create Devices for these Modes"), required: false, multiple: true, options: modes, submitOnChange: true
-            }
-            section("<br/>${sectionTitleStr("Hubitat Safety Monitor Support:")}") {
-                input "addSecurityDevice", "bool", title: inputTitleStr("Allow Hubitat Safety Monitor Control in Homekit?"), required: false, defaultValue: false, submitOnChange: true
-            }
-            section("<br/>${sectionTitleStr("Plug-In Configuration Data:")}") {
-                href url: getAppEndpointUrl("config"), style: "embedded", required: false, title: inputTitleStr("View the Configuration Data for Homebridge"), description: """</br><small style="color: #1A77C9 !important;"><i>Tap, select, copy, then click <b>Done</b></i></small>"""
-                paragraph "<h3>Selected Device Count:\n${getDeviceCnt()}</h3>"
-            }
-            section("<br/>${sectionTitleStr("Options:")}") {
-                input "showLogs", "bool", title: inputTitleStr("Show Events in Live Logs?"), required: false, defaultValue: true, submitOnChange: true
-                label title: inputTitleStr("App Label (optional)"), description: "Rename App", defaultValue: app?.name, required: false
-            }
+        section("Remove Capabilities from Devices Creation", hideable: true, hidden: false) {
+            paragraph "This will allow you to filter out certain capabilities from creating unneeded devices under HomeKit"
+            input "removeTemp", "capability.temperatureMeasurement", title: "Remove Temp from these Sensors", multiple: true, submitOnChange: true, required: false, image: getAppImg("temperature.png")
+            input "removeSwitch", "capability.switch", title: "Remove Switch from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("switch.png")
+            input "removeContact", "capability.contactSensor", title: "Remove Contact from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("contact.png")
+            input "removeMotion", "capability.motionSensor", title: "Remove Motion from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("motion.png")
+            input "removeLevel", "capability.switchLevel", title: "Remove Level from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("speed_knob.png")
+            input "removeBattery", "capability.battery", title: "Remove Battery from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("battery.png")
+            input "removePower", "capability.powerMeter", title: "Remove Power Meter from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("power.png")
+            input "removePresence", "capability.presenceSensor", title: "Remove Presence from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("presence.png")
+            input "removeTamper", "capability.tamperAlert", title: "Remove Tamper from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("tamper.jpg")
+        }
+        section("Create Devices for Modes in HomeKit?") {
+            paragraph title: "What are these for?", "A virtual switch will be created for each mode in HomeKit.\nThe switch will be ON when that mode is active.", state: "complete", image: getAppImg("info.png")
+            def modes = location?.modes?.sort{it?.name}?.collect { [(it?.id):it?.name] }
+            input "modeList", "enum", title: "Create Devices for these Modes", required: false, multiple: true, options: modes, submitOnChange: true, image: getAppImg("mode.png")
+        }
+        section("Create Devices for Routines in HomeKit?") {
+            paragraph title: "What are these?", "A virtual device will be created for each routine in HomeKit.\nThese are very useful for use in Home Kit scenes", state: "complete", image: getAppImg("info.png")
+            def routines = location.helloHome?.getPhrases()?.sort { it?.label }?.collect { [(it?.id):it?.label] }
+            input "routineList", "enum", title: "Create Devices for these Routines", required: false, multiple: true, options: routines, submitOnChange: true, image: getAppImg("routine.png")
+        }
+        section("Smart Home Monitor Support (SHM):") {
+            input "addSecurityDevice", "bool", title: "Allow SHM Control in HomeKit?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("alarm_home.png")
+        }
+        section("Review Configuration:") {
+            href url: getAppEndpointUrl("config"), style: "embedded", required: false, title: "View the Configuration Data for Homebridge", description: "Tap, select, copy, then click \"Done\""
+            paragraph "Selected Device Count:\n${getDeviceCnt()}", image: getAppImg("info.png")
+        }
+        section("Options:") {
+            input "showLogs", "bool", title: "Show Events in Live Logs?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("debug.png")
+            input "allowLocalCmds", "bool", title: "Send HomeKit Commands Locally?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("command2.png")
+            label title: "SmartApp Label (optional)", description: "Rename this App", defaultValue: app?.name, required: false, image: getAppImg("name_tag.png")
         }
     }
 }
 
 def confirmPage() {
-    if(isST()) {
-        return dynamicPage(name: "confirmPage", title: "Confirm Page", install: true, uninstall:true) {
-            section("") {
-                paragraph "Would you like to restart the Homebridge Service to apply any device changes you made?", required: true, state: null, image: getAppImg("info.png")
-                input "restartService", "bool", title: "Restart Homebridge plugin when you press Save?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("reset2.png")
-            }
-        }
-    } else {
-        return dynamicPage(name: "confirmPage", title: "", install: true, uninstall:true) {
-            section("") {
-                paragraph '<small style="color: blue !important;"><i><b>Notice:</b></small><br/><small style="color: grey !important;">Would you like to restart the Homebridge Service to apply any device changes you made?</i></small>', state: "complete"
-                input "restartService", "bool", title: inputTitleStr("Restart Homebridge plugin when you press Save?"), required: false, defaultValue: false, submitOnChange: true
-            }
+    return dynamicPage(name: "confirmPage", title: "Confirm Page", install: true, uninstall:true) {
+        section("") {
+            paragraph "Would you like to restart the Homebridge Service to apply any device changes you made?", required: true, state: null, image: getAppImg("info.png")
+            input "restartService", "bool", title: "Restart Homebridge plugin when you press Save?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("reset2.png")
         }
     }
 }
@@ -196,8 +119,7 @@ def imgTitle(imgSrc, imgWidth, imgHeight, titleStr, color=null) {
 
 def getDeviceCnt() {
     def devices = []
-    def items = ["deviceList", "sensorList", "switchList", "lightList", "fanList", "speakerList", "shadesList", "modeList"]
-    if(isST()) { items?.push("routineList") }
+    def items = ["deviceList", "sensorList", "switchList", "lightList", "fanList", "speakerList", "shadesList", "modeList", "routineList"]
     items?.each { item ->
         if(settings[item]?.size() > 0) {
             devices = devices + settings[item]
@@ -226,26 +148,19 @@ def initialize() {
     runIn(4, "registerSensors", [overwrite: true])
     runIn(6, "registerSwitches", [overwrite: true])
     if(settings?.addSecurityDevice) {
-        if(!isST()) {
-            subscribe(location, "hsmStatus", changeHandler)
-            subscribe(location, "hsmRules", changeHandler)
-            subscribe(location, "hsmAlert", changeHandler)
-            subscribe(location, "hsmSetArm", changeHandler)
-        } else { subscribe(location, "alarmSystemStatus", changeHandler) }
+        subscribe(location, "alarmSystemStatus", changeHandler)
     }
     if(settings?.modeList) {
         log.debug "Registering (${settings?.modeList?.size() ?: 0}) Virtual Mode Devices"
         subscribe(location, "mode", changeHandler)
         if(state.lastMode == null) { state?.lastMode = location.mode?.toString() }
     }
-    if(isST()) {
-        state?.subscriptionRenewed = 0
-        subscribe(app, onAppTouch)
-        if(settings?.allowLocalCmds != false) { subscribe(location, null, lanEventHandler, [filterEvents:false]) }
-        if(settings?.routineList) {
-            log.debug "Registering (${settings?.routineList?.size() ?: 0}) Virtual Routine Devices"
-            subscribe(location, "routineExecuted", changeHandler)
-        }
+    state?.subscriptionRenewed = 0
+    subscribe(app, onAppTouch)
+    if(settings?.allowLocalCmds != false) { subscribe(location, null, lanEventHandler, [filterEvents:false]) }
+    if(settings?.routineList) {
+        log.debug "Registering (${settings?.routineList?.size() ?: 0}) Virtual Routine Devices"
+        subscribe(location, "routineExecuted", changeHandler)
     }
     if(settings?.restartService == true) {
         log.warn "Sent Request to Homebridge Service to Stop... Service should restart automatically"
@@ -261,8 +176,7 @@ def onAppTouch(event) {
 
 def renderDevices() {
     def deviceData = []
-    def items = ["deviceList", "sensorList", "switchList", "lightList", "fanList", "speakerList", "shadesList", "modeList"]
-    if(isST()) { items?.push("routineList") }
+    def items = ["deviceList", "sensorList", "switchList", "lightList", "fanList", "speakerList", "shadesList", "modeList", "routineList"]
     items?.each { item ->
         if(settings[item]?.size()) {
             settings[item]?.each { dev->
@@ -314,14 +228,14 @@ def getDeviceData(type, sItem) {
     if(curType && obj) {
         return [
             name: !isVirtual ? sItem?.displayName : name,
-            basename:  !isVirtual ? sItem?.name : name,
+            basename: !isVirtual ? sItem?.name : name,
             deviceid: !isVirtual ? sItem?.id : devId,
             status: !isVirtual ? sItem?.status : "Online",
-            manufacturerName: (!isVirtual ? (isST() ? sItem?.getManufacturerName() : sItem?.getDataValue("manufacturer")) : platform()) ?: platform(),
-            modelName: !isVirtual ? ((isST() ? sItem?.getModelName() : sItem?.getDataValue("model")) ?: sItem?.getTypeName()) : "${curType} Device",
+            manufacturerName: (!isVirtual ? sItem?.getManufacturerName() : pluginName()) ?: pluginName(),
+            modelName: !isVirtual ? (sItem?.getModelName() ?: sItem?.getTypeName()) : "${curType} Device",
             serialNumber: !isVirtual ? sItem?.getDeviceNetworkId() : "${curType}${devId}",
             firmwareVersion: "1.0.0",
-            lastTime: !isVirtual ? (isST() ? sItem?.getLastActivity() : null) : now(),
+            lastTime: !isVirtual ? (sItem?.getLastActivity() ?: null) : now(),
             capabilities: !isVirtual ? deviceCapabilityList(sItem) : ["${curType}": 1],
             commands: !isVirtual ? deviceCommandList(sItem) : [on:[]],
             attributes: !isVirtual ? deviceAttributeList(sItem) : ["switch": attrVal]
@@ -335,13 +249,13 @@ String modeSwitchState(String mode) {
 
 def getSecurityDevice() {
     return [
-        name: (!isST() ? "Hubitat Safety Monitor Alarm" : "Security Alarm"),
-        basename: (!isST() ? "HSM Alarm" : "Security Alarm"),
+        name: "Security Alarm",
+        basename: "Security Alarm",
         deviceid: "alarmSystemStatus_${location?.id}",
         status: "ACTIVE",
-        manufacturerName: platform(),
-        modelName: (!isST() ? "Safety Monitor" : "Security System"),
-        serialNumber: (!isST() ? "HSM" : "SHM"),
+        manufacturerName: pluginName(),
+        modelName: "Security System",
+        serialNumber: "SHM",
         firmwareVersion: "1.0.0",
         lastTime: null,
         capabilities: ["Alarm System Status":1, "Alarm":1],
@@ -372,62 +286,43 @@ def authError() {
 }
 
 def getSecurityStatus(retInt=false) {
-    if(isST()) {
-        def cur = location.currentState("alarmSystemStatus")?.value
-        def inc = getShmIncidents()
-        if(inc != null && inc?.size()) { cur = 'alarm_active' }
-        if(retInt) {
-            switch (cur) {
-                case 'stay':
-                    return 0
-                case 'away':
-                    return 1
-                case 'night':
-                    return 2
-                case 'off':
-                    return 3
-                case 'alarm_active':
-                    return 4
-            }
-        } else { return cur ?: "disarmed" }
-    } else {
-        return location?.hsmStatus ?: "disarmed"
-    }
+
+    def cur = location.currentState("alarmSystemStatus")?.value
+    def inc = getShmIncidents()
+    if(inc != null && inc?.size()) { cur = 'alarm_active' }
+    if(retInt) {
+        switch (cur) {
+            case 'stay':
+                return 0
+            case 'away':
+                return 1
+            case 'night':
+                return 2
+            case 'off':
+                return 3
+            case 'alarm_active':
+                return 4
+        }
+    } else { return cur ?: "disarmed" }
 }
 
 private setSecurityMode(mode) {
-    if(!isST()) {
-        switch(mode) {
-            case "stay":
-                mode = "armHome"
-                break
-            case "away":
-                mode = "armAway"
-                break
-            case "night":
-                mode = "armHome"
-                break
-            case "off":
-                mode = "disarm"
-                break
-        }
-    }
-    log.info "Setting the ${isST() ? "Smart Home Monitor" : "Hubitat Safety Monitor"} Mode to (${mode})..."
-    sendLocationEvent(name: (isST() ? 'alarmSystemStatus' : 'hsmSetArm'), value: mode.toString())
+    log.info "Setting the Smart Home Monitor Mode to (${mode})..."
+    sendLocationEvent(name: 'alarmSystemStatus', value: mode.toString())
 }
 
 def renderConfig() {
     Map jsonMap = [
         platforms: [
             [
-                platform: platform(),
-                name: platform(),
-                app_url: (isST() ? apiServerUrl("/api/smartapps/installations/") : fullLocalApiServerUrl('')),
+                platform: pluginName(),
+                name: pluginName(),
+                app_url: apiServerUrl("/api/smartapps/installations/"),
+                app_id: app?.getId(),
                 access_token: state?.accessToken
             ]
         ]
     ]
-    if(isST()) { jsonMap?.platforms[0]["app_id"] = app.id }
     def configJson = new groovy.json.JsonOutput().toJson(jsonMap)
     def configString = new groovy.json.JsonOutput().prettyPrint(configJson)
     render contentType: "text/plain", data: configString
@@ -441,7 +336,7 @@ def renderLocation() {
         name: location?.name,
         temperature_scale: location?.temperatureScale,
         zip_code: location?.zipCode,
-        hubIP: (isST() ? location?.hubs[0]?.localIP : location.hubs[0]?.getDataValue("localIP")),
+        hubIP: location?.hubs[0]?.localIP,
         app_version: appVersion()
     ]
 }
@@ -459,7 +354,7 @@ def lanEventHandler(evt) {
     try {
         Map msgData = [:]
         if (headerMap?.size()) {
-            if (headerMap?.evtSource && headerMap?.evtSource == "Homebridge_${platform()}") {
+            if (headerMap?.evtSource && headerMap?.evtSource == "Homebridge_${pluginName()}") {
                 if (msg?.body != null) {
                     def slurper = new groovy.json.JsonSlurper()
                     msgData = slurper?.parseText(msg?.body as String)
@@ -578,7 +473,7 @@ def deviceQuery() {
     def device = findDevice(params?.id)
     if (!device) {
         def mode = findVirtModeDevice(params?.id)
-        def routine = isST() ? findVirtModeDevice(params?.id) : null
+        def routine = findVirtModeDevice(params?.id)
         def obj = mode ? mode : routine ?: null
         if(!obj) {
             device = null
@@ -663,14 +558,11 @@ def deviceAttributeList(device) {
     }
 }
 
-String getAppEndpointUrl(subPath)   { return isST() ? "${apiServerUrl("/api/smartapps/installations/${app.id}${subPath ? "/${subPath}" : ""}?access_token=${state.accessToken}")}" : "${getApiServerUrl()}/${getHubUID()}/apps/${app?.id}${subPath ? "/${subPath}" : ""}?access_token=${state?.accessToken}" }
-String getLocalEndpointUrl(subPath) { return "${getLocalApiServerUrl()}/apps/${app?.id}${subPath ? "/${subPath}" : ""}?access_token=${state?.accessToken}" }
+String getAppEndpointUrl(subPath)   { return "${apiServerUrl("/api/smartapps/installations/${app.id}${subPath ? "/${subPath}" : ""}?access_token=${state.accessToken}")}" }
 
 def getAllData() {
-    if(isST()) {
-        state?.subscriptionRenewed = now()
-        state?.devchanges = []
-    }
+    state?.subscriptionRenewed = now()
+    state?.devchanges = []
     def deviceJson = new groovy.json.JsonOutput().toJson([location: renderLocation(), deviceList: renderDevices()])
     render contentType: "application/json", data: deviceJson
 }
@@ -882,14 +774,12 @@ void settingUpdate(name, value, type=null) {
 private activateDirectUpdates(isLocal=false) {
     log.trace "activateDirectUpdates: ${state?.directIP}:${state?.directPort}${isLocal ? " | (Local)" : ""}"
     def result = new physicalgraph.device.HubAction(method: "GET", path: "/initial", headers: [HOST: "${state?.directIP}:${state?.directPort}"])
-    // def result = new hubitat.device.HubAction(method: "GET", path: "/initial", headers: [HOST: "${state?.directIP}:${state?.directPort}"])
     sendHubCommand(result)
 }
 
 private attemptServiceRestart(isLocal=false) {
     log.trace "attemptServiceRestart: ${state?.directIP}:${state?.directPort}${isLocal ? " | (Local)" : ""}"
     def result = new physicalgraph.device.HubAction(method: "GET", path: "/restart", headers: [HOST: "${state?.directIP}:${state?.directPort}"])
-    // def result = new hubitat.device.HubAction(method: "GET", path: "/restart", headers: [HOST: "${state?.directIP}:${state?.directPort}"])
     sendHubCommand(result)
 }
 
@@ -903,12 +793,11 @@ private updateServicePrefs(isLocal=false) {
             'Content-Type': 'application/json'
         ],
         body: [
-            local_commands: isST() ? (settings?.allowLocalCmds != false) : false,
-            local_hub_ip: isST() ? location?.hubs[0]?.localIP : location.hubs[0]?.getDataValue("localIP")
+            local_commands: (settings?.allowLocalCmds != false),
+            local_hub_ip: location?.hubs[0]?.localIP
         ]
     ]
     def result = new physicalgraph.device.HubAction(params)
-    // def result = new hubitat.device.HubAction(params)
     sendHubCommand(result)
 }
 
@@ -920,7 +809,7 @@ def enableDirectUpdates() {
 }
 
 mappings {
-    if (isST() && (!params?.access_token || (params?.access_token && params?.access_token != state?.accessToken))) {
+    if (!params?.access_token || (params?.access_token && params?.access_token != state?.accessToken)) {
         path("/devices")					{ action: [GET: "authError"] }
         path("/config")						{ action: [GET: "authError"] }
         path("/location")					{ action: [GET: "authError"] }

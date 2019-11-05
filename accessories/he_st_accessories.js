@@ -1,5 +1,6 @@
 const inherits = require('util').inherits;
-var Accessory, Service, Characteristic, uuid, CommunityTypes, platformName;
+let Accessory, Service, Characteristic, uuid, CommunityTypes, platformName;
+
 
 /*
  *   HE_ST Accessory
@@ -58,7 +59,7 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
 
     if (device && device.capabilities) {
         if ((device.capabilities['Switch Level'] !== undefined || device.capabilities['SwitchLevel'] !== undefined) && !isSpeaker && !isFan && !isMode && !isRoutine) {
-            if ((platformName === 'SmartThings-2.0' && isWindowShade) || device.commands.levelOpenClose || device.commands.presetPosition) {
+            if (isWindowShade || device.commands.levelOpenClose || device.commands.presetPosition) {
                 // This is a Window Shade
                 that.deviceGroup = 'window_shades';
                 thisCharacteristic = that.getaddService(Service.WindowCovering).getCharacteristic(Characteristic.TargetPosition)
@@ -131,39 +132,39 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
                 }
             }
         }
-        if (platformName === 'Hubitat' && isWindowShade) {
-            that.deviceGroup = 'window_shades';
-            thisCharacteristic = that.getaddService(Service.WindowCovering).getCharacteristic(Characteristic.TargetPosition)
-                .on('get', function(callback) {
-                    let curPos = parseInt(that.device.attributes.position);
-                    if (curPos > 98) {
-                        curPos = 100;
-                    } else if (curPos < 2) {
-                        curPos = 0;
-                    }
-                    callback(null, curPos);
-                })
-                .on('set', function(value, callback) {
-                    platform.log('setPosition(HE): ' + value);
-                    platform.api.runCommand(callback, device.deviceid, 'setPosition', {
-                        value1: value
-                    });
-                });
-            platform.addAttributeUsage('position', device.deviceid, thisCharacteristic);
-            thisCharacteristic = that.getaddService(Service.WindowCovering).getCharacteristic(Characteristic.CurrentPosition)
-                .on('get', function(callback) {
-                    let curPos = parseInt(that.device.attributes.position);
-                    if (curPos > 98) {
-                        curPos = 100;
-                    } else if (curPos < 2) {
-                        curPos = 0;
-                    }
-                    callback(null, curPos);
-                });
-            platform.addAttributeUsage('position', device.deviceid, thisCharacteristic);
+        // if (platformName === 'Hubitat' && isWindowShade) {
+        //     that.deviceGroup = 'window_shades';
+        //     thisCharacteristic = that.getaddService(Service.WindowCovering).getCharacteristic(Characteristic.TargetPosition)
+        //         .on('get', function(callback) {
+        //             let curPos = parseInt(that.device.attributes.position);
+        //             if (curPos > 98) {
+        //                 curPos = 100;
+        //             } else if (curPos < 2) {
+        //                 curPos = 0;
+        //             }
+        //             callback(null, curPos);
+        //         })
+        //         .on('set', function(value, callback) {
+        //             platform.log('setPosition(HE): ' + value);
+        //             platform.api.runCommand(callback, device.deviceid, 'setPosition', {
+        //                 value1: value
+        //             });
+        //         });
+        //     platform.addAttributeUsage('position', device.deviceid, thisCharacteristic);
+        //     thisCharacteristic = that.getaddService(Service.WindowCovering).getCharacteristic(Characteristic.CurrentPosition)
+        //         .on('get', function(callback) {
+        //             let curPos = parseInt(that.device.attributes.position);
+        //             if (curPos > 98) {
+        //                 curPos = 100;
+        //             } else if (curPos < 2) {
+        //                 curPos = 0;
+        //             }
+        //             callback(null, curPos);
+        //         });
+        //     platform.addAttributeUsage('position', device.deviceid, thisCharacteristic);
 
-            thisCharacteristic = that.getaddService(Service.WindowCovering).setCharacteristic(Characteristic.PositionState, Characteristic.PositionState.STOPPED);
-        }
+        //     thisCharacteristic = that.getaddService(Service.WindowCovering).setCharacteristic(Characteristic.PositionState, Characteristic.PositionState.STOPPED);
+        // }
         if (device.capabilities['Garage Door Control'] !== undefined || device.capabilities['GarageDoorControl'] !== undefined) {
             that.deviceGroup = 'garage_doors';
             thisCharacteristic = that.getaddService(Service.GarageDoorOpener).getCharacteristic(Characteristic.TargetDoorState)
