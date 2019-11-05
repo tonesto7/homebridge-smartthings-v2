@@ -4,7 +4,7 @@ const inherits = require('util').inherits;
 const he_st_api = require('./lib/he_st_api');
 const http = require('http');
 const os = require('os');
-const Service,
+let Service,
     Characteristic,
     Accessory,
     uuid,
