@@ -6,12 +6,12 @@
 
 String appVersion() { return "2.0.0" }
 String appModified() { return "11-05-2019" }
-String platform() { return "SmartThings" }
+String platform() { return "SmartThings-2.0" }
 String appIconUrl() { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-tonesto7/master/images/hb_tonesto7@2x.png" }
 String getAppImg(imgName) { return "https://raw.githubusercontent.com/tonesto7/smartthings-tonesto7-public/master/resources/icons/$imgName" }
 Boolean isST() { return (platform() == "SmartThings") }
 definition(
-    name: "Homebridge (${platform()})",
+    name: "Homebridge 2.0 (${platform()})",
     namespace: "tonesto7",
     author: "Anthony Santilli",
     description: "Provides the API interface between Homebridge (HomeKit) and ${platform()}",
