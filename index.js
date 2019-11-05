@@ -1,5 +1,5 @@
-const pluginName = 'homebridge-smartthings';
-const platformName = 'SmartThings';
+const pluginName = 'homebridge-smartthings-2.0';
+const platformName = 'SmartThings-2.0';
 var he_st_api = require('./lib/he_st_api');
 var http = require('http');
 var os = require('os');
@@ -55,7 +55,7 @@ function HE_ST_Platform(log, config, api) {
     }
     this.direct_port = config['direct_port'];
     if (this.direct_port === undefined || this.direct_port === '') {
-        this.direct_port = (platformName === 'SmartThings' ? 8000 : 8005);
+        this.direct_port = (platformName === 'SmartThings-2.0' ? 8000 : 8005);
     }
 
     this.direct_ip = config['direct_ip'];
@@ -337,7 +337,7 @@ function he_st_api_HandleHTTPResponse(request, response, myHe_st_api) {
             body = Buffer.concat(body).toString();
             let data = JSON.parse(body);
             let sendUpd = false;
-            if (platformName === 'SmartThings') {
+            if (platformName === 'SmartThings-2.0') {
                 if (data.local_commands && myHe_st_api.local_commands !== data.local_commands) {
                     sendUpd = true;
                     myHe_st_api.log(platformName + ' Updated Local Commands Preference | Before: ' + myHe_st_api.local_commands + ' | Now: ' + data.local_commands);

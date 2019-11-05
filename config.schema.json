@@ -1,0 +1,57 @@
+{
+    "pluginAlias": "SmartThings-2.0",
+    "pluginType": "platform",
+    "headerDisplay": "Configure your settings below to get homebridge working with SmartThings.",
+    "footerDisplay": "For help/issues [issues](https://github.com/tonesto7/homebridge-smartthings-2.0/issues).",
+    "schema": {
+        "name": {
+            "title": "Name",
+            "type": "string",
+            "default": "SmartThings 2.0",
+            "required": true
+        },
+        "app_url": {
+            "title": "Endpoint App Url",
+            "type": "string",
+            "default": "",
+            "required": true
+        },
+        "app_id": {
+            "title": "Endpoint App Id",
+            "type": "string",
+            "default": "",
+            "required": true
+        },
+        "access_token": {
+            "title": "Endpoint App Token",
+            "type": "string",
+            "default": "",
+            "required": true
+        },
+        "direct_ip": {
+            "title": "Endpoint App Url",
+            "type": "string",
+            "default": "",
+            "required": false
+        },
+        "direct_port": {
+            "title": "Port",
+            "type": "integer",
+            "default": 8000,
+            "maximum": 65535,
+            "required": false
+        },
+        "update_method": {
+            "title": "Auth Mode",
+            "type": "string",
+            "default": "direct",
+            "oneOf": [{
+                "title": "direct",
+                "enum": [
+                    "direct"
+                ]
+            }],
+            "required": false
+        }
+    }
+}

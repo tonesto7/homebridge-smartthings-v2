@@ -58,7 +58,7 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
 
     if (device && device.capabilities) {
         if ((device.capabilities['Switch Level'] !== undefined || device.capabilities['SwitchLevel'] !== undefined) && !isSpeaker && !isFan && !isMode && !isRoutine) {
-            if ((platformName === 'SmartThings' && isWindowShade) || device.commands.levelOpenClose || device.commands.presetPosition) {
+            if ((platformName === 'SmartThings-2.0' && isWindowShade) || device.commands.levelOpenClose || device.commands.presetPosition) {
                 // This is a Window Shade
                 that.deviceGroup = 'window_shades';
                 thisCharacteristic = that.getaddService(Service.WindowCovering).getCharacteristic(Characteristic.TargetPosition)
