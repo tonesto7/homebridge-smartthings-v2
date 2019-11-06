@@ -22,5 +22,5 @@
         "type": "git",
         "url": "git+https://github.com/tonesto7/homebridge-smartthings-2.0.git"
     },
-    "version": "2.0.0"
+    "version": "1.9.0"
 }

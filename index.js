@@ -1,6 +1,6 @@
-const pluginName = 'homebridge-smartthings-2.0';
-const platformName = 'SmartThings-2.0';
-const inherits = require('util').inherits;
+const pluginName = 'homebridge-smartthings-2';
+const platformName = 'SmartThings-2';
+// const inherits = require('util').inherits;
 const st_api = require('./lib/st_api');
 const http = require('http');
 const os = require('os');
@@ -279,7 +279,7 @@ ST_Platform.prototype.configureAccessory = function(accessory) {
 
     ST_Accessory.prototype.CreateFromCachedAccessory(accessory, this);
     this.deviceLookup[accessory.deviceid] = accessory;
-}
+};
 
 function getIPAddress() {
     var interfaces = os.networkInterfaces();

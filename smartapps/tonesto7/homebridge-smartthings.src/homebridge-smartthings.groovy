@@ -7,7 +7,7 @@
 String appVersion() { return "2.0.0" }
 String appModified() { return "11-05-2019" }
 String platform() { return "SmartThings" }
-String pluginName() { return "${platform()}-2.0" }
+String pluginName() { return "${platform()}-2" }
 String appIconUrl() { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/hb_tonesto7@2x.png" }
 String getAppImg(imgName) { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/${imgName}" }
 
