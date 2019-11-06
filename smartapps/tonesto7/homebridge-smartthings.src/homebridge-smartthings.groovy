@@ -227,7 +227,7 @@ def getDeviceData(type, sItem) {
     }
     if(curType && obj) {
         return [
-            name: !isVirtual ? sItem?.displayName : name,
+            name: !isVirtual ? sItem?.displayName?.toString()?.replaceAll("[#\$()!%&@^']", "") : name?.toString()?.replaceAll("[#\$()!%&@^']", ""),
             basename: !isVirtual ? sItem?.name : name,
             deviceid: !isVirtual ? sItem?.id : devId,
             status: !isVirtual ? sItem?.status : "Online",
