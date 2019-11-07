@@ -497,13 +497,6 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
                         });
                     platform.addAttributeUsage('energy', device.deviceid, thisCharacteristic);
                 }
-                // if (device.capabilities['Power Meter'] || device.capabilities['PowerMeter']) {
-                //     thisCharacteristic = that.getaddService(Service.Switch).addCharacteristic(CommunityTypes.CurrentConsumption1)
-                //         .on('get', function(callback) {
-                //             callback(null, Math.round(that.device.attributes.power));
-                //         });
-                //     platform.addAttributeUsage('power', device.deviceid, thisCharacteristic);
-                // }
             }
         }
         // Smoke Detectors

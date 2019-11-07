@@ -23,7 +23,11 @@ module.exports = function(homebridge) {
 
 function ST_Platform(log, config, api) {
     this.temperature_unit = 'F';
-
+    console.log("config:", config);
+    if (config === undefined || config === null || config.app_url === undefined || config.app_url === null || config.app_id === undefined || config.app_id === null) {
+        log.debug(platformName + " Plugin not configured. Skipping");
+        return;
+    }
     this.app_url = config['app_url'];
     this.app_id = config['app_id'];
     this.access_token = config['access_token'];
