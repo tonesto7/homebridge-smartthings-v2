@@ -7,7 +7,7 @@
 String appVersion() { return "2.0.0" }
 String appModified() { return "11-07-2019" }
 String platform() { return "SmartThings" }
-String pluginName() { return "${platform()}-2.0" }
+String pluginName() { return "${platform()}-2" }
 String appIconUrl() { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/hb_tonesto7@2x.png" }
 String getAppImg(imgName) { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/${imgName}" }
 
@@ -228,8 +228,8 @@ def getDeviceData(type, sItem) {
     }
     if(curType && obj) {
         return [
-            name: !isVirtual ? sItem?.displayName?.toString()?.replaceAll("[#\$()!%&']", "") : name?.toString()?.replaceAll("[#\$()!%&']", ""),
-            basename:  !isVirtual ? sItem?.name : name,
+            name: !isVirtual ? sItem?.displayName?.toString()?.replaceAll("[#\$()!%&@^']", "") : name?.toString()?.replaceAll("[#\$()!%&@^']", ""),
+            basename: !isVirtual ? sItem?.name : name,
             deviceid: !isVirtual ? sItem?.id : devId,
             status: !isVirtual ? sItem?.status : "Online",
             manufacturerName: (!isVirtual ? sItem?.getManufacturerName() : pluginName()) ?: pluginName(),
@@ -605,13 +605,13 @@ def registerSwitches() {
 
 def ignoreTheseAttributes() {
     return [
-        'DeviceWatch-DeviceStatus', 'checkInterval', 'devTypeVer', 'dayPowerAvg', 'apiStatus', 'yearCost', 'yearUsage','monthUsage', 'monthEst', 'weekCost', 'todayUsage',
+        'DeviceWatch-DeviceStatus', "DeviceWatch-Enroll", 'checkInterval', 'devTypeVer', 'dayPowerAvg', 'apiStatus', 'yearCost', 'yearUsage','monthUsage', 'monthEst', 'weekCost', 'todayUsage',
         'maxCodeLength', 'maxCodes', 'readingUpdated', 'maxEnergyReading', 'monthCost', 'maxPowerReading', 'minPowerReading', 'monthCost', 'weekUsage', 'minEnergyReading',
         'codeReport', 'scanCodes', 'verticalAccuracy', 'horizontalAccuracyMetric', 'altitudeMetric', 'latitude', 'distanceMetric', 'closestPlaceDistanceMetric',
         'closestPlaceDistance', 'leavingPlace', 'currentPlace', 'codeChanged', 'codeLength', 'lockCodes', 'healthStatus', 'horizontalAccuracy', 'bearing', 'speedMetric',
         'speed', 'verticalAccuracyMetric', 'altitude', 'indicatorStatus', 'todayCost', 'longitude', 'distance', 'previousPlace','closestPlace', 'places', 'minCodeLength',
         'arrivingAtPlace', 'lastUpdatedDt', 'scheduleType', 'zoneStartDate', 'zoneElapsed', 'zoneDuration', 'watering', 'eventTime', 'eventSummary', 'endOffset', 'startOffset',
-        'closeTime', 'endMsgTime', 'endMsg', 'openTime', 'startMsgTime', 'startMsg', 'calName'
+        'closeTime', 'endMsgTime', 'endMsg', 'openTime', 'startMsgTime', 'startMsg', 'calName', "deleteInfo", "eventTitle", "floor", "sleeping", "powerSource","batteryStatus"
     ]
 }
 

@@ -1,6 +1,6 @@
-const pluginName = 'homebridge-smartthings-2.0';
-const platformName = 'SmartThings-2.0';
-const inherits = require('util').inherits;
+const pluginName = 'homebridge-smartthings-2';
+const platformName = 'SmartThings-2';
+// const inherits = require('util').inherits;
 const st_api = require('./lib/st_api');
 const http = require('http');
 const os = require('os');
@@ -23,7 +23,11 @@ module.exports = function(homebridge) {
 
 function ST_Platform(log, config, api) {
     this.temperature_unit = 'F';
-
+    console.log("config:", config);
+    if (config === undefined || config === null || config.app_url === undefined || config.app_url === null || config.app_id === undefined || config.app_id === null) {
+        log.debug(platformName + " Plugin not configured. Skipping");
+        return;
+    }
     this.app_url = config['app_url'];
     this.app_id = config['app_id'];
     this.access_token = config['access_token'];
@@ -279,7 +283,7 @@ ST_Platform.prototype.configureAccessory = function(accessory) {
 
     ST_Accessory.prototype.CreateFromCachedAccessory(accessory, this);
     this.deviceLookup[accessory.deviceid] = accessory;
-}
+};
 
 function getIPAddress() {
     var interfaces = os.networkInterfaces();

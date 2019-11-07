@@ -209,7 +209,7 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
             platform.addAttributeUsage('door', device.deviceid, thisCharacteristic);
             that.getaddService(Service.GarageDoorOpener).setCharacteristic(Characteristic.ObstructionDetected, false);
         }
-        if (device.capabilities['Lock'] !== undefined) {
+        if (device.capabilities['Lock'] !== undefined && !device.capabilities['Thermostat']) {
             that.deviceGroup = 'locks';
             thisCharacteristic = that.getaddService(Service.LockMechanism).getCharacteristic(Characteristic.LockCurrentState)
                 .on('get', function(callback) {
@@ -497,13 +497,6 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
                         });
                     platform.addAttributeUsage('energy', device.deviceid, thisCharacteristic);
                 }
-                // if (device.capabilities['Power Meter'] || device.capabilities['PowerMeter']) {
-                //     thisCharacteristic = that.getaddService(Service.Switch).addCharacteristic(CommunityTypes.CurrentConsumption1)
-                //         .on('get', function(callback) {
-                //             callback(null, Math.round(that.device.attributes.power));
-                //         });
-                //     platform.addAttributeUsage('power', device.deviceid, thisCharacteristic);
-                // }
             }
         }
         // Smoke Detectors
@@ -1192,7 +1185,7 @@ function CreateFromCachedAccessory(accessory, platform) {
     platform.log.debug("Initializing Cached Device " + deviceid);
 
     accessory.deviceid = deviceid;
-    accessory.name = name
+    accessory.name = name;
     accessory.platform = platform;
     accessory.state = {};
     accessory.device = null;
@@ -1206,7 +1199,7 @@ function CreateFromCachedAccessory(accessory, platform) {
         }
 
         loadDataFn(data, myObject);
-    }
+    };
 
     accessory.loadData = firstLoadfn.bind(accessory);
     accessory.getServices = getServices.bind(accessory);
