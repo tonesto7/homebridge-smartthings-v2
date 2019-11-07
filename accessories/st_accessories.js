@@ -334,7 +334,7 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
             platform.addAttributeUsage('switch', device.deviceid, thisCharacteristic);
 
             if (that.device.attributes.level !== undefined || that.device.attributes.fanSpeed !== undefined) {
-                // let fanLvl = that.device.attributes.fanSpeed ? fanSpeedConversionInt(that.device.attributes.fanSpeed, (device.command['medHighSpeed'] !== undefined)) : parseInt(that.device.attributes.level);
+                // let fanLvl = that.device.attributes.fanSpeed ? fanSpeedConversionInt(that.device.attributes.fanSpeed, (device.commands['medHighSpeed'] !== undefined)) : parseInt(that.device.attributes.level);
                 let fanLvl = parseInt(that.device.attributes.level);
                 // platform.log("Fan with (" + that.device.attributes.fanSpeed ? "fanSpeed" : "level" + ') | value: ' + fanLvl);
                 platform.log("Fan with level at " + fanLvl);

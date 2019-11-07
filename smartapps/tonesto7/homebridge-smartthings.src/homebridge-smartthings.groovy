@@ -5,7 +5,7 @@
  */
 
 String appVersion() { return "2.0.0" }
-String appModified() { return "11-05-2019" }
+String appModified() { return "11-07-2019" }
 String platform() { return "SmartThings" }
 String pluginName() { return "${platform()}-2.0" }
 String appIconUrl() { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/hb_tonesto7@2x.png" }
@@ -21,7 +21,6 @@ definition(
     iconX2Url: "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/hb_tonesto7@2x.png",
     iconX3Url: "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/hb_tonesto7@3x.png",
     oauth: true)
-
 
 preferences {
     page(name: "mainPage")
@@ -45,6 +44,7 @@ def mainPage() {
         section("Define Specific Categories:") {
             paragraph "Each category below will adjust the device attributes to make sure they are recognized as the desired device type under HomeKit", state: "complete"
             input "lightList", "capability.switch", title: "Lights: (${lightList ? lightList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("light_on.png")
+            input "buttonList", "capability.button", title: "Buttons: (${buttonList ? buttonList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("button.png")
             input "fanList", "capability.switch", title: "Fans: (${fanList ? fanList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on.png")
             input "speakerList", "capability.switch", title: "Speakers: (${speakerList ? speakerList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("media_player.png")
             input "shadesList", "capability.windowShade", title: "Window Shades: (${shadesList ? shadesList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("window_shade.png")
@@ -62,15 +62,16 @@ def mainPage() {
         }
         section("Remove Capabilities from Devices Creation", hideable: true, hidden: false) {
             paragraph "This will allow you to filter out certain capabilities from creating unneeded devices under HomeKit"
-            input "removeTemp", "capability.temperatureMeasurement", title: "Remove Temp from these Sensors", multiple: true, submitOnChange: true, required: false, image: getAppImg("temperature.png")
-            input "removeSwitch", "capability.switch", title: "Remove Switch from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("switch.png")
-            input "removeContact", "capability.contactSensor", title: "Remove Contact from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("contact.png")
-            input "removeMotion", "capability.motionSensor", title: "Remove Motion from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("motion.png")
-            input "removeLevel", "capability.switchLevel", title: "Remove Level from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("speed_knob.png")
             input "removeBattery", "capability.battery", title: "Remove Battery from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("battery.png")
+            input "removeButton", "capability.button", title: "Remove Buttons from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("button.png")
+            input "removeContact", "capability.contactSensor", title: "Remove Contact from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("contact.png")
+            input "removeLevel", "capability.switchLevel", title: "Remove Level from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("speed_knob.png")
+            input "removeMotion", "capability.motionSensor", title: "Remove Motion from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("motion.png")
             input "removePower", "capability.powerMeter", title: "Remove Power Meter from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("power.png")
             input "removePresence", "capability.presenceSensor", title: "Remove Presence from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("presence.png")
+            input "removeSwitch", "capability.switch", title: "Remove Switch from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("switch.png")
             input "removeTamper", "capability.tamperAlert", title: "Remove Tamper from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("tamper.jpg")
+            input "removeTemp", "capability.temperatureMeasurement", title: "Remove Temp from these Sensors", multiple: true, submitOnChange: true, required: false, image: getAppImg("temperature.png")
         }
         section("Create Devices for Modes in HomeKit?") {
             paragraph title: "What are these for?", "A virtual switch will be created for each mode in HomeKit.\nThe switch will be ON when that mode is active.", state: "complete", image: getAppImg("info.png")
@@ -119,7 +120,7 @@ def imgTitle(imgSrc, imgWidth, imgHeight, titleStr, color=null) {
 
 def getDeviceCnt() {
     def devices = []
-    def items = ["deviceList", "sensorList", "switchList", "lightList", "fanList", "speakerList", "shadesList", "modeList", "routineList"]
+    def items = ["deviceList", "sensorList", "switchList", "lightList", "buttonList", "fanList", "speakerList", "shadesList", "modeList", "routineList"]
     items?.each { item ->
         if(settings[item]?.size() > 0) {
             devices = devices + settings[item]
@@ -176,7 +177,7 @@ def onAppTouch(event) {
 
 def renderDevices() {
     def deviceData = []
-    def items = ["deviceList", "sensorList", "switchList", "lightList", "fanList", "speakerList", "shadesList", "modeList", "routineList"]
+    def items = ["deviceList", "sensorList", "switchList", "lightList", "buttonList", "fanList", "speakerList", "shadesList", "modeList", "routineList"]
     items?.each { item ->
         if(settings[item]?.size()) {
             settings[item]?.each { dev->
@@ -227,8 +228,8 @@ def getDeviceData(type, sItem) {
     }
     if(curType && obj) {
         return [
-            name: !isVirtual ? sItem?.displayName : name,
-            basename: !isVirtual ? sItem?.name : name,
+            name: !isVirtual ? sItem?.displayName?.toString()?.replaceAll("[#\$()!%&']", "") : name?.toString()?.replaceAll("[#\$()!%&']", ""),
+            basename:  !isVirtual ? sItem?.name : name,
             deviceid: !isVirtual ? sItem?.id : devId,
             status: !isVirtual ? sItem?.status : "Online",
             manufacturerName: (!isVirtual ? sItem?.getManufacturerName() : pluginName()) ?: pluginName(),
@@ -265,19 +266,21 @@ def getSecurityDevice() {
 }
 
 def findDevice(paramid) {
-	def device = deviceList.find { it?.id == paramid }
+	def device = deviceList?.find { it?.id == paramid }
   	if (device) return device
-	device = sensorList.find { it?.id == paramid }
+	device = sensorList?.find { it?.id == paramid }
 	if (device) return device
-  	device = switchList.find { it?.id == paramid }
+  	device = switchList?.find { it?.id == paramid }
     if (device) return device
-    device = lightList.find { it?.id == paramid }
+    device = lightList?.find { it?.id == paramid }
     if (device) return device
-    device = fanList.find { it?.id == paramid }
+    device = buttonList?.find { it?.id == paramid }
     if (device) return device
-    device = speakerList.find { it?.id == paramid }
+    device = fanList?.find { it?.id == paramid }
     if (device) return device
-    device = shadesList.find { it?.id == paramid }
+    device = speakerList?.find { it?.id == paramid }
+    if (device) return device
+    device = shadesList?.find { it?.id == paramid }
 	return device
 }
 
@@ -511,17 +514,20 @@ def deviceQuery() {
 
 def deviceCapabilityList(device) {
     def items = device?.capabilities?.collectEntries { capability-> [ (capability?.name):1 ] }
-    ["Health Check", "Ultraviolet Index", "Indicator"]?.each { if(it in items) { items.remove(it as String) } }
-    if(settings?.lightList.find { it?.id == device?.id }) {
+    ["Health Check", "Ultraviolet Index", "Indicator"]?.each { if(it in items) { items?.remove(it as String) } }
+    if(settings?.lightList?.find { it?.id == device?.id }) {
         items["LightBulb"] = 1
     }
-    if(settings?.fanList.find { it?.id == device?.id }) {
+    if(settings?.buttonList?.find { it?.id == device?.id }) {
+        items["Button"] = 1
+    }
+    if(settings?.fanList?.find { it?.id == device?.id }) {
         items["Fan"] = 1
     }
-    if(settings?.speakerList.find { it?.id == device?.id }) {
+    if(settings?.speakerList?.find { it?.id == device?.id }) {
         items["Speaker"] = 1
     }
-    if(settings?.shadesList.find { it?.id == device?.id }) {
+    if(settings?.shadesList?.find { it?.id == device?.id }) {
         items["WindowShade"] = 1
     }
     if(settings?.noTemp && items["Temperature Measurement"] && (items["Contact Sensor"] || items["Water Sensor"])) {
@@ -530,17 +536,18 @@ def deviceCapabilityList(device) {
             List aItems = settings?.sensorAllowTemp?.collect { it?.getId() as String } ?: []
             if(aItems?.contains(device?.id as String)) { remTemp = false }
         }
-        if(remTemp) { items.remove("Temperature Measurement") }
+        if(remTemp) { items?.remove("Temperature Measurement") }
     }
-    if(settings.removeBattery && items["Battery"] && isDeviceInInput('removeBattery', device?.id)) { items.remove("Battery"); log.debug "Filtering Battery" }
-    if(settings.removeSwitch && items["Switch"] && isDeviceInInput('removeSwitch', device?.id)) { items.remove("Switch"); log.debug "Filtering Switch" }
-    if(settings.removeTemp && items["Temperature Measurement"] && isDeviceInInput('removeTemp', device?.id)) { items.remove("Temperature Measurement"); log.debug "Filtering Temp" }
-    if(settings.removeContact && items["Contact Sensor"] && isDeviceInInput('removeContact', device?.id)) { items.remove("Contact Sensor"); log.debug "Filtering Contact" }
-    if(settings.removeLevel && items["Switch Level"] && isDeviceInInput('removeLevel', device?.id)) { items.remove("Switch Level"); log.debug "Filtering Level" }
-    if(settings.removeMotion && items["Motion Sensor"] && isDeviceInInput('removeMotion', device?.id)) { items.remove("Motion Sensor"); log.debug "Filtering Motion" }
-    if(settings.removePower && items["Power Meter"] && isDeviceInInput('removePower', device?.id)) { items.remove("Power Meter"); log.debug "Filtering Power Meter" }
-    if(settings.removePresence && items["Presence Sensor"] && isDeviceInInput('removePresence', device?.id)) { items.remove("Presence Sensor"); log.debug "Filtering Presence" }
-    if(settings.removeTamper && items["Tamper Alert"] && isDeviceInInput('removeTamper', device?.id)) { items.remove("Tamper Alert"); log.debug "Filtering Tamper" }
+    if(settings?.removeBattery && items["Battery"] && isDeviceInInput('removeBattery', device?.id)) { items?.remove("Battery"); if(showLogs) { log.debug "Filtering Battery"; } }
+    if(settings?.removeButton && items["Button"] && isDeviceInInput('removeButton', device?.id)) { items?.remove("Button");  if(showLogs) { log.debug "Filtering Button"; } }
+    if(settings?.removeContact && items["Contact Sensor"] && isDeviceInInput('removeContact', device?.id)) { items?.remove("Contact Sensor");  if(showLogs) { log.debug "Filtering Contact"; } }
+    if(settings?.removeLevel && items["Switch Level"] && isDeviceInInput('removeLevel', device?.id)) { items?.remove("Switch Level");  if(showLogs) { log.debug "Filtering Level"; } }
+    if(settings?.removeMotion && items["Motion Sensor"] && isDeviceInInput('removeMotion', device?.id)) { items?.remove("Motion Sensor");  if(showLogs) { log.debug "Filtering Motion"; } }
+    if(settings?.removePower && items["Power Meter"] && isDeviceInInput('removePower', device?.id)) { items?.remove("Power Meter");  if(showLogs) { log.debug "Filtering Power Meter"; } }
+    if(settings?.removePresence && items["Presence Sensor"] && isDeviceInInput('removePresence', device?.id)) { items?.remove("Presence Sensor");  if(showLogs) { log.debug "Filtering Presence"; } }
+    if(settings?.removeSwitch && items["Switch"] && isDeviceInInput('removeSwitch', device?.id)) { items?.remove("Switch");  if(showLogs) { log.debug "Filtering Switch"; } }
+    if(settings?.removeTamper && items["Tamper Alert"] && isDeviceInInput('removeTamper', device?.id)) { items?.remove("Tamper Alert");  if(showLogs) { log.debug "Filtering Tamper"; } }
+    if(settings?.removeTemp && items["Temperature Measurement"] && isDeviceInInput('removeTemp', device?.id)) { items?.remove("Temperature Measurement");  if(showLogs) { log.debug "Filtering Temp"; } }
     return items
 }
 
@@ -571,6 +578,8 @@ def registerDevices() {
     //This has to be done at startup because it takes too long for a normal command.
     log.debug "Registering (${settings?.fanList?.size() ?: 0}) Fans"
     registerChangeHandler(settings?.fanList)
+    log.debug "Registering (${settings?.buttonList?.size() ?: 0}) Buttons"
+    registerChangeHandler(settings?.buttonList)
     log.debug "Registering (${settings?.deviceList?.size() ?: 0}) Other Devices"
     registerChangeHandler(settings?.deviceList)
 }
@@ -626,6 +635,7 @@ def registerChangeHandler(devices, showlog=false) {
                     if(skipAtt) { return }
                 }
                 if(att == "battery" && settings.removeBattery && isDeviceInInput('removeBattery', device?.id)) {return}
+                if(att == "button" && settings.removeButton && isDeviceInInput('removeButton', device?.id)) {return}
                 if(att == "switch" && settings.removeSwitch && isDeviceInInput('removeSwitch', device?.id)) {return}
                 if(att == "temperature" && settings.removeTemp && isDeviceInInput('removeTemp', device?.id)) {return}
                 if(att == "contact" && settings.removeContact && isDeviceInInput('removeContact', device?.id)) {return}
