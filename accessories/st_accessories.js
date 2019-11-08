@@ -39,7 +39,7 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
     }
 
     that.getaddService = function(Service) {
-        var myService = that.getService(Service);
+        let myService = that.getService(Service);
         if (!myService) {
             myService = that.addService(Service);
         }
@@ -587,7 +587,7 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
             }
             thisCharacteristic = that.getaddService(Service.LeakSensor).getCharacteristic(Characteristic.LeakDetected)
                 .on('get', function(callback) {
-                    var reply = Characteristic.LeakDetected.LEAK_DETECTED;
+                    let reply = Characteristic.LeakDetected.LEAK_DETECTED;
                     if (that.device.attributes.water === 'dry') {
                         reply = Characteristic.LeakDetected.LEAK_NOT_DETECTED;
                     }
@@ -728,6 +728,29 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
                 that.deviceGroup = 'sensor';
             }
         }
+        if (device.capabilities['Air Quality Sensor'] !== undefined || device.capabilities['AirQualitySensor'] !== undefined) {
+            that.deviceGroup = 'air_quality_sensor';
+            thisCharacteristic = that.getaddService(Service.AirQualitySensor).getCharacteristic(Characteristic.AirQuality)
+                .on('get', function(callback) {
+                    switch (that.device.attributes.airQuality) {
+                        case 'pending cool':
+                        case 'cooling':
+                            callback(null, Characteristic.CurrentHeatingCoolingState.COOL);
+                            break;
+                        case 'pending heat':
+                        case 'heating':
+                            callback(null, Characteristic.CurrentHeatingCoolingState.HEAT);
+                            break;
+                        default:
+                            // The above list should be inclusive, but we need to return something if they change stuff.
+                            // TODO: Double check if Smartthings can send "auto" as operatingstate. I don't think it can.
+                            callback(null, Characteristic.CurrentHeatingCoolingState.OFF);
+                            break;
+                    }
+                });
+            platform.addAttributeUsage('thermostatOperatingState', device.deviceid, thisCharacteristic);
+
+        }
         if (device.capabilities['Thermostat'] !== undefined) {
             that.deviceGroup = 'thermostats';
             thisCharacteristic = that.getaddService(Service.Thermostat).getCharacteristic(Characteristic.CurrentHeatingCoolingState)
@@ -821,7 +844,7 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
             platform.addAttributeUsage('temperature', device.deviceid, thisCharacteristic);
             thisCharacteristic = that.getaddService(Service.Thermostat).getCharacteristic(Characteristic.TargetTemperature)
                 .on('get', function(callback) {
-                    var temp;
+                    let temp;
                     switch (that.device.attributes.thermostatMode) {
                         case 'cool':
                             temp = that.device.attributes.coolingSetpoint;
@@ -833,9 +856,9 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
                         default:
                             // This should only refer to auto
                             // Choose closest target as single target
-                            var high = that.device.attributes.coolingSetpoint;
-                            var low = that.device.attributes.heatingSetpoint;
-                            var cur = that.device.attributes.temperature;
+                            let high = that.device.attributes.coolingSetpoint;
+                            let low = that.device.attributes.heatingSetpoint;
+                            let cur = that.device.attributes.temperature;
                             temp = Math.abs(high - cur) < Math.abs(cur - low) ? high : low;
                             break;
                     }
@@ -847,7 +870,7 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
                 })
                 .on('set', function(value, callback) {
                     // Convert the Celsius value to the appropriate unit for Smartthings
-                    var temp = value;
+                    let temp = value;
                     if (platform.temperature_unit === 'C') {
                         temp = value;
                     } else {
@@ -871,10 +894,10 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
                         default:
                             // This should only refer to auto
                             // Choose closest target as single target
-                            var high = that.device.attributes.coolingSetpoint;
-                            var low = that.device.attributes.heatingSetpoint;
-                            var cur = that.device.attributes.temperature;
-                            var isHighTemp = Math.abs(high - cur) < Math.abs(cur - low);
+                            let high = that.device.attributes.coolingSetpoint;
+                            let low = that.device.attributes.heatingSetpoint;
+                            let cur = that.device.attributes.temperature;
+                            let isHighTemp = Math.abs(high - cur) < Math.abs(cur - low);
                             if (isHighTemp) {
                                 platform.api.runCommand(callback, device.deviceid, 'setCoolingSetpoint', {
                                     value1: temp
@@ -906,7 +929,7 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
                 })
                 .on('set', function(value, callback) {
                     // Convert the Celsius value to the appropriate unit for Smartthings
-                    var temp = value;
+                    let temp = value;
                     if (platform.temperature_unit === 'C') {
                         temp = value;
                     } else {
@@ -924,7 +947,7 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
                 })
                 .on('set', function(value, callback) {
                     // Convert the Celsius value to the appropriate unit for Smartthings
-                    var temp = value;
+                    let temp = value;
                     if (platform.temperature_unit === 'C') {
                         temp = value;
                     } else {
@@ -961,12 +984,13 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
         }
 
         // Sonos Speakers
+
         if (isSonos && that.deviceGroup === 'unknown' && false) {
             that.deviceGroup = 'speakers';
 
             if (that.device.capabilities['Audio Volume']) {
-                var sonosVolumeTimeout = null;
-                var lastVolumeWriteValue = null;
+                let sonosVolumeTimeout = null;
+                let lastVolumeWriteValue = null;
 
                 thisCharacteristic = that.getaddService(Service.Speaker).getCharacteristic(Characteristic.Volume)
                     .on('get', function(callback) {
@@ -1023,7 +1047,7 @@ function ST_Accessory(platform, device) {
     let that = this;
 
     //Removing excluded capabilities from config
-    for (var i = 0; i < device.excludedCapabilities.length; i++) {
+    for (let i = 0; i < device.excludedCapabilities.length; i++) {
         let excludedCapability = device.excludedCapabilities[i];
         if (device.capabilities[excludedCapability] !== undefined) {
             platform.log.debug("Removing capability: " + excludedCapability + " for device: " + device.name);
@@ -1059,9 +1083,9 @@ function tempConversion(tUnit, tempVal) {
 }
 
 function debounce(a, b, c) {
-    var d;
+    let d;
     return function() {
-        var e = this,
+        let e = this,
             f = arguments;
         clearTimeout(d), d = setTimeout(function() { d = null, c || a.apply(e, f); }, b), c && !d && a.apply(e, f);
     };
@@ -1138,14 +1162,14 @@ function convertAlarmState(value, valInt = false) {
 }
 
 function loadData(data, myObject) {
-    var that = this;
+    let that = this;
     if (myObject !== undefined) {
         that = myObject;
     }
     if (data !== undefined) {
         this.device = data;
-        for (var i = 0; i < that.services.length; i++) {
-            for (var j = 0; j < that.services[i].characteristics.length; j++) {
+        for (let i = 0; i < that.services.length; i++) {
+            for (let j = 0; j < that.services[i].characteristics.length; j++) {
                 that.services[i].characteristics[j].getValue();
             }
         }
@@ -1156,8 +1180,8 @@ function loadData(data, myObject) {
                 return;
             }
             this.device = data;
-            for (var i = 0; i < that.services.length; i++) {
-                for (var j = 0; j < that.services[i].characteristics.length; j++) {
+            for (let i = 0; i < that.services.length; i++) {
+                for (let j = 0; j < that.services[i].characteristics.length; j++) {
                     that.services[i].characteristics[j].getValue();
                 }
             }
@@ -1178,9 +1202,9 @@ function clearAndSetTimeout(timeoutReference, fn, timeoutMs) {
 }
 
 function CreateFromCachedAccessory(accessory, platform) {
-    var service = accessory.getService("SmartThings Device ID");
-    var deviceid = service.getCharacteristic("Device Id").value;
-    var name = accessory.getService(Service.AccessoryInformation).getCharacteristic(Characteristic.Name).value;
+    let service = accessory.getService("SmartThings Device ID");
+    let deviceid = service.getCharacteristic("Device Id").value;
+    let name = accessory.getService(Service.AccessoryInformation).getCharacteristic(Characteristic.Name).value;
 
     platform.log.debug("Initializing Cached Device " + deviceid);
 
@@ -1190,8 +1214,8 @@ function CreateFromCachedAccessory(accessory, platform) {
     accessory.state = {};
     accessory.device = null;
 
-    var loadDataFn = loadData.bind(accessory);
-    var firstLoadfn = function(data, myObject) {
+    let loadDataFn = loadData.bind(accessory);
+    let firstLoadfn = function(data, myObject) {
         if (!this.device) {
             this.platform.log.debug("Performing first data load and characteristic initialization.");
             this.device = data;

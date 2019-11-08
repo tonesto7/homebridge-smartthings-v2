@@ -95,10 +95,10 @@ ST_Platform.prototype = {
             // success
             if (myList && myList.deviceList && myList.deviceList instanceof Array) {
                 let populateDevices = function(devices) {
-                    for (var i = 0; i < devices.length; i++) {
-                        var device = devices[i];
+                    for (let i = 0; i < devices.length; i++) {
+                        let device = devices[i];
                         device.excludedCapabilities = that.excludedCapabilities[device.deviceid] || ["None"];
-                        var accessory;
+                        let accessory;
 
                         that.log.debug("Processing device id: " + device.deviceid);
 
@@ -146,7 +146,7 @@ ST_Platform.prototype = {
     accessories: function(callback) {
         this.log('Fetching ' + platformName + ' devices.');
 
-        var that = this;
+        let that = this;
 
         this.unknownCapabilities = [];
         this.knownCapabilities = [
@@ -234,7 +234,7 @@ ST_Platform.prototype = {
     },
 
     doIncrementalUpdate: function() {
-        var that = this;
+        let that = this;
         st_api.getUpdates(function(data) {
             that.processIncrementalUpdate(data, that);
         });
@@ -243,7 +243,7 @@ ST_Platform.prototype = {
     processIncrementalUpdate: function(data, that) {
         that.log.debug('new data: ' + data);
         if (data && data.attributes && data.attributes instanceof Array) {
-            for (var i = 0; i < data.attributes.length; i++) {
+            for (let i = 0; i < data.attributes.length; i++) {
                 that.processFieldUpdate(data.attributes[i], that);
             }
         }
@@ -254,10 +254,10 @@ ST_Platform.prototype = {
         if (!(that.attributeLookup[attributeSet.attribute] && that.attributeLookup[attributeSet.attribute][attributeSet.device])) {
             return;
         }
-        var myUsage = that.attributeLookup[attributeSet.attribute][attributeSet.device];
+        let myUsage = that.attributeLookup[attributeSet.attribute][attributeSet.device];
         if (myUsage instanceof Array) {
-            for (var j = 0; j < myUsage.length; j++) {
-                var accessory = that.deviceLookup[attributeSet.device];
+            for (let j = 0; j < myUsage.length; j++) {
+                let accessory = that.deviceLookup[attributeSet.device];
                 if (accessory) {
                     accessory.device.attributes[attributeSet.attribute] = attributeSet.value;
                     myUsage[j].getValue();
@@ -268,9 +268,9 @@ ST_Platform.prototype = {
 
     processAccessoryCallback: function(foundAccessories) {
         // loop through accessories adding them to the list and registering them
-        for (var i = 0; i < foundAccessories.length; i++) {
-            var accessoryInstance = foundAccessories[i];
-            var accessoryName = accessoryInstance.name; // assume this property was set
+        for (let i = 0; i < foundAccessories.length; i++) {
+            let accessoryInstance = foundAccessories[i];
+            let accessoryName = accessoryInstance.name; // assume this property was set
 
             this.log("Initializing platform accessory '%s'...", accessoryName);
             this.homekit_api.registerPlatformAccessories(pluginName, platformName, [accessoryInstance]);
@@ -286,11 +286,11 @@ ST_Platform.prototype.configureAccessory = function(accessory) {
 };
 
 function getIPAddress() {
-    var interfaces = os.networkInterfaces();
-    for (var devName in interfaces) {
-        var iface = interfaces[devName];
-        for (var i = 0; i < iface.length; i++) {
-            var alias = iface[i];
+    let interfaces = os.networkInterfaces();
+    for (let devName in interfaces) {
+        let iface = interfaces[devName];
+        for (let i = 0; i < iface.length; i++) {
+            let alias = iface[i];
             if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal) {
                 return alias.address;
             }
@@ -362,7 +362,7 @@ function st_api_HandleHTTPResponse(request, response, my_st_api) {
                 return;
             let data = JSON.parse(body);
             if (Object.keys(data).length > 3) {
-                var newChange = {
+                let newChange = {
                     device: data.change_device,
                     attribute: data.change_attribute,
                     value: data.change_value,
