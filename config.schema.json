@@ -1,14 +1,14 @@
 {
-    "pluginAlias": "SmartThings-2.0",
+    "pluginAlias": "SmartThings-v2",
     "pluginType": "platform",
     "singular": true,
-    "footerDisplay": "For help/issues [issues](https://github.com/tonesto7/homebridge-smartthings-2.0/issues).",
+    "footerDisplay": "For help/issues [issues](https://github.com/tonesto7/homebridge-smartthings-v2/issues).",
     "schema": {
         "name": {
             "title": "Name",
-            "description": "This should default to SmartThings-2.0",
+            "description": "This should default to SmartThings-v2",
             "type": "string",
-            "default": "SmartThings-2.0",
+            "default": "SmartThings-v2",
             "required": true
         },
         "app_url": {
@@ -36,32 +36,10 @@
             "required": false
         },
         "direct_port": {
-            "title": "Port",
+            "title": "Direct Port",
             "description": "This is the port that the plugin will listen on for traffic from your hub. Make sure your firewall allows incoming traffic on this port from your hub's IP address.",
             "type": "integer",
             "maximum": 65535,
-            "required": false
-        },
-        "debug": {
-            "title": "Send Commands Locally?",
-            "description": "This will allow the service to send homekit commands to hub locally (SmartThings only).",
-            "type": "boolean"
-        },
-        "update_method": {
-            "title": "Update Method",
-            "type": "string",
-            "default": "direct",
-            "oneOf": [{
-                "title": "direct",
-                "enum": [
-                    "direct"
-                ]
-            }, {
-                "title": "api",
-                "enum": [
-                    "api"
-                ]
-            }],
             "required": false
         }
     }

@@ -16,11 +16,11 @@
         "homebridge"
     ],
     "license": "ISC",
-    "name": "homebridge-smartthings-2.0",
+    "name": "homebridge-smartthings-v2",
     "preferGlobal": true,
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/tonesto7/homebridge-smartthings-2.0.git"
+        "url": "git+https://github.com/tonesto7/homebridge-smartthings-v2.git"
     },
-    "version": "1.9.1"
+    "version": "2.0.0"
 }

@@ -1,8 +1,8 @@
-# homebridge-smartthings-2.0
+# homebridge-smartthings-v2
 
-This is based off of @pdlove homebridge-smartthings and homebridge-smartthings-tonesto7
+This is based off of homebridge-smartthings-tonesto7 which was loosely based off @pdlove homebridge-smartthings
 
-[![npm version](https://badge.fury.io/js/homebridge-smartthings-2.0.svg)](https://badge.fury.io/js/homebridge-smartthings-2.0)
+[![npm version](https://badge.fury.io/js/homebridge-smartthings-v2.svg)](https://badge.fury.io/js/homebridge-smartthings-v2)
 
 **```Current SmartApp version: 2.0.0```**
 
@@ -102,8 +102,8 @@ _Note New SmartThings users: You must first enable github integration. (If you u
   <h4 style="padding: 0em .6em; margin-bottom: 5px;"><u>Example of all settings. Not all settings are required. Read the breakdown below</u></h4>
 
    <div style="overflow:auto;width:auto;border-width:.1em .1em .1em .8em;padding:.2em .6em;"><pre style="margin: 0; line-height: 125%"><span style="color: #f8f8f2">{</span>
-   <span style="color: #f92672">&quot;platform&quot;</span><span style="color: #f8f8f2">:</span> <span style="color: #e6db74">&quot;SmartThings&quot;</span><span style="color: #f8f8f2">,</span>
-   <span style="color: #f92672">&quot;name&quot;</span><span style="color: #f8f8f2">:</span> <span style="color: #e6db74">&quot;SmartThings&quot;</span><span style="color: #f8f8f2">,</span>
+   <span style="color: #f92672">&quot;platform&quot;</span><span style="color: #f8f8f2">:</span> <span style="color: #e6db74">&quot;SmartThings-v2&quot;</span><span style="color: #f8f8f2">,</span>
+   <span style="color: #f92672">&quot;name&quot;</span><span style="color: #f8f8f2">:</span> <span style="color: #e6db74">&quot;SmartThings-v2&quot;</span><span style="color: #f8f8f2">,</span>
    <span style="color: #f92672">&quot;app_url&quot;</span><span style="color: #f8f8f2">:</span> <span style="color: #e6db74">&quot;https://graph.api.smartthings.com:443/api/smartapps/installations/&quot;</span><span style="color: #f8f8f2">,</span>
    <span style="color: #f92672">&quot;app_id&quot;</span><span style="color: #f8f8f2">:</span> <span style="color: #e6db74">&quot;d023c841-7f94-44ea-9e78-3039605f6b29&quot;</span><span style="color: #f8f8f2">,</span>
    <span style="color: #f92672">&quot;access_token&quot;</span><span style="color: #f8f8f2">:</span> <span style="color: #e6db74">&quot;THIS-SHOULD-BE-YOUR-TOKEN&quot;</span><span style="color: #f8f8f2">,</span>
