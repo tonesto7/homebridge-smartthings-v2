@@ -1,17 +1,19 @@
+const {
+    platformName
+} = require("../lib/Constants");
+const myUtils = require('../lib/MyUtils');
 const inherits = require('util').inherits;
-let Accessory, Service, Characteristic, uuid, CommunityTypes, platformName;
-
+let Accessory, Service, Characteristic, uuid, CommunityTypes;
 
 /*
  *   ST_Accessory
  */
-module.exports = function(oAccessory, oService, oCharacteristic, ouuid, platName) {
-    platformName = platName;
+module.exports = function(oAccessory, oService, oCharacteristic, ouuid) {
     if (oAccessory) {
         Accessory = oAccessory;
         Service = oService;
         Characteristic = oCharacteristic;
-        CommunityTypes = require('../lib/communityTypes')(Service, Characteristic);
+        CommunityTypes = require('../lib/CommunityTypes')(Service, Characteristic);
         uuid = ouuid;
 
         inherits(ST_Accessory, Accessory);
@@ -24,13 +26,8 @@ module.exports = function(oAccessory, oService, oCharacteristic, ouuid, platName
 };
 module.exports.ST_Accessory = ST_Accessory;
 
-function toTitleCase(str) {
-    return str.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
-}
-
 function initializeDeviceCharacteristics(accessory, device, platform) {
     let that = accessory;
-
     // Get the Capabilities List
     for (let index in device.capabilities) {
         if (platform.knownCapabilities.indexOf(index) === -1 && platform.unknownCapabilities.indexOf(index) === -1) {
@@ -334,7 +331,7 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
             platform.addAttributeUsage('switch', device.deviceid, thisCharacteristic);
 
             if (that.device.attributes.level !== undefined || that.device.attributes.fanSpeed !== undefined) {
-                // let fanLvl = that.device.attributes.fanSpeed ? fanSpeedConversionInt(that.device.attributes.fanSpeed, (device.commands['medHighSpeed'] !== undefined)) : parseInt(that.device.attributes.level);
+                // let fanLvl = that.device.attributes.fanSpeed ? myUtils.fanSpeedConversionInt(that.device.attributes.fanSpeed, (device.commands['medHighSpeed'] !== undefined)) : parseInt(that.device.attributes.level);
                 let fanLvl = parseInt(that.device.attributes.level);
                 // platform.log("Fan with (" + that.device.attributes.fanSpeed ? "fanSpeed" : "level" + ') | value: ' + fanLvl);
                 platform.log("Fan with level at " + fanLvl);
@@ -646,7 +643,7 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
                     maxValue: parseFloat(100)
                 })
                 .on('get', function(callback) {
-                    callback(null, tempConversion(platform.temperature_unit, that.device.attributes.temperature));
+                    callback(null, myUtils.tempConversion(platform.temperature_unit, that.device.attributes.temperature));
                 });
             platform.addAttributeUsage('temperature', device.deviceid, thisCharacteristic);
             if (device.capabilities['Tamper Alert'] !== undefined || device.capabilities['TamperAlert'] !== undefined) {
@@ -729,27 +726,26 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
             }
         }
         if (device.capabilities['Air Quality Sensor'] !== undefined || device.capabilities['AirQualitySensor'] !== undefined) {
-            that.deviceGroup = 'air_quality_sensor';
-            thisCharacteristic = that.getaddService(Service.AirQualitySensor).getCharacteristic(Characteristic.AirQuality)
-                .on('get', function(callback) {
-                    switch (that.device.attributes.airQuality) {
-                        case 'pending cool':
-                        case 'cooling':
-                            callback(null, Characteristic.CurrentHeatingCoolingState.COOL);
-                            break;
-                        case 'pending heat':
-                        case 'heating':
-                            callback(null, Characteristic.CurrentHeatingCoolingState.HEAT);
-                            break;
-                        default:
-                            // The above list should be inclusive, but we need to return something if they change stuff.
-                            // TODO: Double check if Smartthings can send "auto" as operatingstate. I don't think it can.
-                            callback(null, Characteristic.CurrentHeatingCoolingState.OFF);
-                            break;
-                    }
-                });
-            platform.addAttributeUsage('thermostatOperatingState', device.deviceid, thisCharacteristic);
-
+            // that.deviceGroup = 'air_quality_sensor';
+            // thisCharacteristic = that.getaddService(Service.AirQualitySensor).getCharacteristic(Characteristic.AirQuality)
+            //     .on('get', function(callback) {
+            //         switch (that.device.attributes.airQuality) {
+            //             case 'pending cool':
+            //             case 'cooling':
+            //                 callback(null, Characteristic.CurrentHeatingCoolingState.COOL);
+            //                 break;
+            //             case 'pending heat':
+            //             case 'heating':
+            //                 callback(null, Characteristic.CurrentHeatingCoolingState.HEAT);
+            //                 break;
+            //             default:
+            //                 // The above list should be inclusive, but we need to return something if they change stuff.
+            //                 // TODO: Double check if Smartthings can send "auto" as operatingstate. I don't think it can.
+            //                 callback(null, Characteristic.CurrentHeatingCoolingState.OFF);
+            //                 break;
+            //         }
+            //     });
+            // platform.addAttributeUsage('thermostatOperatingState', device.deviceid, thisCharacteristic);
         }
         if (device.capabilities['Thermostat'] !== undefined) {
             that.deviceGroup = 'thermostats';
@@ -839,7 +835,7 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
             }
             thisCharacteristic = that.getaddService(Service.Thermostat).getCharacteristic(Characteristic.CurrentTemperature)
                 .on('get', function(callback) {
-                    callback(null, tempConversion(platform.temperature_unit, that.device.attributes.temperature));
+                    callback(null, myUtils.tempConversion(platform.temperature_unit, that.device.attributes.temperature));
                 });
             platform.addAttributeUsage('temperature', device.deviceid, thisCharacteristic);
             thisCharacteristic = that.getaddService(Service.Thermostat).getCharacteristic(Characteristic.TargetTemperature)
@@ -865,7 +861,7 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
                     if (!temp) {
                         callback('Unknown');
                     } else {
-                        callback(null, tempConversion(platform.temperature_unit, temp));
+                        callback(null, myUtils.tempConversion(platform.temperature_unit, temp));
                     }
                 })
                 .on('set', function(value, callback) {
@@ -925,7 +921,7 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
             // platform.addAttributeUsage("temperature_unit", "platform", thisCharacteristic);
             thisCharacteristic = that.getaddService(Service.Thermostat).getCharacteristic(Characteristic.HeatingThresholdTemperature)
                 .on('get', function(callback) {
-                    callback(null, tempConversion(platform.temperature_unit, that.device.attributes.heatingSetpoint));
+                    callback(null, myUtils.tempConversion(platform.temperature_unit, that.device.attributes.heatingSetpoint));
                 })
                 .on('set', function(value, callback) {
                     // Convert the Celsius value to the appropriate unit for Smartthings
@@ -943,7 +939,7 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
             platform.addAttributeUsage('heatingSetpoint', device.deviceid, thisCharacteristic);
             thisCharacteristic = that.getaddService(Service.Thermostat).getCharacteristic(Characteristic.CoolingThresholdTemperature)
                 .on('get', function(callback) {
-                    callback(null, tempConversion(platform.temperature_unit, that.device.attributes.coolingSetpoint));
+                    callback(null, myUtils.tempConversion(platform.temperature_unit, that.device.attributes.coolingSetpoint));
                 })
                 .on('set', function(value, callback) {
                     // Convert the Celsius value to the appropriate unit for Smartthings
@@ -965,27 +961,26 @@ function initializeDeviceCharacteristics(accessory, device, platform) {
             that.deviceGroup = 'alarm';
             thisCharacteristic = that.getaddService(Service.SecuritySystem).getCharacteristic(Characteristic.SecuritySystemCurrentState)
                 .on('get', function(callback) {
-                    // platform.log('alarm1: ' + that.device.attributes.alarmSystemStatus + ' | ' + convertAlarmState(that.device.attributes.alarmSystemStatus, true));
-                    callback(null, convertAlarmState(that.device.attributes.alarmSystemStatus, true));
+                    // platform.log('alarm1: ' + that.device.attributes.alarmSystemStatus + ' | ' + myUtils.convertAlarmState(that.device.attributes.alarmSystemStatus, true));
+                    callback(null, myUtils.convertAlarmState(that.device.attributes.alarmSystemStatus, true));
                 });
             platform.addAttributeUsage('alarmSystemStatus', device.deviceid, thisCharacteristic);
 
             thisCharacteristic = that.getaddService(Service.SecuritySystem).getCharacteristic(Characteristic.SecuritySystemTargetState)
                 .on('get', function(callback) {
-                    // platform.log('alarm2: ' + that.device.attributes.alarmSystemStatus + ' | ' + convertAlarmState(that.device.attributes.alarmSystemStatus, true));
-                    callback(null, convertAlarmState(that.device.attributes.alarmSystemStatus.toLowerCase(), true));
+                    // platform.log('alarm2: ' + that.device.attributes.alarmSystemStatus + ' | ' + myUtils.convertAlarmState(that.device.attributes.alarmSystemStatus, true));
+                    callback(null, myUtils.convertAlarmState(that.device.attributes.alarmSystemStatus.toLowerCase(), true));
                 })
                 .on('set', function(value, callback) {
-                    // platform.log('setAlarm: ' + value + ' | ' + convertAlarmState2(value));
-                    platform.api.runCommand(callback, device.deviceid, convertAlarmState(value));
-                    that.device.attributes.alarmSystemStatus = convertAlarmState(value);
+                    // platform.log('setAlarm: ' + value + ' | ' + myUtils.convertAlarmState(value));
+                    platform.api.runCommand(callback, device.deviceid, myUtils.convertAlarmState(value));
+                    that.device.attributes.alarmSystemStatus = myUtils.convertAlarmState(value);
                 });
             platform.addAttributeUsage('alarmSystemStatus', device.deviceid, thisCharacteristic);
         }
 
         // Sonos Speakers
-
-        if (isSonos && that.deviceGroup === 'unknown' && false) {
+        if (isSonos && that.deviceGroup === 'unknown') {
             that.deviceGroup = 'speakers';
 
             if (that.device.capabilities['Audio Volume']) {
@@ -1063,7 +1058,7 @@ function ST_Accessory(platform, device) {
         .setCharacteristic(Characteristic.Identify, (device.capabilities['Switch'] !== undefined))
         .setCharacteristic(Characteristic.FirmwareRevision, device.firmwareVersion)
         .setCharacteristic(Characteristic.Manufacturer, device.manufacturerName)
-        .setCharacteristic(Characteristic.Model, `${toTitleCase(device.modelName)}`)
+        .setCharacteristic(Characteristic.Model, `${myUtils.toTitleCase(device.modelName)}`)
         .setCharacteristic(Characteristic.Name, that.name)
         .setCharacteristic(Characteristic.SerialNumber, device.serialNumber);
 
@@ -1072,93 +1067,6 @@ function ST_Accessory(platform, device) {
     this.loadData(device, that);
 
     return this;
-}
-
-function tempConversion(tUnit, tempVal) {
-    if (tUnit === 'C') {
-        return (parseFloat(tempVal * 10) / 10);
-    } else {
-        return (parseFloat((tempVal - 32) / 1.8 * 10) / 10);
-    }
-}
-
-function debounce(a, b, c) {
-    let d;
-    return function() {
-        let e = this,
-            f = arguments;
-        clearTimeout(d), d = setTimeout(function() { d = null, c || a.apply(e, f); }, b), c && !d && a.apply(e, f);
-    };
-}
-
-function fanSpeedConversion(speedVal, has4Spd = false) {
-    if (speedVal <= 0) {
-        return "off";
-    }
-    if (has4Spd) {
-        if (speedVal > 0 && speedVal <= 25) {
-            return "low";
-        } else if (speedVal > 25 && speedVal <= 50) {
-            return "med";
-        } else if (speedVal > 50 && speedVal <= 75) {
-            return "medhigh";
-        } else if (speedVal > 75 && speedVal <= 100) {
-            return "high";
-        }
-    } else {
-        if (speedVal > 0 && speedVal <= 32) {
-            return "low";
-        } else if (speedVal <= 33 && speedVal <= 66) {
-            return "medium";
-        } else if (speedVal <= 67 && speedVal <= 100) {
-            return "high";
-        }
-    }
-}
-
-function fanSpeedConversionInt(speedVal) {
-    if (!speedVal || speedVal <= 0) {
-        return "off";
-    } else if (speedVal === 1) {
-        return "low";
-    } else if (speedVal === 2) {
-        return "medium";
-    } else if (speedVal === 3) {
-        return "high";
-    }
-}
-
-function convertAlarmState(value, valInt = false) {
-    switch (value) {
-        case 'stay':
-        case 'armHome':
-        case 'armedHome':
-        case 'armhome':
-        case 'armedhome':
-        case 0:
-            return valInt ? Characteristic.SecuritySystemCurrentState.STAY_ARM : 'stay';
-        case 'away':
-        case 'armaway':
-        case 'armAway':
-        case 'armedaway':
-        case 'armedAway':
-        case 1:
-            return valInt ? Characteristic.SecuritySystemCurrentState.AWAY_ARM : 'away';
-        case 'night':
-        case 'armnight':
-        case 'armNight':
-        case 'armednight':
-        case 2:
-            return valInt ? Characteristic.SecuritySystemCurrentState.NIGHT_ARM : 'night';
-        case 'off':
-        case 'disarm':
-        case 'disarmed':
-        case 3:
-            return valInt ? Characteristic.SecuritySystemCurrentState.DISARMED : 'off';
-        case 'alarm_active':
-        case 4:
-            return valInt ? Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED : 'alarm_active';
-    }
 }
 
 function loadData(data, myObject) {
@@ -1197,7 +1105,6 @@ function clearAndSetTimeout(timeoutReference, fn, timeoutMs) {
     if (timeoutReference) {
         clearTimeout(timeoutReference);
     }
-
     return setTimeout(fn, timeoutMs);
 }
 
@@ -1215,7 +1122,7 @@ function CreateFromCachedAccessory(accessory, platform) {
     accessory.device = null;
 
     let loadDataFn = loadData.bind(accessory);
-    let firstLoadfn = function(data, myObject) {
+    let firstLoadfn = (data, myObject) => {
         if (!this.device) {
             this.platform.log.debug("Performing first data load and characteristic initialization.");
             this.device = data;
