@@ -48,14 +48,16 @@ Installation comes in two parts:
 
 _Note New SmartThings users: You must first enable github integration. (If you use github for work you will probably want to set up a new account as it will request access to your private repos). Only after enabling integration will you see the settings button. Non-US users [can set it up here](https://graph-eu01-euwest1.api.smartthings.com/githubAuth/step1)_.
 
+_Note to users updating from homebridge-smartthings-tonesto7: You can continue to use the original Homebridge-SmartThings app if you choose, but to keep it aligned with any changes made to the `homebridge-smartthings-v2` plugin you should consider migrating the app to point to this repository instead of `homebridge-smartthings-tonesto7`._
+
 * Click on <u><b>```My SmartApps```</b></u>
 * Click on Settings and Add the New repository:
    * Owner: <u>```tonesto7```</u>
-   * Name: <u>```homebridge-smartthings-tonesto7```</u>
+   * Name: <u>```homebridge-smartthings-v2```</u>
    * Branch: <u>```master```</u>
    * Click <u><b>```Save```</b></u>.
 * Click <u><b>```Update From Repo```</b></u>
-   * Select <u>```homebridge-smartthings-tonesto7```</u>
+   * Select <u>```homebridge-smartthings-v2```</u>
 * You should have <u>homebridge-smartthings.groovy</u> in the New section.
    * Check the Box next to <u>```homebridge-smartthings.groovy```</u>
    * Check <u><b>```Publish```</b></u> at the bottom
@@ -135,4 +137,4 @@ _Note New SmartThings users: You must first enable github integration. (If you u
     This will allow the service to send homekit commands to hub locally (SmartThings only)</p>
 
  * <p><u>excluded_capabilities</u>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small><br>
-   Defaults to None<br><small style="color: gray;">Specify the SmartThings device by ID and the associated capabilities you want homebridge-smartthings-tonesto7 to ignore<br>This prevents a SmartThings device creating unwanted or redundant HomeKit accessories</small></p>
+   Defaults to None<br><small style="color: gray;">Specify the SmartThings device by ID and the associated capabilities you want homebridge-smartthings-v2 to ignore<br>This prevents a SmartThings device creating unwanted or redundant HomeKit accessories</small></p>
