@@ -6,7 +6,7 @@ const {
 } = require("./lib/Constants");
 
 const myUtils = require('./lib/MyUtils');
-const st_api = require('./lib/ST_Api');
+const st_api = require('./lib/STApi');
 const express = require('express');
 const bodyParser = require('body-parser');
 // const os = require('os');
@@ -25,7 +25,7 @@ module.exports = function(homebridge) {
     Characteristic = homebridge.hap.Characteristic;
     Accessory = homebridge.platformAccessory; //homebridge.hap.Accessory;
     uuid = homebridge.hap.uuid;
-    ST_Accessory = require('./accessories/ST_Accessories')(Accessory, Service, Characteristic, uuid);
+    ST_Accessory = require('./accessories/STAccessories')(Accessory, Service, Characteristic, uuid);
     homebridge.registerPlatform(pluginName, platformName, ST_Platform, true);
 };
 
