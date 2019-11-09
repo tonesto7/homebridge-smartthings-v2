@@ -9,7 +9,7 @@ const myUtils = require('./lib/MyUtils');
 const st_api = require('./lib/ST_Api');
 const express = require('express');
 const bodyParser = require('body-parser');
-const os = require('os');
+// const os = require('os');
 const logger = require('./lib/Logger.js').Logger;
 const webApp = express();
 let Service,
@@ -149,7 +149,7 @@ ST_Platform.prototype = {
                 // The Hub sends updates to this module using http
                 // st_api_SetupHTTPServer(that);
                 // st_api.startDirect(null, that.direct_ip, that.direct_port);
-                WebServerInit(that)
+                that.WebServerInit()
                     .catch((err) => that.log('WebServerInit Error: ', err))
                     .then((resp) => {
                         if (resp === 'OK')
@@ -168,14 +168,14 @@ ST_Platform.prototype = {
         this.attributeLookup[attribute][deviceid].push(mycharacteristic);
     },
 
-    doIncrementalUpdate: function() {
+    doIncrementalUpdate: () => {
         let that = this;
         st_api.getUpdates(function(data) {
             that.processIncrementalUpdate(data, that);
         });
     },
 
-    processIncrementalUpdate: function(data, that) {
+    processIncrementalUpdate: (data, that) => {
         that.log.debug('new data: ' + data);
         if (data && data.attributes && data.attributes instanceof Array) {
             for (let i = 0; i < data.attributes.length; i++) {
@@ -184,7 +184,7 @@ ST_Platform.prototype = {
         }
     },
 
-    processFieldUpdate: function(attributeSet, that) {
+    processFieldUpdate: (attributeSet, that) => {
         // this.log(attributeSet);
         if (!(that.attributeLookup[attributeSet.attribute] && that.attributeLookup[attributeSet.attribute][attributeSet.device])) {
             return;
@@ -201,7 +201,7 @@ ST_Platform.prototype = {
         }
     },
 
-    processAccessoryCallback: function(foundAccessories) {
+    processAccessoryCallback: (foundAccessories) => {
         // loop through accessories adding them to the list and registering them
         for (let i = 0; i < foundAccessories.length; i++) {
             let accessoryInstance = foundAccessories[i];
@@ -210,29 +210,99 @@ ST_Platform.prototype = {
             this.log("Initializing platform accessory '%s'...", accessoryName);
             this.homekit_api.registerPlatformAccessories(pluginName, platformName, [accessoryInstance]);
         }
+    },
+
+    WebServerInit: () => {
+        let that = this;
+        // Get the IP address that we will send to the SmartApp. This can be overridden in the config file.
+        return new Promise(function(resolve) {
+            try {
+                let ip = that.direct_ip || this.myUtils.getIPAddress();
+                // Start the HTTP Server
+                webApp.listen(that.direct_port, function() {
+                    that.log(`Direct Connect is Listening On ${ip}:${that.direct_port}`);
+                });
+                webApp.use(bodyParser.urlencoded({ extended: false }));
+                webApp.use(bodyParser.json());
+                webApp.use(function(req, res, next) {
+                    res.header("Access-Control-Allow-Origin", "*");
+                    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+                    next();
+                });
+
+                webApp.get('/', function(req, res) {
+                    res.send('WebApp is running...');
+                });
+
+                webApp.get('/restart', function(req, res) {
+                    console.log('restart...');
+                    let delay = (10 * 1000);
+                    that.log('Received request from ' + platformName + ' to restart homebridge service in (' + (delay / 1000) + ' seconds) | NOTICE: If you using PM2 or Systemd the Homebridge Service should start back up');
+                    setTimeout(function() {
+                        process.exit(1);
+                    }, parseInt(delay));
+                    res.send('OK');
+                });
+
+                webApp.post('/updateprefs', function(req, res) {
+                    that.log(platformName + ' Hub Sent Preference Updates');
+                    let data = JSON.parse(req.body);
+                    let sendUpd = false;
+                    if (data.local_commands && that.local_commands !== data.local_commands) {
+                        sendUpd = true;
+                        that.log(platformName + ' Updated Local Commands Preference | Before: ' + that.local_commands + ' | Now: ' + data.local_commands);
+                        that.local_commands = data.local_commands;
+                    }
+                    if (data.local_hub_ip && that.local_hub_ip !== data.local_hub_ip) {
+                        sendUpd = true;
+                        that.log(platformName + ' Updated Hub IP Preference | Before: ' + that.local_hub_ip + ' | Now: ' + data.local_hub_ip);
+                        that.local_hub_ip = data.local_hub_ip;
+                    }
+                    if (sendUpd) {
+                        st_api.updateGlobals(that.local_hub_ip, that.local_commands);
+                    }
+                    res.send('OK');
+                });
+
+                webApp.get('/initial', function(req, res) {
+                    that.log(platformName + ' Hub Communication Established');
+                    res.send('OK');
+                });
+
+                webApp.post('/update', function(req, res) {
+                    if (req.body.length < 3)
+                        return;
+                    let data = JSON.parse(JSON.stringify(req.body));
+                    // console.log('update: ', data);
+                    if (Object.keys(data).length > 3) {
+                        let newChange = {
+                            device: data.change_device,
+                            attribute: data.change_attribute,
+                            value: data.change_value,
+                            date: data.change_date
+                        };
+                        that.log('Change Event:', '(' + data.change_name + ') [' + (data.change_attribute ? data.change_attribute.toUpperCase() : 'unknown') + '] is ' + data.change_value);
+                        that.processFieldUpdate(newChange, that);
+                    }
+                    res.send('OK');
+                });
+                resolve('OK');
+            } catch (ex) {
+                resolve('');
+            }
+        });
     }
 };
 
-ST_Platform.prototype.configureAccessory = function(accessory) {
+ST_Platform.prototype.configureAccessory = (accessory) => {
     this.log("Configure Cached Accessory: " + accessory.displayName + ", UUID: " + accessory.UUID);
 
     ST_Accessory.prototype.CreateFromCachedAccessory(accessory, this);
     this.deviceLookup[accessory.deviceid] = accessory;
 };
 
-function getIPAddress() {
-    let interfaces = os.networkInterfaces();
-    for (let devName in interfaces) {
-        let iface = interfaces[devName];
-        for (let i = 0; i < iface.length; i++) {
-            let alias = iface[i];
-            if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal) {
-                return alias.address;
-            }
-        }
-    }
-    return '0.0.0.0';
-}
+
+
 
 // function st_api_SetupHTTPServer(my_st_api) {
 //     // Get the IP address that we will send to the SmartApp. This can be overridden in the config file.
@@ -310,85 +380,3 @@ function getIPAddress() {
 //     }
 //     response.end('OK');
 // }
-
-function WebServerInit(that) {
-    // Get the IP address that we will send to the SmartApp. This can be overridden in the config file.
-    return new Promise(function(resolve) {
-        try {
-            let ip = that.direct_ip || getIPAddress();
-            // Start the HTTP Server
-            webApp.listen(that.direct_port, function() {
-                that.log(`Direct Connect is Listening On ${ip}:${that.direct_port}`);
-            });
-            webApp.use(bodyParser.urlencoded({ extended: false }));
-            webApp.use(bodyParser.json());
-            webApp.use(function(req, res, next) {
-                res.header("Access-Control-Allow-Origin", "*");
-                res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-                next();
-            });
-
-            webApp.get('/', function(req, res) {
-                res.send('WebApp is running...');
-            });
-
-            webApp.get('/restart', function(req, res) {
-                console.log('restart...');
-                let delay = (10 * 1000);
-                that.log('Received request from ' + platformName + ' to restart homebridge service in (' + (delay / 1000) + ' seconds) | NOTICE: If you using PM2 or Systemd the Homebridge Service should start back up');
-                setTimeout(function() {
-                    process.exit(1);
-                }, parseInt(delay));
-                res.send('OK');
-            });
-
-            webApp.post('/updateprefs', function(req, res) {
-                that.log(platformName + ' Hub Sent Preference Updates');
-                let data = JSON.parse(req.body);
-                let sendUpd = false;
-                if (platformName === 'SmartThings') {
-                    if (data.local_commands && that.local_commands !== data.local_commands) {
-                        sendUpd = true;
-                        that.log(platformName + ' Updated Local Commands Preference | Before: ' + that.local_commands + ' | Now: ' + data.local_commands);
-                        that.local_commands = data.local_commands;
-                    }
-                    if (data.local_hub_ip && that.local_hub_ip !== data.local_hub_ip) {
-                        sendUpd = true;
-                        that.log(platformName + ' Updated Hub IP Preference | Before: ' + that.local_hub_ip + ' | Now: ' + data.local_hub_ip);
-                        that.local_hub_ip = data.local_hub_ip;
-                    }
-                }
-                if (sendUpd) {
-                    st_api.updateGlobals(that.local_hub_ip, that.local_commands);
-                }
-                res.send('OK');
-            });
-
-            webApp.get('/initial', function(req, res) {
-                that.log(platformName + ' Hub Communication Established');
-                res.send('OK');
-            });
-
-            webApp.post('/update', function(req, res) {
-                if (req.body.length < 3)
-                    return;
-                let data = JSON.parse(JSON.stringify(req.body));
-                // console.log('update: ', data);
-                if (Object.keys(data).length > 3) {
-                    let newChange = {
-                        device: data.change_device,
-                        attribute: data.change_attribute,
-                        value: data.change_value,
-                        date: data.change_date
-                    };
-                    that.log('Change Event:', '(' + data.change_name + ') [' + (data.change_attribute ? data.change_attribute.toUpperCase() : 'unknown') + '] is ' + data.change_value);
-                    that.processFieldUpdate(newChange, that);
-                }
-                res.send('OK');
-            });
-            resolve('OK');
-        } catch (ex) {
-            resolve('');
-        }
-    });
-}
