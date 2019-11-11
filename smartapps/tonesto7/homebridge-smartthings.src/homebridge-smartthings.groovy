@@ -340,6 +340,7 @@ def renderLocation() {
         temperature_scale: location?.temperatureScale,
         zip_code: location?.zipCode,
         hubIP: location?.hubs[0]?.localIP,
+        local_commands: (settings?.allowLocalCmds == true),
         app_version: appVersion()
     ]
 }

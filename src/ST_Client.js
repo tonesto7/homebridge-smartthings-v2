@@ -3,21 +3,17 @@ const {
 } = require("./Constants");
 const logger = require('./Logger.js').Logger,
     http = require('https'),
-    reqPromise = require('request-promise'),
+    rp = require('request-promise-native'),
     url = require('url');
 
 
-module.exports = class ST_Api {
+module.exports = class ST_Client {
     constructor(platform) {
         this.platform = platform;
-        this.configItems = platform.getConfigItems();
+        this.log = platform.log;
         this.useLocal = platform.local_commands;
         this.hubIp = platform.local_hub_ip;
-        this.urlItems = {};
-    }
-
-    init() {
-        this.configItems = this.platform.getConfigItems();
+        this.configItems = platform.getConfigItems();
         let appURL = url.parse(this.configItems.app_url);
         this.urlItems = {
             app_host: appURL.hostname || "graph.api.smartthings.com",
@@ -32,34 +28,43 @@ module.exports = class ST_Api {
         this.useLocal = (useLocal === true);
     }
 
-    getDevices(callback) {
-        this.GET({
-            debug: false,
-            path: 'devices'
-        }, function(data) {
-            if (callback) {
-                callback(data);
-                callback = undefined;
-            };
+    getDevices() {
+        let that = this;
+        return new Promise((resolve, reject) => {
+            rp({
+                    uri: `${that.configItems.app_url}${that.configItems.app_id}/devices`,
+                    qs: {
+                        access_token: that.configItems.access_token
+                    },
+                    json: true
+                })
+                .then(function(body) {
+                    resolve(body);
+                })
+                .catch(function(err) {
+                    that.log.debug("reqPromise Error: ", err.message);
+                    resolve(undefined);
+                });
         });
     }
 
-    getDevice(deviceid, callback) {
-        this.GET({
-            debug: false,
-            path: deviceid + '/query'
-        }, function(data) {
-            if (data) {
-                if (callback) {
-                    callback(data);
-                    callback = undefined;
-                };
-            } else {
-                if (callback) {
-                    callback();
-                    callback = undefined;
-                };
-            }
+    getDevice(deviceid) {
+        let that = this;
+        return new Promise((resolve, reject) => {
+            rp({
+                    uri: `${that.configItems.app_url}${that.configItems.app_id}/${deviceid}/query`,
+                    qs: {
+                        access_token: that.configItems.access_token
+                    },
+                    json: true
+                })
+                .then(function(body) {
+                    resolve(body);
+                })
+                .catch(function(err) {
+                    that.log.debug("reqPromise Error: ", err.message);
+                    resolve(undefined);
+                });
         });
     }
 
@@ -219,7 +224,7 @@ module.exports = class ST_Api {
             body: data.body || {},
             json: true
         };
-        reqPromise(options)
+        rp(options)
             .then(function(body) {
                 if (callback) {
                     callback(body);

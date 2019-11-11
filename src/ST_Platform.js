@@ -5,17 +5,12 @@ const {
     pluginVersion
 } = require("./Constants");
 const myUtils = require('./MyUtils'),
-    SmartThingsApi = require('./ST_Api'),
+    SmartThingsClient = require('./ST_Client'),
     SmartThingsAccessories = require('./Accessories/ST_Accessories'),
     express = require('express'),
     bodyParser = require('body-parser'),
     logger = require('./Logger.js').Logger,
     webApp = express();
-var Service,
-    Characteristic,
-    Accessory,
-    uuid,
-    AccessoryDevice;
 
 module.exports = class ST_Platform {
     constructor(log, config, api) {
@@ -25,11 +20,10 @@ module.exports = class ST_Platform {
         this.logFile = logger.withPrefix(`${this.config['name']} ${pluginVersion}`);
         console.log(`Homebridge Version: ${api.version}`);
         console.log(`${platformName} Plugin Version: ${pluginVersion}`);
-        Service = api.hap.Service;
-        Characteristic = api.hap.Characteristic;
-        Accessory = api.platformAccessory; //homebridge.hap.Accessory;
-        uuid = api.hap.uuid;
-        AccessoryDevice = SmartThingsAccessories(Accessory, Service, Characteristic, uuid);
+        this.Service = api.hap.Service;
+        this.Characteristic = api.hap.Characteristic;
+        this.PlatformAccessory = api.platformAccessory;
+        this.uuid = api.hap.uuid;
         if (config === undefined || config === null || config.app_url === undefined || config.app_url === null || config.app_id === undefined || config.app_id === null) {
             log.debug(platformName + " Plugin not configured. Skipping");
             return;
@@ -43,16 +37,15 @@ module.exports = class ST_Platform {
         this.local_hub_ip = undefined;
         this.myUtils = new myUtils(this);
         this.configItems = this.getConfigItems();
+        this.SmartThingsAccessories = new SmartThingsAccessories(this);
 
-        this.deviceLookup = {};
+        this.deviceCache = {};
         this.firstpoll = true;
         this.attributeLookup = {};
         this.knownCapabilities = knownCapabilities;
         this.unknownCapabilities = [];
-        this.smartthings = new SmartThingsApi(this);
+        this.client = new SmartThingsClient(this);
         this.homebridge.on('didFinishLaunching', function() {
-            // Start the refresh from the server
-            this.smartthings.init();
             this.didFinishLaunching();
         }.bind(this));
         this.asyncCallWait = 0;
@@ -75,91 +68,130 @@ module.exports = class ST_Platform {
             return;
         }
         this.log('Fetching ' + platformName + ' devices. This can take a while depending on the number of devices are configured!');
+        setInterval(this.refreshDevices.bind(this), this.polling_seconds * 1000);
+        let that = this;
+        console.log(this.webServerInit);
         let starttime = new Date();
-        let that = this;
-        that.reloadData((foundAccessories) => {
-            let timeElapsedinSeconds = Math.round((new Date() - starttime) / 1000);
-            if (timeElapsedinSeconds >= that.polling_seconds) {
-                that.log(`It took ${timeElapsedinSeconds} seconds to get all data | polling_seconds is set to ${that.polling_seconds}`);
-                that.log(' Changing polling_seconds to ' + (timeElapsedinSeconds * 2) + ' seconds');
-                that.polling_seconds = timeElapsedinSeconds * 2;
-            } else if (that.polling_seconds < 30) {
-                that.log('polling_seconds really shouldn\'t be smaller than 30 seconds. Setting it to 30 seconds');
-                that.polling_seconds = 30;
-            }
-            that.processAccessoryCallback(foundAccessories || []);
-            setInterval(that.reloadData.bind(that), that.polling_seconds * 1000);
-            that.log('Unknown Capabilities: ' + JSON.stringify(that.unknownCapabilities));
-            // callback.bind(that)(foundAccessories);
-            that.log('update_method: ' + that.configItems.update_method);
-            setInterval(that.reloadData.bind(that), that.polling_seconds * 1000);
-            // Initialize Update Mechanism for realtime-ish updates.
-            that.WebServerInit(that)
-                .catch((err) => that.log('WebServerInit Error: ', err))
-                .then((resp) => {
-                    if (resp === 'OK')
-                        that.smartthings.startDirect(null);
-                });
-        });
+        this.refreshDevices()
+            .then(() => {
+                // Initialize Update Mechanism for realtime-ish updates.
+                // let timeElapsedinSeconds = Math.round((new Date() - starttime) / 1000);
+                // if (timeElapsedinSeconds >= that.polling_seconds) {
+                //     that.log(`It took ${timeElapsedinSeconds} seconds to get all data | polling_seconds is set to ${that.polling_seconds}`);
+                //     that.log(' Changing polling_seconds to ' + (timeElapsedinSeconds * 2) + ' seconds');
+                //     that.polling_seconds = timeElapsedinSeconds * 2;
+                // } else if (that.polling_seconds < 30) {
+                //     that.log('polling_seconds really shouldn\'t be smaller than 30 seconds. Setting it to 30 seconds');
+                //     that.polling_seconds = 30;
+                // }
+                // // that.processAccessoryCallback(foundAccessories || []);
+                // setInterval(that.refreshDevices.bind(that), that.polling_seconds * 1000);
+
+                that.WebServerInit(that)
+                    .catch((err) => that.log('WebServerInit Error: ', err))
+                    .then((resp) => {
+                        if (resp === 'OK')
+                            that.client.startDirect(null);
+                    });
+            });
     }
-    reloadData(callback) {
+
+    refreshDevices() {
         let that = this;
-        // that.log('config: ', JSON.stringify(this.config));
-        console.log(that);
-        let foundAccessories = [];
-        that.log.debug('Refreshing All Device Data');
-        that.smartthings.getDevices(function(myList) {
-            that.log('Received All Device Data');
-            // success
-            if (myList && myList.deviceList && myList.deviceList instanceof Array) {
-                let populateDevices = (devices) => {
-                    for (let i = 0; i < devices.length; i++) {
-                        let device = devices[i];
-                        device.excludedCapabilities = that.excludedCapabilities[device.deviceid] || ["None"];
-                        let accessory;
+        return new Promise((resolve) => {
+            let foundAccessories = [];
+            try {
+                that.log.debug('Refreshing All Device Data');
+                this.client.getDevices()
+                    .then(resp => {
+                        console.log(resp);
+                        that.log.debug('Received All Device Data');
+                        // success
+                        if (resp && resp.deviceList && resp.deviceList instanceof Array) {
+                            resp.deviceList.forEach(device => {
+                                let accessory;
+                                device.excludedCapabilities = that.excludedCapabilities[device.deviceid] || ["None"];
+                                that.log.debug("Processing device id: " + device.deviceid);
 
-                        that.log.debug("Processing device id: " + device.deviceid);
-
-                        if (that.deviceLookup[device.deviceid]) {
-                            that.log("Existing device, loading...");
-                            accessory = that.deviceLookup[device.deviceid];
-                            accessory.loadData(devices[i]);
-                        } else {
-                            that.log.debug("New Device, initializing...");
-                            accessory = new AccessoryDevice(that, device);
-                            // that.log(accessory);
-                            if (accessory !== undefined) {
-                                if (accessory.services.length <= 1 || accessory.deviceGroup === 'unknown') {
-                                    if (that.firstpoll) {
-                                        that.log.debug('Device Skipped - Group ' + accessory.deviceGroup + ', Name ' + accessory.name + ', ID ' + accessory.deviceid + ', JSON: ' + JSON.stringify(device));
-                                    }
+                                if (that.deviceCache[device.deviceid]) {
+                                    that.log("Existing device, loading...");
+                                    accessory = that.deviceCache[device.deviceid];
+                                    accessory.loadData(device);
                                 } else {
-                                    // that.log("Device Added - Group " + accessory.deviceGroup + ", Name " + accessory.name + ", ID " + accessory.deviceid); //+", JSON: "+ JSON.stringify(device));
-                                    that.deviceLookup[device.deviceid] = accessory;
-                                    foundAccessories.push(accessory);
+                                    that.log.debug("New Device, initializing...");
+                                    // let deviceId = this.uuid.generate('hbdev:' + platformName.toLowerCase() + ':' + this.deviceid);
+                                    // let devAccessory = new that.PlatformAccessory(device.name, deviceId);
+                                    // accessory = new that.SmartThingsAccessories.AccessoryDevice(that, devAccessory, device);
+                                    accessory = that.addDevice(device);
+                                    // that.log(accessory);
+                                    if (accessory !== undefined) {
+                                        if (accessory.services.length <= 1 || accessory.deviceGroup === 'unknown') {
+                                            if (that.firstpoll) {
+                                                that.log.debug('Device Skipped - Group ' + accessory.deviceGroup + ', Name ' + accessory.name + ', ID ' + accessory.deviceid + ', JSON: ' + JSON.stringify(device));
+                                            }
+                                        } else {
+                                            // that.log("Device Added - Group " + accessory.deviceGroup + ", Name " + accessory.name + ", ID " + accessory.deviceid); //+", JSON: "+ JSON.stringify(device));
+                                            that.deviceCache[device.deviceid] = accessory;
+                                            foundAccessories.push(accessory);
+                                        }
+                                    }
                                 }
+                                that.firstpoll = false;
+                            });
+                        };
+                        if (resp && resp.location) {
+                            that.temperature_unit = resp.location.temperature_scale;
+                            if (resp.location.hubIP) {
+                                that.local_hub_ip = resp.location.hubIP;
+                                that.local_commands = (resp.location.local_commands === true);
+                                that.client.updateGlobals(that.local_hub_ip, that.local_commands);
                             }
                         }
-                    }
-                };
-                if (myList && myList.location) {
-                    that.temperature_unit = myList.location.temperature_scale;
-                    if (myList.location.hubIP) {
-                        that.local_hub_ip = myList.location.hubIP;
-                        that.smartthings.updateGlobals(that.local_hub_ip, that.local_commands);
-                    }
-                }
-                populateDevices(myList.deviceList);
-            } else if (!myList || !myList.error) {
-                that.log('Invalid Response from API call');
-            } else if (myList.error) {
-                that.log('Error received type ' + myList.type + ' - ' + myList.message);
-            } else {
-                that.log('Invalid Response from API call');
+                        this.log("Devices refreshed");
+                        that.log('Unknown Capabilities: ' + JSON.stringify(that.unknownCapabilities));
+                        resolve(true);
+                    });
+
+
+            } catch (e) {
+                this.log.error("Failed to refresh devices.", e);
+                resolve(false);
             }
-            if (callback) callback(foundAccessories);
-            that.firstpoll = false;
         });
+    }
+
+    getNewAccessory(device) {
+        const deviceId = this.uuid.generate('hbdev:' + platformName.toLowerCase() + ':' + this.deviceid);
+        const accessory = new this.PlatformAccessory(device.name, deviceId);
+        this.SmartThingsAccessories.PopulateAccessory(accessory, device);
+        // this.patchAccessory(accessory, device);
+        // this.accessoryHelper.configureAccessory(accessory);
+        return accessory;
+    }
+
+    addDevice(device) {
+        const accessory = this.getNewAccessory(device);
+        this.homebridge.registerPlatformAccessories(pluginName, platformName, [accessory]);
+        this.accessories.add(accessory);
+        this.log(`Added: ${accessory.context.name} (${accessory.context.object_type}/${accessory.context.object_id})`);
+    }
+
+    ignoreDevice(data) {
+        const [device, reason] = data;
+        if (!this.accessories.ignore(device)) {
+            return;
+        }
+
+        this.log(`${reason}: ${device.name} (${device.object_type}/${device.object_id})`);
+    }
+
+    removeAccessory(accessory) {
+        if (this.accessories.remove(accessory)) {
+            this.api.unregisterPlatformAccessories(pluginName, platformName, [
+                accessory
+            ]);
+            this.log(`Removed: ${accessory.context.name} (${accessory.context.object_type}/${accessory.context.object_id })`);
+        }
     }
 
     addAttributeUsage(attribute, deviceid, mycharacteristic) {
@@ -174,7 +206,7 @@ module.exports = class ST_Platform {
 
     doIncrementalUpdate() {
         let that = this;
-        that.smartthings.getUpdates(function(data) {
+        that.client.getUpdates(function(data) {
             that.processIncrementalUpdate(data, that);
         });
     }
@@ -196,7 +228,7 @@ module.exports = class ST_Platform {
         let myUsage = that.attributeLookup[attributeSet.attribute][attributeSet.device];
         if (myUsage instanceof Array) {
             for (let j = 0; j < myUsage.length; j++) {
-                let accessory = that.deviceLookup[attributeSet.device];
+                let accessory = that.deviceCache[attributeSet.device];
                 if (accessory) {
                     accessory.device.attributes[attributeSet.attribute] = attributeSet.value;
                     myUsage[j].getValue();
@@ -205,159 +237,27 @@ module.exports = class ST_Platform {
         }
     }
 
-    processAccessoryCallback(foundAccessories) {
-        // loop through accessories adding them to the list and registering them
-        console.log(foundAccessories);
-        let that = this;
-        for (let i = 0; i < foundAccessories.length; i++) {
-            let accessoryInstance = foundAccessories[i];
-            let accessoryName = accessoryInstance.name; // assume this property was set
 
-            that.log("Initializing platform accessory '%s'...", accessoryName);
-            this.homebridge.registerPlatformAccessories(pluginName, platformName, [accessoryInstance]);
-        }
-    };
-    // removeAccessory(accessory) {
-    //     var that = this;
-    //     return new Promise(function(resolve, reject) {
-    //         if (accessory instanceof AccessoryDevice) {
-    //             that.api.unregisterPlatformAccessories(pluginName, platformName, [accessory.accessory]);
-    //             if (that.deviceLookup[accessory.accessory.UUID]) {
-    //                 that.log.warn("Device Removed - Name " + that.deviceLookup[accessory.accessory.UUID].name + ', ID ' + that.deviceLookup[accessory.accessory.UUID].deviceid);
-    //                 that.removeDeviceAttributeUsage(that.deviceLookup[accessory.accessory.UUID].deviceid);
-    //                 if (that.deviceLookup.hasOwnProperty(accessory.accessory.UUID))
-    //                     delete that.deviceLookup[accessory.accessory.UUID];
-    //             }
-    //         } else {
-    //             that.log.warn("Remove stale cache device " + that.deviceLookup[accessory.UUID].displayName);
-    //             that.api.unregisterPlatformAccessories(pluginName, platformName, [that.deviceLookup[accessory.UUID]]);
-    //             delete that.deviceLookup[accessory.UUID];
-    //         }
-    //         resolve('');
-    //     });
-    // }
 
-    // removeOldDevices(devices) {
-    //     var that = this;
-    //     return new Promise(function(resolve, reject) {
-    //         var accessories = [];
-    //         Object.keys(that.deviceLookup).forEach(function(key) {
-    //             if (!(that.deviceLookup[key] instanceof HE_AccessoryDevice)) {
-    //                 that.removeAccessory(that.deviceLookup[key]).catch(function(error) {});
-    //             }
-    //         });
-    //         Object.keys(that.deviceLookup).forEach(function(key) {
-    //             if (that.deviceLookup[key].deviceGroup === 'reboot')
-    //                 return;
-    //             var unregister = true;
-    //             for (var i = 0; i < devices.length; i++) {
-    //                 if (that.deviceLookup[key].accessory.UUID === uuidGen(devices[i].id)) {
-    //                     unregister = false;
-    //                 }
-    //             }
-    //             if (unregister) {
-    //                 that.removeAccessory(that.deviceLookup[key]).catch(function(error) {});
-    //             }
-    //         });
-    //         resolve(devices);
-    //     });
-    // }
+    // processAccessoryCallback(foundAccessories) {
+    //     // loop through accessories adding them to the list and registering them
+    //     console.log(foundAccessories);
+    //     let that = this;
+    //     for (let i = 0; i < foundAccessories.length; i++) {
+    //         let accessoryInstance = foundAccessories[i];
+    //         let accessoryName = accessoryInstance.name; // assume this property was set
 
-    // populateDevices(devices) {
-    //     var that = this;
-    //     return new Promise(function(resolve, reject) {
-    //         for (var i = 0; i < devices.length; i++) {
-    //             let device = devices[i];
-    //             // let group = "device";
-    //             // if (device.type) {
-    //             //     group = device.type;
-    //             // }
-    //             // let deviceData = null;
-    //             // if (device.data) {
-    //             //     deviceData = device.data;
-    //             // }
-    //             that.addUpdateAccessory(device.id, 'populateDevices', null, device)
-    //                 .catch(function(error) {
-    //                     that.log.error(error);
-    //                 });
-    //         }
-    //         resolve(devices);
-    //     });
-    // }
+    //         that.log("Initializing platform accessory '%s'...", accessoryName);
+    //         this.homebridge.registerPlatformAccessories(pluginName, platformName, [accessoryInstance]);
+    //     }
+    // };
 
-    // updateDevices() {
-    //     var that = this;
-    //     return new Promise(function(resolve, reject) {
-    //         if (!that.firstpoll) {
-    //             var updateAccessories = [];
-    //             Object.keys(that.deviceLookup).forEach(function(key) {
-    //                 if (that.deviceLookup[key] instanceof HE_AccessoryDevice)
-    //                     updateAccessories.push(that.deviceLookup[key].accessory);
-    //             });
-    //             if (updateAccessories.length)
-    //                 that.api.updatePlatformAccessories(updateAccessories);
-    //         }
-    //         resolve('');
-    //     });
-    // }
-
-    // reloadData(callback) {
-    //     var that = this;
-    //     // that.log('config: ', JSON.stringify(this.config));
-    //     var foundAccessories = [];
-    //     that.log('Loading All Device Data');
-    //     he_st_api.getDevices()
-    //         .then((myList) => {
-    //             // console.log(myList);
-    //             that.log('Received All Device Data...'); //, util.inspect(myList, false, null, true));
-    //             if (myList && myList.location) {
-    //                 that.temperature_unit = myList.location.temperature_scale;
-    //                 if (myList.location.hubIP) {
-    //                     that.local_hub_ip = myList.location.hubIP;
-    //                     he_st_api.updateGlobals(that.local_hub_ip, that.local_commands);
-    //                 }
-    //             }
-    //             return myList.deviceList;
-    //         })
-    //         .then((myList) => {
-    //             return that.removeOldDevices(myList);
-    //         })
-    //         .then((myList) => {
-    //             console.log(`populateDevices: (${Object.keys(myList).length} devices)`);
-    //             return that.populateDevices(myList);
-    //         })
-    //         .then((myList) => {
-    //             return that.updateDevices();
-    //         })
-    //         .then((myList) => {
-    //             if (callback) {
-    //                 callback(foundAccessories);
-    //             }
-    //             that.firstpoll = false;
-    //         })
-    //         .catch((error) => {
-    //             if (error.hasOwnProperty('statusCode')) {
-    //                 if (error.statusCode === 404) {
-    //                     that.log.error('Hubitat tells me that the MakerAPI instance you have configured is not available (code 404).');
-    //                 } else if (error.statusCode === 401) {
-    //                     that.log.error('Hubitat tells me that your access code is wrong. Please check and correct it.');
-    //                 } else if (error.statusCode === 500) {
-    //                     that.log.error('Looks like your MakerAPI instance is disabled. Got code 500');
-    //                 } else {
-    //                     that.log.error('Got an unknown error code, ' + error.statusCode + ' tell dan.t in the hubitat forums and give him the following dump', error);
-    //                 }
-    //             } else {
-    //                 that.log.error('Received an error trying to get the device summary information from Hubitat.', error);
-    //             }
-    //             that.log.error('I am stopping my reload here and hope eveything fixes themselves (e.g. a firmware update of HE is rebooting the hub');
-    //         });
-    // }
 
     configureAccessory(accessory) {
-        this.log("Configure Cached Accessory: " + accessory.displayName + ", UUID: " + accessory.UUID);
+        // this.log("Configure Cached Accessory: " + accessory.displayName + ", UUID: " + accessory.UUID);
 
-        AccessoryDevice.prototype.CreateFromCachedAccessory(accessory, this);
-        this.deviceLookup[accessory.deviceid] = accessory;
+        // this.SmartThingsAccessories.CreateFromCachedAccessory(accessory, this);
+        // this.deviceCache[accessory.deviceid] = accessory;
     };
 
     webServerInit() {
@@ -409,7 +309,7 @@ module.exports = class ST_Platform {
                         that.local_hub_ip = data.local_hub_ip;
                     }
                     if (sendUpd) {
-                        that.smartthings.updateGlobals(that.local_hub_ip, that.local_commands);
+                        that.client.updateGlobals(that.local_hub_ip, that.local_commands);
                     }
                     res.send('OK');
                 });

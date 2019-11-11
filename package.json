@@ -1,9 +1,10 @@
 {
     "dependencies": {
         "request": "^2.88.0",
+        "lodash": "4.17.15",
         "chalk": "^3.0.0",
         "express": "4.17.1",
-        "request-promise": "^4.2.5"
+        "request-promise-native": "^1.0.8"
     },
     "description": "SmartThings plugin for HomeBridge",
     "engines": {
