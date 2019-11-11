@@ -12,6 +12,8 @@ const myUtils = require('./MyUtils'),
     logger = require('./Logger.js').Logger,
     webApp = express();
 
+var PlatformAccessory;
+
 module.exports = class ST_Platform {
     constructor(log, config, api) {
         this.config = config;
@@ -22,7 +24,7 @@ module.exports = class ST_Platform {
         console.log(`${platformName} Plugin Version: ${pluginVersion}`);
         this.Service = api.hap.Service;
         this.Characteristic = api.hap.Characteristic;
-        this.PlatformAccessory = api.platformAccessory;
+        PlatformAccessory = api.platformAccessory;
         this.uuid = api.hap.uuid;
         if (config === undefined || config === null || config.app_url === undefined || config.app_url === null || config.app_id === undefined || config.app_id === null) {
             log.debug(platformName + " Plugin not configured. Skipping");
@@ -70,7 +72,6 @@ module.exports = class ST_Platform {
         this.log('Fetching ' + platformName + ' devices. This can take a while depending on the number of devices are configured!');
         setInterval(this.refreshDevices.bind(this), this.polling_seconds * 1000);
         let that = this;
-        console.log(this.webServerInit);
         let starttime = new Date();
         this.refreshDevices()
             .then(() => {
@@ -92,8 +93,12 @@ module.exports = class ST_Platform {
                     .then((resp) => {
                         if (resp === 'OK')
                             that.client.startDirect(null);
-                    });
-            });
+                    }).catch((err) => {
+                        that.log.error(err);
+                    })
+            }).catch((err) => {
+                that.log.error(err);
+            })
     }
 
     refreshDevices() {
@@ -104,7 +109,7 @@ module.exports = class ST_Platform {
                 that.log.debug('Refreshing All Device Data');
                 this.client.getDevices()
                     .then(resp => {
-                        console.log(resp);
+                        // console.log(resp);
                         that.log.debug('Received All Device Data');
                         // success
                         if (resp && resp.deviceList && resp.deviceList instanceof Array) {
@@ -118,10 +123,7 @@ module.exports = class ST_Platform {
                                     accessory = that.deviceCache[device.deviceid];
                                     accessory.loadData(device);
                                 } else {
-                                    that.log.debug("New Device, initializing...");
-                                    // let deviceId = this.uuid.generate('hbdev:' + platformName.toLowerCase() + ':' + this.deviceid);
-                                    // let devAccessory = new that.PlatformAccessory(device.name, deviceId);
-                                    // accessory = new that.SmartThingsAccessories.AccessoryDevice(that, devAccessory, device);
+
                                     accessory = that.addDevice(device);
                                     // that.log(accessory);
                                     if (accessory !== undefined) {
@@ -150,9 +152,9 @@ module.exports = class ST_Platform {
                         this.log("Devices refreshed");
                         that.log('Unknown Capabilities: ' + JSON.stringify(that.unknownCapabilities));
                         resolve(true);
-                    });
-
-
+                    }).catch((err) => {
+                        that.log.error(err);
+                    })
             } catch (e) {
                 this.log.error("Failed to refresh devices.", e);
                 resolve(false);
@@ -161,33 +163,35 @@ module.exports = class ST_Platform {
     }
 
     getNewAccessory(device) {
-        const deviceId = this.uuid.generate('hbdev:' + platformName.toLowerCase() + ':' + this.deviceid);
-        const accessory = new this.PlatformAccessory(device.name, deviceId);
+        const UUID = this.uuid.isValid(device.deviceid) ? deviceid : this.uuid.generate(device.deviceid);
+        console.log('UUID:', UUID)
+        const accessory = new PlatformAccessory(device.name, UUID);
         this.SmartThingsAccessories.PopulateAccessory(accessory, device);
         return accessory;
     }
 
     addDevice(device) {
+        this.log.debug("New Device, initializing...");
         const accessory = this.getNewAccessory(device);
         this.homebridge.registerPlatformAccessories(pluginName, platformName, [accessory]);
-        this.accessories.add(accessory);
-        this.log(`Added: ${accessory.context.name} (${accessory.context.object_type}/${accessory.context.object_id})`);
+        this.SmartThingsAccessories.add(accessory);
+        this.log(`Added: ${accessory.name} (${accessory.context.deviceid})`);
     }
 
     ignoreDevice(data) {
         const [device, reason] = data;
-        if (!this.accessories.ignore(device)) {
+        if (!this.SmartThingsAccessories.ignore(device)) {
             return;
         }
-        this.log(`${reason}: ${device.name} (${device.object_type}/${device.object_id})`);
+        this.log(`${reason}: ${device.name} (${device.deviceid})`);
     }
 
     removeAccessory(accessory) {
-        if (this.accessories.remove(accessory)) {
+        if (this.SmartThingsAccessories.remove(accessory)) {
             this.api.unregisterPlatformAccessories(pluginName, platformName, [
                 accessory
             ]);
-            this.log(`Removed: ${accessory.context.name} (${accessory.context.object_type}/${accessory.context.object_id })`);
+            this.log(`Removed: ${accessory.context.name} (${accessory.context.deviceid })`);
         }
     }
 
@@ -234,27 +238,10 @@ module.exports = class ST_Platform {
         }
     }
 
-
-
-    // processAccessoryCallback(foundAccessories) {
-    //     // loop through accessories adding them to the list and registering them
-    //     console.log(foundAccessories);
-    //     let that = this;
-    //     for (let i = 0; i < foundAccessories.length; i++) {
-    //         let accessoryInstance = foundAccessories[i];
-    //         let accessoryName = accessoryInstance.name; // assume this property was set
-
-    //         that.log("Initializing platform accessory '%s'...", accessoryName);
-    //         this.homebridge.registerPlatformAccessories(pluginName, platformName, [accessoryInstance]);
-    //     }
-    // };
-
-
     configureAccessory(accessory) {
         this.log("Configure Cached Accessory: " + accessory.displayName + ", UUID: " + accessory.UUID);
-
-        this.SmartThingsAccessories.CreateFromCachedAccessory(accessory, this);
-        this.deviceCache[accessory.deviceid] = accessory;
+        this.deviceCache[accessory.deviceid] = this.SmartThingsAccessories.CreateFromCachedAccessory(accessory, this);
+        // this.deviceCache[accessory.deviceid] = accessory;
     };
 
     webServerInit() {

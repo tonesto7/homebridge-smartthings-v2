@@ -557,7 +557,8 @@ def deviceCommandList(device) {
 }
 
 def deviceAttributeList(device) {
-    return device.supportedAttributes.collectEntries { attribute->
+    List skip = ['DeviceWatch-Enroll', 'DeviceWatch-Status']
+    return device?.supportedAttributes?.findAll { !(it?.name in skip) }?.collectEntries { attribute->
         try {
             [(attribute?.name): device?.currentValue(attribute?.name)]
         } catch(e) {
@@ -566,7 +567,7 @@ def deviceAttributeList(device) {
     }
 }
 
-String getAppEndpointUrl(subPath)   { return "${apiServerUrl("/api/smartapps/installations/${app.id}${subPath ? "/${subPath}" : ""}?access_token=${state.accessToken}")}" }
+String getAppEndpointUrl(subPath) { return "${apiServerUrl("/api/smartapps/installations/${app.id}${subPath ? "/${subPath}" : ""}?access_token=${state.accessToken}")}" }
 
 def getAllData() {
     state?.subscriptionRenewed = now()

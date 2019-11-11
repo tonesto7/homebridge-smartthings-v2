@@ -356,16 +356,5 @@ module.exports = function(Service, Characteristic) {
         this.addOptionalCharacteristic(Characteristic.Name);
     };
 
-    CommunityTypes.SmartThingsDeviceIdService = function(displayName, subtype) {
-        Service.call(this, displayName, '7441b009-ee28-4f29-9a95-f5f6c8ec374a', subtype);
-
-        // Required Characteristics
-        this.addCharacteristic(CommunityTypes.DeviceId);
-
-        // Optional Characteristics
-        this.addOptionalCharacteristic(Characteristic.Name);
-    };
-    inherits(CommunityTypes.SmartThingsDeviceIdService, Service);
-
     return CommunityTypes;
 };
