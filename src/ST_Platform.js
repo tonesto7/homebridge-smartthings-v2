@@ -251,10 +251,10 @@ module.exports = class ST_Platform {
 
 
     configureAccessory(accessory) {
-        // this.log("Configure Cached Accessory: " + accessory.displayName + ", UUID: " + accessory.UUID);
+        this.log("Configure Cached Accessory: " + accessory.displayName + ", UUID: " + accessory.UUID);
 
-        // this.SmartThingsAccessories.CreateFromCachedAccessory(accessory, this);
-        // this.deviceCache[accessory.deviceid] = accessory;
+        this.SmartThingsAccessories.CreateFromCachedAccessory(accessory, this);
+        this.deviceCache[accessory.deviceid] = accessory;
     };
 
     webServerInit() {
