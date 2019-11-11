@@ -164,8 +164,6 @@ module.exports = class ST_Platform {
         const deviceId = this.uuid.generate('hbdev:' + platformName.toLowerCase() + ':' + this.deviceid);
         const accessory = new this.PlatformAccessory(device.name, deviceId);
         this.SmartThingsAccessories.PopulateAccessory(accessory, device);
-        // this.patchAccessory(accessory, device);
-        // this.accessoryHelper.configureAccessory(accessory);
         return accessory;
     }
 
@@ -181,7 +179,6 @@ module.exports = class ST_Platform {
         if (!this.accessories.ignore(device)) {
             return;
         }
-
         this.log(`${reason}: ${device.name} (${device.object_type}/${device.object_id})`);
     }
 
