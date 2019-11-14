@@ -18,10 +18,10 @@ module.exports = class ST_Platform {
     constructor(log, config, api) {
         this.config = config;
         this.homebridge = api;
-        this.log = log;
+        this.log = logger.withPrefix(`${this.config['name']}`);
         this.logFile = logger.withPrefix(`${this.config['name']} ${pluginVersion}`);
-        console.log(`Homebridge Version: ${api.version}`);
-        console.log(`${platformName} Plugin Version: ${pluginVersion}`);
+        this.log(`Homebridge Version: ${api.version}`);
+        this.log(`${platformName} Plugin Version: ${pluginVersion}`);
         this.Service = api.hap.Service;
         this.Characteristic = api.hap.Characteristic;
         PlatformAccessory = api.platformAccessory;
@@ -39,7 +39,6 @@ module.exports = class ST_Platform {
         this.local_hub_ip = undefined;
         this.myUtils = new myUtils(this);
         this.configItems = this.getConfigItems();
-        this.SmartThingsAccessories = new SmartThingsAccessories(this);
 
         this.deviceCache = {};
         this.firstpoll = true;
@@ -47,6 +46,9 @@ module.exports = class ST_Platform {
         this.knownCapabilities = knownCapabilities;
         this.unknownCapabilities = [];
         this.client = new SmartThingsClient(this);
+
+        this.SmartThingsAccessories = new SmartThingsAccessories(this);
+
         this.homebridge.on('didFinishLaunching', function() {
             this.didFinishLaunching();
         }.bind(this));
@@ -103,6 +105,7 @@ module.exports = class ST_Platform {
 
     refreshDevices() {
         let that = this;
+
         return new Promise((resolve) => {
             let foundAccessories = [];
             try {
@@ -121,9 +124,9 @@ module.exports = class ST_Platform {
                                 if (that.deviceCache[device.deviceid]) {
                                     that.log("Existing device, loading...");
                                     accessory = that.deviceCache[device.deviceid];
-                                    accessory.loadData(device);
+                                    that.SmartThingsAccessories.loadData(accessory, device);
+                                    //accessory.loadData(device);
                                 } else {
-
                                     accessory = that.addDevice(device);
                                     // that.log(accessory);
                                     if (accessory !== undefined) {
@@ -163,8 +166,8 @@ module.exports = class ST_Platform {
     }
 
     getNewAccessory(device) {
-        const UUID = this.uuid.isValid(device.deviceid) ? deviceid : this.uuid.generate(device.deviceid);
-        console.log('UUID:', UUID)
+        const UUID = this.uuid.isValid(device.deviceid) ? device.deviceid : this.uuid.generate(device.deviceid);
+        this.log('UUID:', UUID)
         const accessory = new PlatformAccessory(device.name, UUID);
         this.SmartThingsAccessories.PopulateAccessory(accessory, device);
         return accessory;
@@ -175,6 +178,7 @@ module.exports = class ST_Platform {
         const accessory = this.getNewAccessory(device);
         this.homebridge.registerPlatformAccessories(pluginName, platformName, [accessory]);
         this.SmartThingsAccessories.add(accessory);
+        this.deviceCache[accessory.deviceid] = accessory;
         this.log(`Added: ${accessory.name} (${accessory.context.deviceid})`);
     }
 
@@ -222,7 +226,6 @@ module.exports = class ST_Platform {
     }
 
     processFieldUpdate(attributeSet, that) {
-        // this.log(attributeSet);
         if (!(that.attributeLookup[attributeSet.attribute] && that.attributeLookup[attributeSet.attribute][attributeSet.device])) {
             return;
         }
@@ -231,7 +234,7 @@ module.exports = class ST_Platform {
             for (let j = 0; j < myUsage.length; j++) {
                 let accessory = that.deviceCache[attributeSet.device];
                 if (accessory) {
-                    accessory.device.attributes[attributeSet.attribute] = attributeSet.value;
+                    accessory.context.deviceData.attributes[attributeSet.attribute] = attributeSet.value;
                     myUsage[j].getValue();
                 }
             }
@@ -240,11 +243,12 @@ module.exports = class ST_Platform {
 
     configureAccessory(accessory) {
         this.log("Configure Cached Accessory: " + accessory.displayName + ", UUID: " + accessory.UUID);
-        this.deviceCache[accessory.deviceid] = this.SmartThingsAccessories.CreateFromCachedAccessory(accessory, this);
+        let cachedAccessory = this.SmartThingsAccessories.CreateFromCachedAccessory(accessory, this);
+        this.deviceCache[cachedAccessory.deviceid] = cachedAccessory;
         // this.deviceCache[accessory.deviceid] = accessory;
     };
 
-    webServerInit() {
+    WebServerInit() {
         let that = this;
         // Get the IP address that we will send to the SmartApp. This can be overridden in the config file.
         return new Promise(function(resolve) {
