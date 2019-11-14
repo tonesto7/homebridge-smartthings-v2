@@ -125,7 +125,6 @@ module.exports = class ST_Platform {
                                     that.log("Existing device, loading...");
                                     accessory = that.deviceCache[device.deviceid];
                                     that.SmartThingsAccessories.loadData(accessory, device);
-                                    //accessory.loadData(device);
                                 } else {
                                     accessory = that.addDevice(device);
                                     // that.log(accessory);
@@ -152,7 +151,7 @@ module.exports = class ST_Platform {
                                 that.client.updateGlobals(that.local_hub_ip, that.local_commands);
                             }
                         }
-                        this.log("Devices refreshed");
+                        that.log("Devices refreshed");
                         that.log('Unknown Capabilities: ' + JSON.stringify(that.unknownCapabilities));
                         resolve(true);
                     }).catch((err) => {
@@ -199,6 +198,12 @@ module.exports = class ST_Platform {
         }
     }
 
+    configureAccessory(accessory) {
+        this.log("Configure Cached Accessory: " + accessory.displayName + ", UUID: " + accessory.UUID);
+        let cachedAccessory = this.SmartThingsAccessories.CreateFromCachedAccessory(accessory, this);
+        this.deviceCache[cachedAccessory.deviceid] = cachedAccessory;
+    };
+
     addAttributeUsage(attribute, deviceid, mycharacteristic) {
         if (!this.attributeLookup[attribute]) {
             this.attributeLookup[attribute] = {};
@@ -211,7 +216,7 @@ module.exports = class ST_Platform {
 
     doIncrementalUpdate() {
         let that = this;
-        that.client.getUpdates(function(data) {
+        that.client.getUpdates((data) => {
             that.processIncrementalUpdate(data, that);
         });
     }
@@ -241,48 +246,41 @@ module.exports = class ST_Platform {
         }
     }
 
-    configureAccessory(accessory) {
-        this.log("Configure Cached Accessory: " + accessory.displayName + ", UUID: " + accessory.UUID);
-        let cachedAccessory = this.SmartThingsAccessories.CreateFromCachedAccessory(accessory, this);
-        this.deviceCache[cachedAccessory.deviceid] = cachedAccessory;
-        // this.deviceCache[accessory.deviceid] = accessory;
-    };
-
     WebServerInit() {
         let that = this;
         // Get the IP address that we will send to the SmartApp. This can be overridden in the config file.
-        return new Promise(function(resolve) {
+        return new Promise((resolve) => {
             try {
                 let ip = that.configItems.direct_ip || that.myUtils.getIPAddress();
                 // Start the HTTP Server
-                webApp.listen(that.configItems.direct_port, function() {
+                webApp.listen(that.configItems.direct_port, () => {
                     that.log(`Direct Connect is Listening On ${ip}:${that.configItems.direct_port}`);
                 });
                 webApp.use(bodyParser.urlencoded({
                     extended: false
                 }));
                 webApp.use(bodyParser.json());
-                webApp.use(function(req, res, next) {
+                webApp.use((req, res, next) => {
                     res.header("Access-Control-Allow-Origin", "*");
                     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
                     next();
                 });
 
-                webApp.get('/', function(req, res) {
+                webApp.get('/', (req, res) => {
                     res.send('WebApp is running...');
                 });
 
-                webApp.get('/restart', function(req, res) {
+                webApp.get('/restart', (req, res) => {
                     console.log('restart...');
                     let delay = (10 * 1000);
                     that.log('Received request from ' + platformName + ' to restart homebridge service in (' + (delay / 1000) + ' seconds) | NOTICE: If you using PM2 or Systemd the Homebridge Service should start back up');
-                    setTimeout(function() {
+                    setTimeout(() => {
                         process.exit(1);
                     }, parseInt(delay));
                     res.send('OK');
                 });
 
-                webApp.post('/updateprefs', function(req, res) {
+                webApp.post('/updateprefs', (req, res) => {
                     that.log(platformName + ' Hub Sent Preference Updates');
                     let data = JSON.parse(req.body);
                     let sendUpd = false;
@@ -302,12 +300,12 @@ module.exports = class ST_Platform {
                     res.send('OK');
                 });
 
-                webApp.get('/initial', function(req, res) {
+                webApp.get('/initial', (req, res) => {
                     that.log(platformName + ' Hub Communication Established');
                     res.send('OK');
                 });
 
-                webApp.post('/update', function(req, res) {
+                webApp.post('/update', (req, res) => {
                     if (req.body.length < 3)
                         return;
                     let data = JSON.parse(JSON.stringify(req.body));

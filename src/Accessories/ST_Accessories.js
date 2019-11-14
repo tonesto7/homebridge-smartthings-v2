@@ -24,12 +24,13 @@ module.exports = class ST_Accessories {
         this._ignored = {};
     }
 
-    PopulateAccessory(accessory, deviceData) {
+    async PopulateAccessory(accessory, deviceData) {
         // console.log("AccessoryDevice: ", accessory, deviceData);
         accessory.deviceid = deviceData.deviceid;
         accessory.name = deviceData.name;
         accessory.state = {};
         accessory.device = deviceData;
+        accessory.deviceGroups = [];
         let that = this;
 
         //Removing excluded capabilities from config
@@ -43,8 +44,11 @@ module.exports = class ST_Accessories {
 
         // Attach helper to accessory
         accessory.getOrAddService = this.getOrAddService.bind(accessory);
+        accessory.hasDeviceGroup = this.hasDeviceGroup.bind(accessory);
+        accessory.hasAttribute = this.hasAttribute.bind(accessory);
+        accessory.hasCapability = this.hasCapability.bind(accessory);
+        accessory.hasCommand = this.hasCommand.bind(accessory);
 
-        // accessory.getOrAddService(that.CommunityTypes.SmartThingsDeviceIdService, "SmartThings Device ID", "smartthings_device_id").setCharacteristic(that.CommunityTypes.DeviceId, deviceData.deviceid);
         accessory.context.name = deviceData.name;
         accessory.context.deviceid = deviceData.deviceid;
         accessory.context.deviceData = deviceData;
@@ -54,34 +58,50 @@ module.exports = class ST_Accessories {
             .setCharacteristic(Characteristic.FirmwareRevision, deviceData.firmwareVersion)
             .setCharacteristic(Characteristic.Manufacturer, deviceData.manufacturerName)
             .setCharacteristic(Characteristic.Model, `${that.myUtils.toTitleCase(deviceData.modelName)}`)
-            .setCharacteristic(Characteristic.Name, that.name)
+            .setCharacteristic(Characteristic.Name, deviceData.name)
             .setCharacteristic(Characteristic.SerialNumber, deviceData.serialNumber);
-        accessory = this.initializeDeviceCharacteristics(accessory);
+        return await this.initializeDeviceCharacteristics(accessory);
         // console.log(accessory)
-        return accessory;
+        // return accessory;
     }
 
-    getOrAddService(accsvc) {
-        let s = this.getService(accsvc);
-        if (!s) { s = this.addService(accsvc); }
+    getOrAddService(svc) {
+        let s = this.getService(svc);
+        if (!s) { s = this.addService(svc); }
         return s;
     };
 
-    CreateFromCachedAccessory(accessory) {
+    hasDeviceGroup(grp) {
+        return (this.deviceGroups.includes(grp))
+    };
+    hasCapability(val) {
+        val = val.replace(/\s/g, '');
+        return (this.context.deviceData.capabilities.includes(val))
+    };
+    hasAttribute(val) {
+        return (this.context.deviceData.attributes.includes(val))
+    };
+    hasCommand(val) {
+        return (this.context.deviceData.commands.includes(val))
+    };
+    getServices() {
+        return this.services;
+    }
+
+    async CreateFromCachedAccessory(accessory) {
         let deviceid = accessory.context.deviceid;
         let name = accessory.context.name;
-        // console.log(accessory);
         this.log.debug("Initializing Cached Device " + deviceid);
         accessory.deviceid = deviceid;
         accessory.name = name;
         accessory.state = {};
+        accessory.deviceGroups = []
         accessory.getOrAddService = this.getOrAddService.bind(accessory);
-        this.initializeDeviceCharacteristics(accessory)
-        return accessory
-    }
-
-    getServices() {
-        return this.services;
+        accessory.hasDeviceGroup = this.hasDeviceGroup.bind(accessory);
+        accessory.hasAttribute = this.hasAttribute.bind(accessory);
+        accessory.hasCapability = this.hasCapability.bind(accessory);
+        accessory.hasCommand = this.hasCommand.bind(accessory);
+        return await this.initializeDeviceCharacteristics(accessory)
     }
 
     initializeDeviceCharacteristics(accessory) {
@@ -92,157 +112,125 @@ module.exports = class ST_Accessories {
             }
         }
         let that = this;
-
         // return new Promise((resolve, reject) => {
-        let deviceGroup = 'unknown';
         let deviceGroups = []
-
         let thisCharacteristic;
         // log(JSON.stringify(accessory.context.deviceData));
-        let isMode = (accessory.context.deviceData.capabilities['Mode'] !== undefined);
-        let isRoutine = (accessory.context.deviceData.capabilities['Routine'] !== undefined);
-        let isFan = (accessory.context.deviceData.capabilities['Fan'] !== undefined || accessory.context.deviceData.capabilities['Fan Light'] !== undefined || accessory.context.deviceData.capabilities['FanLight'] !== undefined || accessory.context.deviceData.capabilities['Fan Speed'] || accessory.context.deviceData.commands.lowSpeed !== undefined);
-        let isWindowShade = (accessory.context.deviceData.capabilities['WindowShade'] !== undefined || accessory.context.deviceData.capabilities['Window Shade'] !== undefined);
-        let isLight = (accessory.context.deviceData.capabilities['LightBulb'] !== undefined || accessory.context.deviceData.capabilities['Light Bulb'] !== undefined || accessory.context.deviceData.capabilities['Bulb'] !== undefined || accessory.context.deviceData.capabilities['Fan Light'] !== undefined || accessory.context.deviceData.capabilities['FanLight'] !== undefined || accessory.context.deviceData.name.includes('light'));
-        let isSpeaker = (accessory.context.deviceData.capabilities['Speaker'] !== undefined);
-        let isSonos = (accessory.context.deviceData.manufacturerName === 'Sonos');
 
-        if (accessory.context.deviceData && accessory.context.deviceData.capabilities) {
-            if ((accessory.context.deviceData.capabilities['Switch Level'] !== undefined || accessory.context.deviceData.capabilities['SwitchLevel'] !== undefined) && !isSpeaker && !isFan && !isMode && !isRoutine) {
-                if (isWindowShade || accessory.context.deviceData.commands.levelOpenClose || accessory.context.deviceData.commands.presetPosition) {
+        let attributes = accessory.context.deviceData.attributes;
+        let capabilities = accessory.context.deviceData.capabilities;
+        let commands = accessory.context.deviceData.commands;
+        let devData = accessory.context.deviceData;
+        let isMode = (capabilities['Mode'] !== undefined);
+        let isRoutine = (capabilities['Routine'] !== undefined);
+        let isFan = (capabilities['Fan'] !== undefined || capabilities['Fan Light'] !== undefined || capabilities['FanLight'] !== undefined || capabilities['Fan Speed'] || commands.lowSpeed !== undefined);
+        let isWindowShade = (capabilities['WindowShade'] !== undefined || capabilities['Window Shade'] !== undefined);
+        let isLight = (capabilities['LightBulb'] !== undefined || capabilities['Light Bulb'] !== undefined || capabilities['Bulb'] !== undefined || capabilities['Fan Light'] !== undefined || capabilities['FanLight'] !== undefined || devData.name.includes('light'));
+        let isSpeaker = (capabilities['Speaker'] !== undefined);
+        let isSonos = (devData.manufacturerName === 'Sonos');
+
+
+        if (devData && capabilities) {
+            if ((capabilities['Switch Level'] !== undefined || capabilities['SwitchLevel'] !== undefined) && !isSpeaker && !isFan && !isMode && !isRoutine) {
+                if (isWindowShade || commands.levelOpenClose || commands.presetPosition) {
                     // This is a Window Shade
-                    deviceGroup = 'window_shades';
-                    deviceGroups.push('Window_Shades');
+                    deviceGroups.push('window_shades');
                     thisCharacteristic = accessory.getOrAddService(Service.WindowCovering).getCharacteristic(Characteristic.TargetPosition)
-                        .on('get', function(callback) {
-                            callback(null, parseInt(accessory.context.deviceData.attributes.level));
+                        .on('get', (callback) => {
+                            callback(null, parseInt(attributes.level));
                         })
-                        .on('set', function(value, callback) {
-                            if (accessory.context.deviceData.commands.close && value === 0) {
+                        .on('set', (value, callback) => {
+                            if (commands.close && value === 0) {
                                 // setLevel: 0, not responding on spring fashion blinds
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'close');
+                                that.client.runCommand(callback, devData.deviceid, 'close');
                             } else {
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'setLevel', {
+                                that.client.runCommand(callback, devData.deviceid, 'setLevel', {
                                     value1: value
                                 });
                             }
                         });
-                    that.platform.addAttributeUsage('level', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    that.platform.addAttributeUsage('level', devData.deviceid, thisCharacteristic);
                     thisCharacteristic = accessory.getOrAddService(Service.WindowCovering).getCharacteristic(Characteristic.CurrentPosition)
-                        .on('get', function(callback) {
-                            callback(null, parseInt(accessory.context.deviceData.attributes.level));
+                        .on('get', (callback) => {
+                            callback(null, parseInt(attributes.level));
                         });
-                    that.platform.addAttributeUsage('level', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    that.platform.addAttributeUsage('level', devData.deviceid, thisCharacteristic);
 
                     thisCharacteristic = accessory.getOrAddService(Service.WindowCovering).setCharacteristic(Characteristic.PositionState, Characteristic.PositionState.STOPPED);
-                } else if (isLight === true || accessory.context.deviceData.commands.setLevel) {
-                    deviceGroup = 'lights';
-                    deviceGroups.push('Lights');
+                } else if (isLight === true || commands.setLevel) {
+                    deviceGroups.push('lights');
                     thisCharacteristic = accessory.getOrAddService(Service.Lightbulb).getCharacteristic(Characteristic.On)
-                        .on('get', function(callback) {
-                            callback(null, accessory.context.deviceData.attributes.switch === 'on');
+                        .on('get', (callback) => {
+                            callback(null, attributes.switch === 'on');
                         })
-                        .on('set', function(value, callback) {
+                        .on('set', (value, callback) => {
                             if (value) {
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'on');
+                                that.client.runCommand(callback, devData.deviceid, 'on');
                             } else {
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'off');
+                                that.client.runCommand(callback, devData.deviceid, 'off');
                             }
                         });
                     console.log('light')
-                    that.platform.addAttributeUsage('switch', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    that.platform.addAttributeUsage('switch', devData.deviceid, thisCharacteristic);
                     thisCharacteristic = accessory.getOrAddService(Service.Lightbulb).getCharacteristic(Characteristic.Brightness)
-                        .on('get', function(callback) {
-                            callback(null, parseInt(accessory.context.deviceData.attributes.level));
+                        .on('get', (callback) => {
+                            callback(null, parseInt(attributes.level));
                         })
-                        .on('set', function(value, callback) {
-                            that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'setLevel', {
+                        .on('set', (value, callback) => {
+                            that.client.runCommand(callback, devData.deviceid, 'setLevel', {
                                 value1: value
                             });
                         });
-                    that.platform.addAttributeUsage('level', accessory.context.deviceData.deviceid, thisCharacteristic);
-                    if (accessory.context.deviceData.capabilities['Color Control'] || accessory.context.deviceData.capabilities['ColorControl']) {
+                    that.platform.addAttributeUsage('level', devData.deviceid, thisCharacteristic);
+                    if (capabilities['Color Control'] || capabilities['ColorControl']) {
                         thisCharacteristic = accessory.getOrAddService(Service.Lightbulb).getCharacteristic(Characteristic.Hue)
-                            .on('get', function(callback) {
-                                callback(null, Math.round(accessory.context.deviceData.attributes.hue * 3.6));
+                            .on('get', (callback) => {
+                                callback(null, Math.round(attributes.hue * 3.6));
                             })
-                            .on('set', function(value, callback) {
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'setHue', {
+                            .on('set', (value, callback) => {
+                                that.client.runCommand(callback, devData.deviceid, 'setHue', {
                                     value1: Math.round(value / 3.6)
                                 });
                             });
-                        that.platform.addAttributeUsage('hue', accessory.context.deviceData.deviceid, thisCharacteristic);
+                        that.platform.addAttributeUsage('hue', devData.deviceid, thisCharacteristic);
                         thisCharacteristic = accessory.getOrAddService(Service.Lightbulb).getCharacteristic(Characteristic.Saturation)
-                            .on('get', function(callback) {
-                                callback(null, parseInt(accessory.context.deviceData.attributes.saturation));
+                            .on('get', (callback) => {
+                                callback(null, parseInt(attributes.saturation));
                             })
-                            .on('set', function(value, callback) {
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'setSaturation', {
+                            .on('set', (value, callback) => {
+                                that.client.runCommand(callback, devData.deviceid, 'setSaturation', {
                                     value1: value
                                 });
                             });
-                        that.platform.addAttributeUsage('saturation', accessory.context.deviceData.deviceid, thisCharacteristic);
+                        that.platform.addAttributeUsage('saturation', devData.deviceid, thisCharacteristic);
                     }
                 }
             }
-            // if (platformName === 'Hubitat' && isWindowShade) {
-            //     deviceGroup = 'window_shades';
-            //     thisCharacteristic = accessory.getOrAddService(Service.WindowCovering).getCharacteristic(Characteristic.TargetPosition)
-            //         .on('get', function(callback) {
-            //             let curPos = parseInt(accessory.context.deviceData.attributes.position);
-            //             if (curPos > 98) {
-            //                 curPos = 100;
-            //             } else if (curPos < 2) {
-            //                 curPos = 0;
-            //             }
-            //             callback(null, curPos);
-            //         })
-            //         .on('set', function(value, callback) {
-            //             that.log('setPosition(HE): ' + value);
-            //             that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'setPosition', {
-            //                 value1: value
-            //             });
-            //         });
-            //     that.platform.addAttributeUsage('position', accessory.context.deviceData.deviceid, thisCharacteristic);
-            //     thisCharacteristic = accessory.getOrAddService(Service.WindowCovering).getCharacteristic(Characteristic.CurrentPosition)
-            //         .on('get', function(callback) {
-            //             let curPos = parseInt(accessory.context.deviceData.attributes.position);
-            //             if (curPos > 98) {
-            //                 curPos = 100;
-            //             } else if (curPos < 2) {
-            //                 curPos = 0;
-            //             }
-            //             callback(null, curPos);
-            //         });
-            //     that.platform.addAttributeUsage('position', accessory.context.deviceData.deviceid, thisCharacteristic);
 
-            //     thisCharacteristic = accessory.getOrAddService(Service.WindowCovering).setCharacteristic(Characteristic.PositionState, Characteristic.PositionState.STOPPED);
-            // }
-            if (accessory.context.deviceData.capabilities['Garage Door Control'] !== undefined || accessory.context.deviceData.capabilities['GarageDoorControl'] !== undefined) {
-                deviceGroup = 'garage_doors';
-                deviceGroups.push('Garage_Doors');
+            if (capabilities['Garage Door Control'] !== undefined || capabilities['GarageDoorControl'] !== undefined) {
+                deviceGroups.push('garage_doors');
                 thisCharacteristic = accessory.getOrAddService(Service.GarageDoorOpener).getCharacteristic(Characteristic.TargetDoorState)
-                    .on('get', function(callback) {
-                        if (accessory.context.deviceData.attributes.door === 'closed' || accessory.context.deviceData.attributes.door === 'closing') {
+                    .on('get', (callback) => {
+                        if (attributes.door === 'closed' || attributes.door === 'closing') {
                             callback(null, Characteristic.TargetDoorState.CLOSED);
-                        } else if (accessory.context.deviceData.attributes.door === 'open' || accessory.context.deviceData.attributes.door === 'opening') {
+                        } else if (attributes.door === 'open' || attributes.door === 'opening') {
                             callback(null, Characteristic.TargetDoorState.OPEN);
                         }
                     })
-                    .on('set', function(value, callback) {
+                    .on('set', (value, callback) => {
                         if (value === Characteristic.TargetDoorState.OPEN || value === 0) {
-                            that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'open');
-                            accessory.context.deviceData.attributes.door = 'opening';
+                            that.client.runCommand(callback, devData.deviceid, 'open');
+                            attributes.door = 'opening';
                         } else if (value === Characteristic.TargetDoorState.CLOSED || value === 1) {
-                            that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'close');
-                            accessory.context.deviceData.attributes.door = 'closing';
+                            that.client.runCommand(callback, devData.deviceid, 'close');
+                            attributes.door = 'closing';
                         }
                     });
-                that.platform.addAttributeUsage('door', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('door', devData.deviceid, thisCharacteristic);
 
                 thisCharacteristic = accessory.getOrAddService(Service.GarageDoorOpener).getCharacteristic(Characteristic.CurrentDoorState)
-                    .on('get', function(callback) {
-                        switch (accessory.context.deviceData.attributes.door) {
+                    .on('get', (callback) => {
+                        switch (attributes.door) {
                             case 'open':
                                 callback(null, Characteristic.TargetDoorState.OPEN);
                                 break;
@@ -260,15 +248,14 @@ module.exports = class ST_Accessories {
                                 break;
                         }
                     });
-                that.platform.addAttributeUsage('door', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('door', devData.deviceid, thisCharacteristic);
                 accessory.getOrAddService(Service.GarageDoorOpener).setCharacteristic(Characteristic.ObstructionDetected, false);
             }
-            if (accessory.context.deviceData.capabilities['Lock'] !== undefined && !accessory.context.deviceData.capabilities['Thermostat']) {
-                deviceGroup = 'locks';
-                deviceGroups.push('Locks');
+            if (capabilities['Lock'] !== undefined && !capabilities['Thermostat']) {
+                deviceGroups.push('locks');
                 thisCharacteristic = accessory.getOrAddService(Service.LockMechanism).getCharacteristic(Characteristic.LockCurrentState)
-                    .on('get', function(callback) {
-                        switch (accessory.context.deviceData.attributes.lock) {
+                    .on('get', (callback) => {
+                        switch (attributes.lock) {
                             case 'locked':
                                 callback(null, Characteristic.LockCurrentState.SECURED);
                                 break;
@@ -280,11 +267,11 @@ module.exports = class ST_Accessories {
                                 break;
                         }
                     });
-                that.platform.addAttributeUsage('lock', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('lock', devData.deviceid, thisCharacteristic);
 
                 thisCharacteristic = accessory.getOrAddService(Service.LockMechanism).getCharacteristic(Characteristic.LockTargetState)
-                    .on('get', function(callback) {
-                        switch (accessory.context.deviceData.attributes.lock) {
+                    .on('get', (callback) => {
+                        switch (attributes.lock) {
                             case 'locked':
                                 callback(null, Characteristic.LockCurrentState.SECURED);
                                 break;
@@ -296,182 +283,182 @@ module.exports = class ST_Accessories {
                                 break;
                         }
                     })
-                    .on('set', function(value, callback) {
+                    .on('set', (value, callback) => {
                         if (value === 1 || value === true) {
-                            that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'lock');
-                            accessory.context.deviceData.attributes.lock = 'locked';
+                            that.client.runCommand(callback, devData.deviceid, 'lock');
+                            attributes.lock = 'locked';
                         } else {
-                            that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'unlock');
-                            accessory.context.deviceData.attributes.lock = 'unlocked';
+                            that.client.runCommand(callback, devData.deviceid, 'unlock');
+                            attributes.lock = 'unlocked';
                         }
                     });
-                that.platform.addAttributeUsage('lock', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('lock', devData.deviceid, thisCharacteristic);
             }
-            if (accessory.context.deviceData.capabilities["Valve"] !== undefined) {
-                that.log("valve: " + accessory.context.deviceData.attributes.valve);
-                deviceGroup = "valve";
-                deviceGroups.push('Valve');
-                let valveType = (accessory.context.deviceData.capabilities['Irrigation'] !== undefined ? 0 : 0);
+
+            if (capabilities["Valve"] !== undefined) {
+                that.log("valve: " + attributes.valve);
+                deviceGroups.push('valve');
+                let valveType = (capabilities['Irrigation'] !== undefined ? 0 : 0);
 
                 //Gets the inUse Characteristic
                 thisCharacteristic = accessory.getOrAddService(Service.Valve).getCharacteristic(Characteristic.InUse)
-                    .on('get', function(callback) {
-                        callback(null, accessory.context.deviceData.attributes.valve === 'open' ? Characteristic.InUse.IN_USE : Characteristic.InUse.NOT_IN_USE);
+                    .on('get', (callback) => {
+                        callback(null, attributes.valve === 'open' ? Characteristic.InUse.IN_USE : Characteristic.InUse.NOT_IN_USE);
                     });
-                that.platform.addAttributeUsage('inUse', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('inUse', devData.deviceid, thisCharacteristic);
 
                 //Defines the valve type (irrigation or generic)
                 thisCharacteristic = accessory.getOrAddService(Service.Valve).getCharacteristic(Characteristic.ValveType)
-                    .on('get', function(callback) {
+                    .on('get', (callback) => {
                         callback(null, valveType);
                     });
-                that.platform.addAttributeUsage('valveType', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('valveType', devData.deviceid, thisCharacteristic);
 
                 //Defines Valve State (opened/closed)
                 thisCharacteristic = accessory.getOrAddService(Service.Valve).getCharacteristic(Characteristic.Active)
-                    .on('get', function(callback) {
-                        callback(null, accessory.context.deviceData.attributes.valve === 'open' ? Characteristic.InUse.IN_USE : Characteristic.InUse.NOT_IN_USE);
+                    .on('get', (callback) => {
+                        callback(null, attributes.valve === 'open' ? Characteristic.InUse.IN_USE : Characteristic.InUse.NOT_IN_USE);
                     })
-                    .on('set', function(value, callback) {
-                        // if (accessory.context.deviceData.attributes.inStandby !== 'true') {
+                    .on('set', (value, callback) => {
+                        // if (attributes.inStandby !== 'true') {
                         if (value) {
-                            that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'on');
+                            that.client.runCommand(callback, devData.deviceid, 'on');
                         } else {
-                            that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'off');
+                            that.client.runCommand(callback, devData.deviceid, 'off');
                         }
                         // }
                     });
-                that.platform.addAttributeUsage('valve', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('valve', devData.deviceid, thisCharacteristic);
             }
 
             //Defines Speaker Device
             if (isSpeaker === true) {
-                deviceGroup = 'speakers';
+                accessory.deviceGroups.push('speakers');
                 thisCharacteristic = accessory.getOrAddService(Service.Speaker).getCharacteristic(Characteristic.Volume)
-                    .on('get', function(callback) {
-                        callback(null, parseInt(accessory.context.deviceData.attributes.level || 0));
+                    .on('get', (callback) => {
+                        callback(null, parseInt(attributes.level || 0));
                     })
-                    .on('set', function(value, callback) {
+                    .on('set', (value, callback) => {
                         if (value > 0) {
-                            that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'setLevel', {
+                            that.client.runCommand(callback, devData.deviceid, 'setLevel', {
                                 value1: value
                             });
                         }
                     });
-                that.platform.addAttributeUsage('volume', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('volume', devData.deviceid, thisCharacteristic);
 
                 thisCharacteristic = accessory.getOrAddService(Service.Speaker).getCharacteristic(Characteristic.Mute)
-                    .on('get', function(callback) {
-                        callback(null, accessory.context.deviceData.attributes.mute === 'muted');
+                    .on('get', (callback) => {
+                        callback(null, attributes.mute === 'muted');
                     })
-                    .on('set', function(value, callback) {
+                    .on('set', (value, callback) => {
                         if (value) {
-                            that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'mute');
+                            that.client.runCommand(callback, devData.deviceid, 'mute');
                         } else {
-                            that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'unmute');
+                            that.client.runCommand(callback, devData.deviceid, 'unmute');
                         }
                     });
-                that.platform.addAttributeUsage('mute', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('mute', devData.deviceid, thisCharacteristic);
             }
             //Handles Standalone Fan with no levels
-            if (isFan === true && (accessory.context.deviceData.capabilities['Fan Light'] !== undefined || accessory.context.deviceData.capabilities['FanLight'] !== undefined || deviceGroup === 'unknown')) {
-                deviceGroup = 'fans';
+            if (isFan === true && (capabilities['Fan Light'] !== undefined || capabilities['FanLight'] !== undefined || !accessory.deviceGroups.length)) {
+                deviceGroups.push('fans');
                 thisCharacteristic = accessory.getOrAddService(Service.Fanv2).getCharacteristic(Characteristic.Active)
-                    .on('get', function(callback) {
-                        callback(null, accessory.context.deviceData.attributes.switch === 'on');
+                    .on('get', (callback) => {
+                        callback(null, attributes.switch === 'on');
                     })
-                    .on('set', function(value, callback) {
+                    .on('set', (value, callback) => {
                         if (value) {
-                            that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'on');
+                            that.client.runCommand(callback, devData.deviceid, 'on');
                         } else {
-                            that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'off');
+                            that.client.runCommand(callback, devData.deviceid, 'off');
                         }
                     });
-                that.platform.addAttributeUsage('switch', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('switch', devData.deviceid, thisCharacteristic);
 
-                if (accessory.context.deviceData.attributes.level !== undefined || accessory.context.deviceData.attributes.fanSpeed !== undefined) {
-                    // let fanLvl = accessory.context.deviceData.attributes.fanSpeed ? that.myUtils.fanSpeedConversionInt(accessory.context.deviceData.attributes.fanSpeed, (accessory.context.deviceData.commands['medHighSpeed'] !== undefined)) : parseInt(accessory.context.deviceData.attributes.level);
-                    let fanLvl = parseInt(accessory.context.deviceData.attributes.level);
-                    // that.log("Fan with (" + accessory.context.deviceData.attributes.fanSpeed ? "fanSpeed" : "level" + ') | value: ' + fanLvl);
+                if (attributes.level !== undefined || attributes.fanSpeed !== undefined) {
+                    // let fanLvl = attributes.fanSpeed ? that.myUtils.fanSpeedConversionInt(attributes.fanSpeed, (commands['medHighSpeed'] !== undefined)) : parseInt(attributes.level);
+                    let fanLvl = parseInt(attributes.level);
+                    // that.log("Fan with (" + attributes.fanSpeed ? "fanSpeed" : "level" + ') | value: ' + fanLvl);
                     that.log("Fan with level at " + fanLvl);
                     // let waitTimer;
                     thisCharacteristic = accessory.getOrAddService(Service.Fanv2).getCharacteristic(Characteristic.RotationSpeed)
-                        .on('get', function(callback) {
+                        .on('get', (callback) => {
                             callback(null, fanLvl);
                         })
-                        .on('set', function(value, callback) {
+                        .on('set', (value, callback) => {
                             if (value >= 0 && value <= 100) {
 
                                 // clearTimeout(waitTimer);
                                 // that.log('Sending Fan value of ' + value);
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'setLevel', {
+                                that.client.runCommand(callback, devData.deviceid, 'setLevel', {
                                     value1: parseInt(value)
                                 });
 
                             }
                         });
-                    that.platform.addAttributeUsage('level', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    that.platform.addAttributeUsage('level', devData.deviceid, thisCharacteristic);
                 }
             }
             if (isMode === true) {
-                deviceGroup = 'mode';
-                that.log('Mode: (' + that.name + ')');
+                deviceGroups.push('mode');
+                that.log('Mode: (' + accessory.name + ')');
                 thisCharacteristic = accessory.getOrAddService(Service.Switch).getCharacteristic(Characteristic.On)
-                    .on('get', function(callback) {
-                        callback(null, accessory.context.deviceData.attributes.switch === 'on');
+                    .on('get', (callback) => {
+                        callback(null, attributes.switch === 'on');
                     })
-                    .on('set', function(value, callback) {
-                        if (value && accessory.context.deviceData.attributes.switch === 'off') {
-                            that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'mode', {
-                                value1: that.name.toString()
+                    .on('set', (value, callback) => {
+                        if (value && attributes.switch === 'off') {
+                            that.client.runCommand(callback, devData.deviceid, 'mode', {
+                                value1: accessory.name.toString()
                             });
                         }
                     });
-                that.platform.addAttributeUsage('switch', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('switch', devData.deviceid, thisCharacteristic);
             }
             if (isRoutine === true) {
-                deviceGroup = 'routine';
-                that.log('Routine: (' + that.name + ')');
+                deviceGroups.push('routine');
+                that.log('Routine: (' + accessory.name + ')');
                 thisCharacteristic = accessory.getOrAddService(Service.Switch).getCharacteristic(Characteristic.On)
-                    .on('get', function(callback) {
-                        callback(null, accessory.context.deviceData.attributes.switch === 'on');
+                    .on('get', (callback) => {
+                        callback(null, attributes.switch === 'on');
                     })
-                    .on('set', function(value, callback) {
+                    .on('set', (value, callback) => {
                         if (value) {
-                            that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'routine', {
-                                value1: that.name.toString()
+                            that.client.runCommand(callback, devData.deviceid, 'routine', {
+                                value1: accessory.name.toString()
                             });
                             setTimeout(
-                                function() {
+                                () => {
                                     console.log("routineOff...");
                                     accessory.getOrAddService(Service.Switch).setCharacteristic(Characteristic.On, false);
                                 }, 2000);
                         }
                     });
-                that.platform.addAttributeUsage('switch', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('switch', devData.deviceid, thisCharacteristic);
             }
-            if (accessory.context.deviceData.capabilities['Button'] !== undefined) {
-                deviceGroup = 'button';
-                that.log('Button: (' + that.name + ')');
+            if (capabilities['Button'] !== undefined) {
+                deviceGroups.push('button');
+                that.log('Button: (' + accessory.name + ')');
                 //Old Button Logic
                 // thisCharacteristic = accessory.getOrAddService(Service.Switch).getCharacteristic(Characteristic.On)
-                //     .on('get', function(callback) {
-                //         callback(null, accessory.context.deviceData.attributes.switch === 'on');
+                //     .on('get', (callback)=>{
+                //         callback(null, attributes.switch === 'on');
                 //     })
-                //     .on('set', function(value, callback) {
-                //         if (value && accessory.context.deviceData.attributes.switch === 'off') {
-                //             that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'button');
+                //     .on('set', (value, callback) =>{
+                //         if (value && attributes.switch === 'off') {
+                //             that.client.runCommand(callback, devData.deviceid, 'button');
                 //         }
                 //     });
-                // that.platform.addAttributeUsage('switch', accessory.context.deviceData.deviceid, thisCharacteristic);
+                // that.platform.addAttributeUsage('switch', devData.deviceid, thisCharacteristic);
 
                 // New STATELESS BUTTON LOGIC (By @shnhrrsn)
                 thisCharacteristic = accessory.getOrAddService(Service.StatelessProgrammableSwitch).getCharacteristic(Characteristic.ProgrammableSwitchEvent)
-                    .on('get', function(callback) {
+                    .on('get', (callback) => {
                         // Reset value to force `change` to fire for repeated presses
                         this.value = -1;
 
-                        switch (accessory.context.deviceData.attributes.button) {
+                        switch (attributes.button) {
                             case 'pushed':
                                 return callback(null, Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS);
                             case 'held':
@@ -485,8 +472,8 @@ module.exports = class ST_Accessories {
 
                 const validValues = [];
 
-                if (typeof accessory.context.deviceData.attributes.supportedButtonValues === 'string') {
-                    for (const value of JSON.parse(accessory.context.deviceData.attributes.supportedButtonValues)) {
+                if (typeof attributes.supportedButtonValues === 'string') {
+                    for (const value of JSON.parse(attributes.supportedButtonValues)) {
                         switch (value) {
                             case 'pushed':
                                 validValues.push(Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS);
@@ -498,7 +485,7 @@ module.exports = class ST_Accessories {
                                 validValues.push(Characteristic.ProgrammableSwitchEvent.DOUBLE_PRESS);
                                 continue;
                             default:
-                                that.log('Button: (' + that.name + ') unsupported button value: ' + value);
+                                that.log('Button: (' + accessory.name + ') unsupported button value: ' + value);
                         }
                     }
 
@@ -510,287 +497,271 @@ module.exports = class ST_Accessories {
                 // Turned on by default for Characteristic.ProgrammableSwitchEvent, required to emit `change`
                 thisCharacteristic.eventOnlyCharacteristic = false;
 
-                that.platform.addAttributeUsage('button', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('button', devData.deviceid, thisCharacteristic);
             }
 
             // This should catch the remaining switch devices that are specially defined
-            if (accessory.context.deviceData.capabilities['Switch'] !== undefined && (accessory.context.deviceData.capabilities['Fan Light'] !== undefined || accessory.context.deviceData.capabilities['FanLight'] !== undefined || deviceGroup === 'unknown')) {
+            if (capabilities['Switch'] !== undefined && (capabilities['Fan Light'] !== undefined || capabilities['FanLight'] !== undefined || !accessory.deviceGroups.length)) {
                 //Handles Standalone Fan with no levels
                 if (isLight === true) {
-                    deviceGroup = 'light';
-                    if (accessory.context.deviceData.capabilities['Fan Light'] || accessory.context.deviceData.capabilities['FanLight']) {
-                        that.log('FanLight: ' + accessory.context.deviceData.name);
+                    deviceGroups.push('light');
+                    if (capabilities['Fan Light'] || capabilities['FanLight']) {
+                        that.log('FanLight: ' + devData.name);
                     }
                     thisCharacteristic = accessory.getOrAddService(Service.Lightbulb).getCharacteristic(Characteristic.On)
-                        .on('get', function(callback) {
-                            callback(null, accessory.context.deviceData.attributes.switch === 'on');
+                        .on('get', (callback) => {
+                            callback(null, attributes.switch === 'on');
                         })
-                        .on('set', function(value, callback) {
+                        .on('set', (value, callback) => {
                             if (value) {
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'on');
+                                that.client.runCommand(callback, devData.deviceid, 'on');
                             } else {
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'off');
+                                that.client.runCommand(callback, devData.deviceid, 'off');
                             }
                         });
-                    that.platform.addAttributeUsage('switch', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    that.platform.addAttributeUsage('switch', devData.deviceid, thisCharacteristic);
                 } else {
-                    deviceGroup = 'switch';
+                    deviceGroups.push('switch')
                     thisCharacteristic = accessory.getOrAddService(Service.Switch).getCharacteristic(Characteristic.On)
-                        .on('get', function(callback) {
-                            callback(null, accessory.context.deviceData.attributes.switch === 'on');
+                        .on('get', (callback) => {
+                            callback(null, attributes.switch === 'on');
                         })
-                        .on('set', function(value, callback) {
+                        .on('set', (value, callback) => {
                             if (value) {
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'on');
+                                that.client.runCommand(callback, devData.deviceid, 'on');
                             } else {
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'off');
+                                that.client.runCommand(callback, devData.deviceid, 'off');
                             }
                         });
-                    that.platform.addAttributeUsage('switch', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    that.platform.addAttributeUsage('switch', devData.deviceid, thisCharacteristic);
 
-                    // if (accessory.context.deviceData.capabilities['Energy Meter'] || accessory.context.deviceData.capabilities['EnergyMeter']) {
+                    // if (capabilities['Energy Meter'] || capabilities['EnergyMeter']) {
                     //     thisCharacteristic = accessory.getOrAddService(Service.Switch).addCharacteristic(this.CommunityTypes.Watts)
-                    //         .on('get', function(callback) {
-                    //             callback(null, Math.round(accessory.context.deviceData.attributes.power));
+                    //         .on('get', (callback)=>{
+                    //             callback(null, Math.round(attributes.power));
                     //         });
-                    //     that.platform.addAttributeUsage('energy', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    //     that.platform.addAttributeUsage('energy', devData.deviceid, thisCharacteristic);
                     // }
                 }
             }
             // Smoke Detectors
-            if ((accessory.context.deviceData.capabilities['Smoke Detector'] !== undefined || accessory.context.deviceData.capabilities['SmokeDetector'] !== undefined) && accessory.context.deviceData.attributes.smoke) {
-                deviceGroup = 'detectors';
+            if ((capabilities['Smoke Detector'] !== undefined || capabilities['SmokeDetector'] !== undefined) && attributes.smoke) {
+                deviceGroups.push('smoke_detector')
                 thisCharacteristic = accessory.getOrAddService(Service.SmokeSensor).getCharacteristic(Characteristic.SmokeDetected)
-                    .on('get', function(callback) {
-                        if (accessory.context.deviceData.attributes.smoke === 'clear') {
+                    .on('get', (callback) => {
+                        if (attributes.smoke === 'clear') {
                             callback(null, Characteristic.SmokeDetected.SMOKE_NOT_DETECTED);
                         } else {
                             callback(null, Characteristic.SmokeDetected.SMOKE_DETECTED);
                         }
                     });
-                that.platform.addAttributeUsage('smoke', accessory.context.deviceData.deviceid, thisCharacteristic);
-                if (accessory.context.deviceData.capabilities['Tamper Alert'] || accessory.context.deviceData.capabilities['TamperAlert']) {
+                that.platform.addAttributeUsage('smoke', devData.deviceid, thisCharacteristic);
+                if (capabilities['Tamper Alert'] || capabilities['TamperAlert']) {
                     thisCharacteristic = accessory.getOrAddService(Service.SmokeSensor).getCharacteristic(Characteristic.StatusTampered)
-                        .on('get', function(callback) {
-                            callback(null, (accessory.context.deviceData.attributes.tamperAlert === 'detected') ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
+                        .on('get', (callback) => {
+                            callback(null, (attributes.tamperAlert === 'detected') ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
                         });
-                    that.platform.addAttributeUsage('tamper', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    that.platform.addAttributeUsage('tamper', devData.deviceid, thisCharacteristic);
                 }
             }
-            if ((accessory.context.deviceData.capabilities['Carbon Monoxide Detector'] !== undefined || accessory.context.deviceData.capabilities['CarbonMonoxideDetector'] !== undefined) && accessory.context.deviceData.attributes.carbonMonoxide) {
-                deviceGroup = 'detectors';
+            if ((capabilities['Carbon Monoxide Detector'] !== undefined || capabilities['CarbonMonoxideDetector'] !== undefined) && attributes.carbonMonoxide) {
+                deviceGroups.push('carbon_monoxide_detector')
                 thisCharacteristic = accessory.getOrAddService(Service.CarbonMonoxideSensor).getCharacteristic(Characteristic.CarbonMonoxideDetected)
-                    .on('get', function(callback) {
-                        if (accessory.context.deviceData.attributes.carbonMonoxide === 'clear') {
+                    .on('get', (callback) => {
+                        if (attributes.carbonMonoxide === 'clear') {
                             callback(null, Characteristic.CarbonMonoxideDetected.CO_LEVELS_NORMAL);
                         } else {
                             callback(null, Characteristic.CarbonMonoxideDetected.CO_LEVELS_ABNORMAL);
                         }
                     });
-                that.platform.addAttributeUsage('carbonMonoxide', accessory.context.deviceData.deviceid, thisCharacteristic);
-                if (accessory.context.deviceData.capabilities['Tamper Alert'] !== undefined || accessory.context.deviceData.capabilities['TamperAlert'] !== undefined) {
+                that.platform.addAttributeUsage('carbonMonoxide', devData.deviceid, thisCharacteristic);
+                if (capabilities['Tamper Alert'] !== undefined || capabilities['TamperAlert'] !== undefined) {
                     thisCharacteristic = accessory.getOrAddService(Service.CarbonMonoxideSensor).getCharacteristic(Characteristic.StatusTampered)
-                        .on('get', function(callback) {
-                            callback(null, (accessory.context.deviceData.attributes.tamperAlert === 'detected') ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
+                        .on('get', (callback) => {
+                            callback(null, (attributes.tamperAlert === 'detected') ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
                         });
-                    that.platform.addAttributeUsage('tamper', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    that.platform.addAttributeUsage('tamper', devData.deviceid, thisCharacteristic);
                 }
             }
-            if ((accessory.context.deviceData.capabilities['Carbon Dioxide Measurement'] !== undefined || accessory.context.deviceData.capabilities['CarbonDioxideMeasurement'] !== undefined) && accessory.context.deviceData.attributes.carbonDioxideMeasurement) {
-                deviceGroup = 'carbonDioxide';
+            if ((capabilities['Carbon Dioxide Measurement'] !== undefined || capabilities['CarbonDioxideMeasurement'] !== undefined) && attributes.carbonDioxideMeasurement) {
+                deviceGroups.push('carbon_dioxide_measure')
                 thisCharacteristic = accessory.getOrAddService(Service.CarbonDioxideSensor).getCharacteristic(Characteristic.CarbonDioxideDetected)
-                    .on('get', function(callback) {
-                        if (accessory.context.deviceData.attributes.carbonDioxideMeasurement < 2000) {
+                    .on('get', (callback) => {
+                        if (attributes.carbonDioxideMeasurement < 2000) {
                             callback(null, Characteristic.CarbonDioxideDetected.CO2_LEVELS_NORMAL);
                         } else {
                             callback(null, Characteristic.CarbonDioxideDetected.CO2_LEVELS_ABNORMAL);
                         }
                     });
-                that.platform.addAttributeUsage('carbonDioxide', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('carbonDioxide', devData.deviceid, thisCharacteristic);
                 thisCharacteristic = accessory.getOrAddService(Service.CarbonDioxideSensor).getCharacteristic(Characteristic.CarbonDioxideLevel)
-                    .on('get', function(callback) {
-                        if (accessory.context.deviceData.attributes.carbonDioxideMeasurement >= 0) {
-                            callback(null, accessory.context.deviceData.attributes.carbonDioxideMeasurement);
+                    .on('get', (callback) => {
+                        if (attributes.carbonDioxideMeasurement >= 0) {
+                            callback(null, attributes.carbonDioxideMeasurement);
                         }
                     });
-                that.platform.addAttributeUsage('carbonDioxideLevel', accessory.context.deviceData.deviceid, thisCharacteristic);
-                if (accessory.context.deviceData.capabilities['Tamper Alert'] !== undefined || accessory.context.deviceData.capabilities['TamperAlert'] !== undefined) {
+                that.platform.addAttributeUsage('carbonDioxideLevel', devData.deviceid, thisCharacteristic);
+                if (capabilities['Tamper Alert'] !== undefined || capabilities['TamperAlert'] !== undefined) {
                     thisCharacteristic = accessory.getOrAddService(Service.CarbonDioxideSensor).getCharacteristic(Characteristic.StatusTampered)
-                        .on('get', function(callback) {
-                            callback(null, (accessory.context.deviceData.attributes.tamperAlert === 'detected') ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
+                        .on('get', (callback) => {
+                            callback(null, (attributes.tamperAlert === 'detected') ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
                         });
-                    that.platform.addAttributeUsage('tamper', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    that.platform.addAttributeUsage('tamper', devData.deviceid, thisCharacteristic);
                 }
             }
-            if (accessory.context.deviceData.capabilities['Motion Sensor'] !== undefined || accessory.context.deviceData.capabilities['MotionSensor'] !== undefined) {
-                if (deviceGroup === 'unknown') {
-                    deviceGroup = 'sensor';
-                }
+            if (capabilities['Motion Sensor'] !== undefined || capabilities['MotionSensor'] !== undefined) {
+                deviceGroups.push('motion_sensor')
                 thisCharacteristic = accessory.getOrAddService(Service.MotionSensor).getCharacteristic(Characteristic.MotionDetected)
-                    .on('get', function(callback) {
-                        callback(null, accessory.context.deviceData.attributes.motion === 'active');
+                    .on('get', (callback) => {
+                        callback(null, attributes.motion === 'active');
                     });
-                that.platform.addAttributeUsage('motion', accessory.context.deviceData.deviceid, thisCharacteristic);
-                if (accessory.context.deviceData.capabilities['Tamper Alert'] !== undefined || accessory.context.deviceData.capabilities['TamperAlert'] !== undefined) {
+                that.platform.addAttributeUsage('motion', devData.deviceid, thisCharacteristic);
+                if (capabilities['Tamper Alert'] !== undefined || capabilities['TamperAlert'] !== undefined) {
                     thisCharacteristic = accessory.getOrAddService(Service.MotionSensor).getCharacteristic(Characteristic.StatusTampered)
-                        .on('get', function(callback) {
-                            callback(null, (accessory.context.deviceData.attributes.tamperAlert === 'detected') ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
+                        .on('get', (callback) => {
+                            callback(null, (attributes.tamperAlert === 'detected') ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
                         });
-                    that.platform.addAttributeUsage('tamper', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    that.platform.addAttributeUsage('tamper', devData.deviceid, thisCharacteristic);
                 }
             }
-            if (accessory.context.deviceData.capabilities['Water Sensor'] !== undefined || accessory.context.deviceData.capabilities['WaterSensor'] !== undefined) {
-                if (deviceGroup === 'unknown') {
-                    deviceGroup = 'sensor';
-                }
+            if (capabilities['Water Sensor'] !== undefined || capabilities['WaterSensor'] !== undefined) {
+                deviceGroups.push('water_sensor')
                 thisCharacteristic = accessory.getOrAddService(Service.LeakSensor).getCharacteristic(Characteristic.LeakDetected)
-                    .on('get', function(callback) {
+                    .on('get', (callback) => {
                         let reply = Characteristic.LeakDetected.LEAK_DETECTED;
-                        if (accessory.context.deviceData.attributes.water === 'dry') {
+                        if (attributes.water === 'dry') {
                             reply = Characteristic.LeakDetected.LEAK_NOT_DETECTED;
                         }
                         callback(null, reply);
                     });
-                that.platform.addAttributeUsage('water', accessory.context.deviceData.deviceid, thisCharacteristic);
-                if (accessory.context.deviceData.capabilities['Tamper Alert'] !== undefined || accessory.context.deviceData.capabilities['TamperAlert'] !== undefined) {
+                that.platform.addAttributeUsage('water', devData.deviceid, thisCharacteristic);
+                if (capabilities['Tamper Alert'] !== undefined || capabilities['TamperAlert'] !== undefined) {
                     thisCharacteristic = accessory.getOrAddService(Service.LeakSensor).getCharacteristic(Characteristic.StatusTampered)
-                        .on('get', function(callback) {
-                            callback(null, (accessory.context.deviceData.attributes.tamperAlert === 'detected') ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
+                        .on('get', (callback) => {
+                            callback(null, (attributes.tamperAlert === 'detected') ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
                         });
-                    that.platform.addAttributeUsage('tamper', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    that.platform.addAttributeUsage('tamper', devData.deviceid, thisCharacteristic);
                 }
             }
-            if (accessory.context.deviceData.capabilities['Presence Sensor'] !== undefined || accessory.context.deviceData.capabilities['PresenceSensor'] !== undefined) {
-                if (deviceGroup === 'unknown') {
-                    deviceGroup = 'sensor';
-                }
+            if (capabilities['Presence Sensor'] !== undefined || capabilities['PresenceSensor'] !== undefined) {
+                deviceGroups.push('presence_sensor')
                 thisCharacteristic = accessory.getOrAddService(Service.OccupancySensor).getCharacteristic(Characteristic.OccupancyDetected)
-                    .on('get', function(callback) {
-                        callback(null, accessory.context.deviceData.attributes.presence === 'present');
+                    .on('get', (callback) => {
+                        callback(null, attributes.presence === 'present');
                     });
-                that.platform.addAttributeUsage('presence', accessory.context.deviceData.deviceid, thisCharacteristic);
-                if (accessory.context.deviceData.capabilities['Tamper Alert'] !== undefined || accessory.context.deviceData.capabilities['TamperAlert'] !== undefined) {
+                that.platform.addAttributeUsage('presence', devData.deviceid, thisCharacteristic);
+                if (capabilities['Tamper Alert'] !== undefined || capabilities['TamperAlert'] !== undefined) {
                     thisCharacteristic = accessory.getOrAddService(Service.OccupancySensor).getCharacteristic(Characteristic.StatusTampered)
-                        .on('get', function(callback) {
-                            callback(null, (accessory.context.deviceData.attributes.tamperAlert === 'detected') ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
+                        .on('get', (callback) => {
+                            callback(null, (attributes.tamperAlert === 'detected') ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
                         });
-                    that.platform.addAttributeUsage('tamper', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    that.platform.addAttributeUsage('tamper', devData.deviceid, thisCharacteristic);
                 }
             }
-            if (accessory.context.deviceData.capabilities['Relative Humidity Measurement'] !== undefined || accessory.context.deviceData.capabilities['RelativeHumidityMeasurement'] !== undefined) {
-                if (deviceGroup === 'unknown') {
-                    deviceGroup = 'sensor';
-                }
+            if (capabilities['Relative Humidity Measurement'] !== undefined || capabilities['RelativeHumidityMeasurement'] !== undefined) {
+                deviceGroups.push('humidity_sensor')
                 thisCharacteristic = accessory.getOrAddService(Service.HumiditySensor).getCharacteristic(Characteristic.CurrentRelativeHumidity)
-                    .on('get', function(callback) {
-                        callback(null, Math.round(accessory.context.deviceData.attributes.humidity));
+                    .on('get', (callback) => {
+                        callback(null, Math.round(attributes.humidity));
                     });
-                that.platform.addAttributeUsage('humidity', accessory.context.deviceData.deviceid, thisCharacteristic);
-                if (accessory.context.deviceData.capabilities['Tamper Alert'] !== undefined || accessory.context.deviceData.capabilities['TamperAlert'] !== undefined) {
+                that.platform.addAttributeUsage('humidity', devData.deviceid, thisCharacteristic);
+                if (capabilities['Tamper Alert'] !== undefined || capabilities['TamperAlert'] !== undefined) {
                     thisCharacteristic = accessory.getOrAddService(Service.HumiditySensor).getCharacteristic(Characteristic.StatusTampered)
-                        .on('get', function(callback) {
-                            callback(null, (accessory.context.deviceData.attributes.tamperAlert === 'detected') ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
+                        .on('get', (callback) => {
+                            callback(null, (attributes.tamperAlert === 'detected') ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
                         });
-                    that.platform.addAttributeUsage('tamper', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    that.platform.addAttributeUsage('tamper', devData.deviceid, thisCharacteristic);
                 }
             }
-            if (accessory.context.deviceData.capabilities['Temperature Measurement'] !== undefined || accessory.context.deviceData.capabilities['TemperatureMeasurement'] !== undefined) {
-                if (deviceGroup === 'unknown') {
-                    deviceGroup = 'sensor';
-                }
+            if (capabilities['Temperature Measurement'] !== undefined || capabilities['TemperatureMeasurement'] !== undefined) {
+                deviceGroups.push('temp_sensor')
                 thisCharacteristic = accessory.getOrAddService(Service.TemperatureSensor).getCharacteristic(Characteristic.CurrentTemperature)
                     .setProps({
                         minValue: parseFloat(-50),
                         maxValue: parseFloat(100)
                     })
-                    .on('get', function(callback) {
-                        callback(null, that.myUtils.tempConversion(that.temperature_unit, accessory.context.deviceData.attributes.temperature));
+                    .on('get', (callback) => {
+                        callback(null, that.myUtils.tempConversion(that.temperature_unit, attributes.temperature));
                     });
-                that.platform.addAttributeUsage('temperature', accessory.context.deviceData.deviceid, thisCharacteristic);
-                if (accessory.context.deviceData.capabilities['Tamper Alert'] !== undefined || accessory.context.deviceData.capabilities['TamperAlert'] !== undefined) {
+                that.platform.addAttributeUsage('temperature', devData.deviceid, thisCharacteristic);
+                if (capabilities['Tamper Alert'] !== undefined || capabilities['TamperAlert'] !== undefined) {
                     thisCharacteristic = accessory.getOrAddService(Service.TemperatureSensor).getCharacteristic(Characteristic.StatusTampered)
-                        .on('get', function(callback) {
-                            callback(null, (accessory.context.deviceData.attributes.tamperAlert === 'detected') ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
+                        .on('get', (callback) => {
+                            callback(null, (attributes.tamperAlert === 'detected') ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
                         });
-                    that.platform.addAttributeUsage('tamper', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    that.platform.addAttributeUsage('tamper', devData.deviceid, thisCharacteristic);
                 }
             }
-            if (accessory.context.deviceData.capabilities['Illuminance Measurement'] !== undefined || accessory.context.deviceData.capabilities['IlluminanceMeasurement'] !== undefined) {
-                // console.log(accessory.context.deviceData);
-                if (deviceGroup === 'unknown') {
-                    deviceGroup = 'sensor';
-                }
+            if (capabilities['Illuminance Measurement'] !== undefined || capabilities['IlluminanceMeasurement'] !== undefined) {
+                // console.log(devData);
+                deviceGroups.push('illuminance_sensor')
                 thisCharacteristic = accessory.getOrAddService(Service.LightSensor).getCharacteristic(Characteristic.CurrentAmbientLightLevel)
-                    .on('get', function(callback) {
-                        callback(null, Math.ceil(accessory.context.deviceData.attributes.illuminance));
+                    .on('get', (callback) => {
+                        callback(null, Math.ceil(attributes.illuminance));
                     });
-                that.platform.addAttributeUsage('illuminance', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('illuminance', devData.deviceid, thisCharacteristic);
             }
-            if ((accessory.context.deviceData.capabilities['Contact Sensor'] !== undefined && accessory.context.deviceData.capabilities['Garage Door Control'] === undefined) || (accessory.context.deviceData.capabilities['ContactSensor'] !== undefined && accessory.context.deviceData.capabilities['GarageDoorControl'] === undefined)) {
-                if (deviceGroup === 'unknown') {
-                    deviceGroup = 'sensor';
-                }
+            if ((capabilities['Contact Sensor'] !== undefined && capabilities['Garage Door Control'] === undefined) || (capabilities['ContactSensor'] !== undefined && capabilities['GarageDoorControl'] === undefined)) {
+                deviceGroups.push('contact_sensor')
                 thisCharacteristic = accessory.getOrAddService(Service.ContactSensor).getCharacteristic(Characteristic.ContactSensorState)
-                    .on('get', function(callback) {
-                        if (accessory.context.deviceData.attributes.contact === 'closed') {
+                    .on('get', (callback) => {
+                        if (attributes.contact === 'closed') {
                             callback(null, Characteristic.ContactSensorState.CONTACT_DETECTED);
                         } else {
                             callback(null, Characteristic.ContactSensorState.CONTACT_NOT_DETECTED);
                         }
                     });
-                that.platform.addAttributeUsage('contact', accessory.context.deviceData.deviceid, thisCharacteristic);
-                if (accessory.context.deviceData.capabilities['Tamper Alert'] !== undefined || accessory.context.deviceData.capabilities['TamperAlert'] !== undefined) {
+                that.platform.addAttributeUsage('contact', devData.deviceid, thisCharacteristic);
+                if (capabilities['Tamper Alert'] !== undefined || capabilities['TamperAlert'] !== undefined) {
                     thisCharacteristic = accessory.getOrAddService(Service.ContactSensor).getCharacteristic(Characteristic.StatusTampered)
-                        .on('get', function(callback) {
-                            callback(null, (accessory.context.deviceData.attributes.tamperAlert === 'detected') ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
+                        .on('get', (callback) => {
+                            callback(null, (attributes.tamperAlert === 'detected') ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
                         });
-                    that.platform.addAttributeUsage('tamper', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    that.platform.addAttributeUsage('tamper', devData.deviceid, thisCharacteristic);
                 }
             }
-            if (accessory.context.deviceData.capabilities['Battery'] !== undefined) {
+            if (capabilities['Battery'] !== undefined) {
+                deviceGroups.push('battery_level')
                 thisCharacteristic = accessory.getOrAddService(Service.BatteryService).getCharacteristic(Characteristic.BatteryLevel)
-                    .on('get', function(callback) {
-                        callback(null, Math.round(accessory.context.deviceData.attributes.battery));
+                    .on('get', (callback) => {
+                        callback(null, Math.round(attributes.battery));
                     });
-                that.platform.addAttributeUsage('battery', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('battery', devData.deviceid, thisCharacteristic);
                 thisCharacteristic = accessory.getOrAddService(Service.BatteryService).getCharacteristic(Characteristic.StatusLowBattery)
-                    .on('get', function(callback) {
-                        let battStatus = (accessory.context.deviceData.attributes.battery < 20) ? Characteristic.StatusLowBattery.BATTERY_LEVEL_LOW : Characteristic.StatusLowBattery.BATTERY_LEVEL_NORMAL;
+                    .on('get', (callback) => {
+                        let battStatus = (attributes.battery < 20) ? Characteristic.StatusLowBattery.BATTERY_LEVEL_LOW : Characteristic.StatusLowBattery.BATTERY_LEVEL_NORMAL;
                         callback(null, battStatus);
                     });
                 accessory.getOrAddService(Service.BatteryService).setCharacteristic(Characteristic.ChargingState, Characteristic.ChargingState.NOT_CHARGING);
-                that.platform.addAttributeUsage('battery', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('battery', devData.deviceid, thisCharacteristic);
             }
-            if (accessory.context.deviceData.capabilities['Energy Meter'] !== undefined && !accessory.context.deviceData.capabilities.Switch && deviceGroup === 'unknown') {
-                deviceGroup = 'EnergyMeter';
+            if (capabilities['Energy Meter'] !== undefined && !capabilities.Switch && !accessory.deviceGroups.length) {
+                deviceGroups.push('energy_meter')
                 thisCharacteristic = accessory.getOrAddService(Service.Outlet).addCharacteristic(this.CommunityTypes.KilowattHours)
-                    .on('get', function(callback) {
-                        callback(null, Math.round(accessory.context.deviceData.attributes.energy));
+                    .on('get', (callback) => {
+                        callback(null, Math.round(attributes.energy));
                     });
-                that.platform.addAttributeUsage('energy', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('energy', devData.deviceid, thisCharacteristic);
             }
-            if (accessory.context.deviceData.capabilities['Power Meter'] !== undefined && !accessory.context.deviceData.capabilities.Switch && deviceGroup === 'unknown') {
+            if (capabilities['Power Meter'] !== undefined && !capabilities.Switch && !deviceGroups.length) {
+                deviceGroups.push('power_meter')
                 thisCharacteristic = accessory.getOrAddService(Service.Outlet).addCharacteristic(this.CommunityTypes.Watts)
-                    .on('get', function(callback) {
-                        callback(null, Math.round(accessory.context.deviceData.attributes.power));
+                    .on('get', (callback) => {
+                        callback(null, Math.round(attributes.power));
                     });
-                that.platform.addAttributeUsage('power', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('power', devData.deviceid, thisCharacteristic);
             }
-            if (accessory.context.deviceData.capabilities['Acceleration Sensor'] !== undefined || accessory.context.deviceData.capabilities['AccelerationSensor'] !== undefined) {
-                if (deviceGroup === 'unknown') {
-                    deviceGroup = 'sensor';
-                }
+            if (capabilities['Acceleration Sensor'] !== undefined || capabilities['AccelerationSensor'] !== undefined) {
+                // deviceGroups.push('accel_sensor')
             }
-            if (accessory.context.deviceData.capabilities['Three Axis'] !== undefined || accessory.context.deviceData.capabilities['ThreeAxis'] !== undefined) {
-                if (deviceGroup === 'unknown') {
-                    deviceGroup = 'sensor';
-                }
+            if (capabilities['Three Axis'] !== undefined || capabilities['ThreeAxis'] !== undefined) {
+                // deviceGroups.push('3_axis_sensor')
             }
-            if (accessory.context.deviceData.capabilities['Air Quality Sensor'] !== undefined || accessory.context.deviceData.capabilities['AirQualitySensor'] !== undefined) {
-                // deviceGroup = 'air_quality_sensor';
+            if (capabilities['Air Quality Sensor'] !== undefined || capabilities['AirQualitySensor'] !== undefined) {
+                // deviceGroups.push('air_quality_sensor')
                 // thisCharacteristic = accessory.getOrAddService(Service.AirQualitySensor).getCharacteristic(Characteristic.AirQuality)
-                //     .on('get', function(callback) {
-                //         switch (accessory.context.deviceData.attributes.airQuality) {
+                //     .on('get', (callback)=>{
+                //         switch (attributes.airQuality) {
                 //             case 'pending cool':
                 //             case 'cooling':
                 //                 callback(null, Characteristic.CurrentHeatingCoolingState.COOL);
@@ -806,13 +777,13 @@ module.exports = class ST_Accessories {
                 //                 break;
                 //         }
                 //     });
-                // that.platform.addAttributeUsage('thermostatOperatingState', accessory.context.deviceData.deviceid, thisCharacteristic);
+                // that.platform.addAttributeUsage('thermostatOperatingState', devData.deviceid, thisCharacteristic);
             }
-            if (accessory.context.deviceData.capabilities['Thermostat'] !== undefined) {
-                deviceGroup = 'thermostats';
+            if (capabilities['Thermostat'] !== undefined) {
+                deviceGroups.push('thermostat')
                 thisCharacteristic = accessory.getOrAddService(Service.Thermostat).getCharacteristic(Characteristic.CurrentHeatingCoolingState)
-                    .on('get', function(callback) {
-                        switch (accessory.context.deviceData.attributes.thermostatOperatingState) {
+                    .on('get', (callback) => {
+                        switch (attributes.thermostatOperatingState) {
                             case 'pending cool':
                             case 'cooling':
                                 callback(null, Characteristic.CurrentHeatingCoolingState.COOL);
@@ -828,11 +799,11 @@ module.exports = class ST_Accessories {
                                 break;
                         }
                     });
-                that.platform.addAttributeUsage('thermostatOperatingState', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('thermostatOperatingState', devData.deviceid, thisCharacteristic);
                 // Handle the Target State
                 thisCharacteristic = accessory.getOrAddService(Service.Thermostat).getCharacteristic(Characteristic.TargetHeatingCoolingState)
-                    .on('get', function(callback) {
-                        switch (accessory.context.deviceData.attributes.thermostatMode) {
+                    .on('get', (callback) => {
+                        switch (attributes.thermostatMode) {
                             case 'cool':
                                 callback(null, Characteristic.TargetHeatingCoolingState.COOL);
                                 break;
@@ -849,38 +820,38 @@ module.exports = class ST_Accessories {
                                 break;
                         }
                     })
-                    .on('set', function(value, callback) {
+                    .on('set', (value, callback) => {
                         switch (value) {
                             case Characteristic.TargetHeatingCoolingState.COOL:
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'cool');
-                                accessory.context.deviceData.attributes.thermostatMode = 'cool';
+                                that.client.runCommand(callback, devData.deviceid, 'cool');
+                                attributes.thermostatMode = 'cool';
                                 break;
                             case Characteristic.TargetHeatingCoolingState.HEAT:
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'heat');
-                                accessory.context.deviceData.attributes.thermostatMode = 'heat';
+                                that.client.runCommand(callback, devData.deviceid, 'heat');
+                                attributes.thermostatMode = 'heat';
                                 break;
                             case Characteristic.TargetHeatingCoolingState.AUTO:
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'auto');
-                                accessory.context.deviceData.attributes.thermostatMode = 'auto';
+                                that.client.runCommand(callback, devData.deviceid, 'auto');
+                                attributes.thermostatMode = 'auto';
                                 break;
                             case Characteristic.TargetHeatingCoolingState.OFF:
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'off');
-                                accessory.context.deviceData.attributes.thermostatMode = 'off';
+                                that.client.runCommand(callback, devData.deviceid, 'off');
+                                attributes.thermostatMode = 'off';
                                 break;
                         }
                     });
-                if (typeof accessory.context.deviceData.attributes.supportedThermostatModes === 'string') {
+                if (typeof attributes.supportedThermostatModes === 'string') {
                     let validValuesArray = [];
-                    if (accessory.context.deviceData.attributes.supportedThermostatModes.includes("off")) {
+                    if (attributes.supportedThermostatModes.includes("off")) {
                         validValuesArray.push(0);
                     }
-                    if ((accessory.context.deviceData.attributes.supportedThermostatModes.includes("heat")) || (accessory.context.deviceData.attributes.supportedThermostatModes.includes("emergency heat"))) {
+                    if ((attributes.supportedThermostatModes.includes("heat")) || (attributes.supportedThermostatModes.includes("emergency heat"))) {
                         validValuesArray.push(1);
                     }
-                    if (accessory.context.deviceData.attributes.supportedThermostatModes.includes("cool")) {
+                    if (attributes.supportedThermostatModes.includes("cool")) {
                         validValuesArray.push(2);
                     }
-                    if (accessory.context.deviceData.attributes.supportedThermostatModes.includes("auto")) {
+                    if (attributes.supportedThermostatModes.includes("auto")) {
                         validValuesArray.push(3);
                     }
                     let validValues = {
@@ -888,36 +859,36 @@ module.exports = class ST_Accessories {
                     };
                     thisCharacteristic.setProps(validValues);
                 }
-                that.platform.addAttributeUsage('thermostatMode', accessory.context.deviceData.deviceid, thisCharacteristic);
-                if (accessory.context.deviceData.capabilities['Relative Humidity Measurement'] !== undefined) {
+                that.platform.addAttributeUsage('thermostatMode', devData.deviceid, thisCharacteristic);
+                if (capabilities['Relative Humidity Measurement'] !== undefined) {
                     thisCharacteristic = accessory.getOrAddService(Service.Thermostat).getCharacteristic(Characteristic.CurrentRelativeHumidity)
-                        .on('get', function(callback) {
-                            callback(null, parseInt(accessory.context.deviceData.attributes.humidity));
+                        .on('get', (callback) => {
+                            callback(null, parseInt(attributes.humidity));
                         });
-                    that.platform.addAttributeUsage('humidity', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    that.platform.addAttributeUsage('humidity', devData.deviceid, thisCharacteristic);
                 }
                 thisCharacteristic = accessory.getOrAddService(Service.Thermostat).getCharacteristic(Characteristic.CurrentTemperature)
-                    .on('get', function(callback) {
-                        callback(null, that.myUtils.tempConversion(that.temperature_unit, accessory.context.deviceData.attributes.temperature));
+                    .on('get', (callback) => {
+                        callback(null, that.myUtils.tempConversion(that.temperature_unit, attributes.temperature));
                     });
-                that.platform.addAttributeUsage('temperature', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('temperature', devData.deviceid, thisCharacteristic);
                 thisCharacteristic = accessory.getOrAddService(Service.Thermostat).getCharacteristic(Characteristic.TargetTemperature)
-                    .on('get', function(callback) {
+                    .on('get', (callback) => {
                         let temp;
-                        switch (accessory.context.deviceData.attributes.thermostatMode) {
+                        switch (attributes.thermostatMode) {
                             case 'cool':
-                                temp = accessory.context.deviceData.attributes.coolingSetpoint;
+                                temp = attributes.coolingSetpoint;
                                 break;
                             case 'emergency heat':
                             case 'heat':
-                                temp = accessory.context.deviceData.attributes.heatingSetpoint;
+                                temp = attributes.heatingSetpoint;
                                 break;
                             default:
                                 // This should only refer to auto
                                 // Choose closest target as single target
-                                let high = accessory.context.deviceData.attributes.coolingSetpoint;
-                                let low = accessory.context.deviceData.attributes.heatingSetpoint;
-                                let cur = accessory.context.deviceData.attributes.temperature;
+                                let high = attributes.coolingSetpoint;
+                                let low = attributes.heatingSetpoint;
+                                let cur = attributes.temperature;
                                 temp = Math.abs(high - cur) < Math.abs(cur - low) ? high : low;
                                 break;
                         }
@@ -927,7 +898,7 @@ module.exports = class ST_Accessories {
                             callback(null, that.myUtils.tempConversion(that.temperature_unit, temp));
                         }
                     })
-                    .on('set', function(value, callback) {
+                    .on('set', (value, callback) => {
                         // Convert the Celsius value to the appropriate unit for Smartthings
                         let temp = value;
                         if (that.temperature_unit === 'C') {
@@ -936,45 +907,45 @@ module.exports = class ST_Accessories {
                             temp = value * 1.8 + 32;
                         }
                         // Set the appropriate temperature unit based on the mode
-                        switch (accessory.context.deviceData.attributes.thermostatMode) {
+                        switch (attributes.thermostatMode) {
                             case 'cool':
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'setCoolingSetpoint', {
+                                that.client.runCommand(callback, devData.deviceid, 'setCoolingSetpoint', {
                                     value1: temp
                                 });
-                                accessory.context.deviceData.attributes.coolingSetpoint = temp;
+                                attributes.coolingSetpoint = temp;
                                 break;
                             case 'emergency heat':
                             case 'heat':
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'setHeatingSetpoint', {
+                                that.client.runCommand(callback, devData.deviceid, 'setHeatingSetpoint', {
                                     value1: temp
                                 });
-                                accessory.context.deviceData.attributes.heatingSetpoint = temp;
+                                attributes.heatingSetpoint = temp;
                                 break;
                             default:
                                 // This should only refer to auto
                                 // Choose closest target as single target
-                                let high = accessory.context.deviceData.attributes.coolingSetpoint;
-                                let low = accessory.context.deviceData.attributes.heatingSetpoint;
-                                let cur = accessory.context.deviceData.attributes.temperature;
+                                let high = attributes.coolingSetpoint;
+                                let low = attributes.heatingSetpoint;
+                                let cur = attributes.temperature;
                                 let isHighTemp = Math.abs(high - cur) < Math.abs(cur - low);
                                 if (isHighTemp) {
-                                    that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'setCoolingSetpoint', {
+                                    that.client.runCommand(callback, devData.deviceid, 'setCoolingSetpoint', {
                                         value1: temp
                                     });
                                 } else {
-                                    that.client.runCommand(null, accessory.context.deviceData.deviceid, 'setHeatingSetpoint', {
+                                    that.client.runCommand(null, devData.deviceid, 'setHeatingSetpoint', {
                                         value1: temp
                                     });
                                 }
                                 break;
                         }
                     });
-                that.platform.addAttributeUsage('thermostatMode', accessory.context.deviceData.deviceid, thisCharacteristic);
-                that.platform.addAttributeUsage('coolingSetpoint', accessory.context.deviceData.deviceid, thisCharacteristic);
-                that.platform.addAttributeUsage('heatingSetpoint', accessory.context.deviceData.deviceid, thisCharacteristic);
-                that.platform.addAttributeUsage('temperature', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('thermostatMode', devData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('coolingSetpoint', devData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('heatingSetpoint', devData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('temperature', devData.deviceid, thisCharacteristic);
                 thisCharacteristic = accessory.getOrAddService(Service.Thermostat).getCharacteristic(Characteristic.TemperatureDisplayUnits)
-                    .on('get', function(callback) {
+                    .on('get', (callback) => {
                         if (that.temperature_unit === 'C') {
                             callback(null, Characteristic.TemperatureDisplayUnits.CELSIUS);
                         } else {
@@ -983,10 +954,10 @@ module.exports = class ST_Accessories {
                     });
                 // that.platform.addAttributeUsage("temperature_unit", "platform", thisCharacteristic);
                 thisCharacteristic = accessory.getOrAddService(Service.Thermostat).getCharacteristic(Characteristic.HeatingThresholdTemperature)
-                    .on('get', function(callback) {
-                        callback(null, that.myUtils.tempConversion(that.temperature_unit, accessory.context.deviceData.attributes.heatingSetpoint));
+                    .on('get', (callback) => {
+                        callback(null, that.myUtils.tempConversion(that.temperature_unit, attributes.heatingSetpoint));
                     })
-                    .on('set', function(value, callback) {
+                    .on('set', (value, callback) => {
                         // Convert the Celsius value to the appropriate unit for Smartthings
                         let temp = value;
                         if (that.temperature_unit === 'C') {
@@ -994,17 +965,17 @@ module.exports = class ST_Accessories {
                         } else {
                             temp = value * 1.8 + 32;
                         }
-                        that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'setHeatingSetpoint', {
+                        that.client.runCommand(callback, devData.deviceid, 'setHeatingSetpoint', {
                             value1: temp
                         });
-                        accessory.context.deviceData.attributes.heatingSetpoint = temp;
+                        attributes.heatingSetpoint = temp;
                     });
-                that.platform.addAttributeUsage('heatingSetpoint', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('heatingSetpoint', devData.deviceid, thisCharacteristic);
                 thisCharacteristic = accessory.getOrAddService(Service.Thermostat).getCharacteristic(Characteristic.CoolingThresholdTemperature)
-                    .on('get', function(callback) {
-                        callback(null, that.myUtils.tempConversion(that.temperature_unit, accessory.context.deviceData.attributes.coolingSetpoint));
+                    .on('get', (callback) => {
+                        callback(null, that.myUtils.tempConversion(that.temperature_unit, attributes.coolingSetpoint));
                     })
-                    .on('set', function(value, callback) {
+                    .on('set', (value, callback) => {
                         // Convert the Celsius value to the appropriate unit for Smartthings
                         let temp = value;
                         if (that.temperature_unit === 'C') {
@@ -1012,131 +983,130 @@ module.exports = class ST_Accessories {
                         } else {
                             temp = value * 1.8 + 32;
                         }
-                        that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'setCoolingSetpoint', {
+                        that.client.runCommand(callback, devData.deviceid, 'setCoolingSetpoint', {
                             value1: temp
                         });
-                        accessory.context.deviceData.attributes.coolingSetpoint = temp;
+                        attributes.coolingSetpoint = temp;
                     });
-                that.platform.addAttributeUsage('coolingSetpoint', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('coolingSetpoint', devData.deviceid, thisCharacteristic);
             }
             // Alarm System Control/Status
-            if (accessory.context.deviceData.attributes['alarmSystemStatus'] !== undefined) {
-                deviceGroup = 'alarm';
+            if (attributes['alarmSystemStatus'] !== undefined) {
+                deviceGroups.push('alarm')
                 thisCharacteristic = accessory.getOrAddService(Service.SecuritySystem).getCharacteristic(Characteristic.SecuritySystemCurrentState)
-                    .on('get', function(callback) {
-                        // that.log('alarm1: ' + accessory.context.deviceData.attributes.alarmSystemStatus + ' | ' + that.myUtils.convertAlarmState(accessory.context.deviceData.attributes.alarmSystemStatus, true, Characteristic));
-                        callback(null, that.myUtils.convertAlarmState(accessory.context.deviceData.attributes.alarmSystemStatus, true, Characteristic));
+                    .on('get', (callback) => {
+                        // that.log('alarm1: ' + attributes.alarmSystemStatus + ' | ' + that.myUtils.convertAlarmState(attributes.alarmSystemStatus, true, Characteristic));
+                        callback(null, that.myUtils.convertAlarmState(attributes.alarmSystemStatus, true, Characteristic));
                     });
-                that.platform.addAttributeUsage('alarmSystemStatus', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('alarmSystemStatus', devData.deviceid, thisCharacteristic);
 
                 thisCharacteristic = accessory.getOrAddService(Service.SecuritySystem).getCharacteristic(Characteristic.SecuritySystemTargetState)
-                    .on('get', function(callback) {
-                        // that.log('alarm2: ' + accessory.context.deviceData.attributes.alarmSystemStatus + ' | ' + that.myUtils.convertAlarmState(accessory.context.deviceData.attributes.alarmSystemStatus, true, Characteristic));
-                        callback(null, that.myUtils.convertAlarmState(accessory.context.deviceData.attributes.alarmSystemStatus.toLowerCase(), true, Characteristic));
+                    .on('get', (callback) => {
+                        // that.log('alarm2: ' + attributes.alarmSystemStatus + ' | ' + that.myUtils.convertAlarmState(attributes.alarmSystemStatus, true, Characteristic));
+                        callback(null, that.myUtils.convertAlarmState(attributes.alarmSystemStatus.toLowerCase(), true, Characteristic));
                     })
-                    .on('set', function(value, callback) {
+                    .on('set', (value, callback) => {
                         // that.log('setAlarm: ' + value + ' | ' + that.myUtils.convertAlarmState(value, false, Characteristic));
-                        that.client.runCommand(callback, accessory.context.deviceData.deviceid, that.myUtils.convertAlarmState(value, false, Characteristic));
-                        accessory.context.deviceData.attributes.alarmSystemStatus = that.myUtils.convertAlarmState(value, false, Characteristic);
+                        that.client.runCommand(callback, devData.deviceid, that.myUtils.convertAlarmState(value, false, Characteristic));
+                        attributes.alarmSystemStatus = that.myUtils.convertAlarmState(value, false, Characteristic);
                     });
-                that.platform.addAttributeUsage('alarmSystemStatus', accessory.context.deviceData.deviceid, thisCharacteristic);
+                that.platform.addAttributeUsage('alarmSystemStatus', devData.deviceid, thisCharacteristic);
             }
 
             // Sonos Speakers
-            if (isSonos && deviceGroup === 'unknown') {
-                deviceGroup = 'speakers';
-
-                if (accessory.context.deviceData.capabilities['Audio Volume']) {
+            if (isSonos && !deviceGroups.length) {
+                deviceGroups.push('speakers')
+                if (capabilities['Audio Volume']) {
                     let sonosVolumeTimeout = null;
                     let lastVolumeWriteValue = null;
 
                     thisCharacteristic = accessory.getOrAddService(Service.Speaker).getCharacteristic(Characteristic.Volume)
-                        .on('get', function(callback) {
-                            that.log.debug("Reading sonos volume " + accessory.context.deviceData.attributes.volume);
-                            callback(null, parseInt(accessory.context.deviceData.attributes.volume || 0));
+                        .on('get', (callback) => {
+                            that.log.debug("Reading sonos volume " + attributes.volume);
+                            callback(null, parseInt(attributes.volume || 0));
                         })
-                        .on('set', function(value, callback) {
+                        .on('set', (value, callback) => {
                             if (value > 0 && value !== lastVolumeWriteValue) {
                                 lastVolumeWriteValue = value;
-                                that.log.debug("Existing volume: " + accessory.context.deviceData.attributes.volume + ", set to " + value);
+                                that.log.debug("Existing volume: " + attributes.volume + ", set to " + value);
 
                                 // Smooth continuous updates to make more responsive
-                                sonosVolumeTimeout = clearAndSetTimeout(sonosVolumeTimeout, function() {
-                                    that.log.debug("Existing volume: " + accessory.context.deviceData.attributes.volume + ", set to " + lastVolumeWriteValue);
+                                sonosVolumeTimeout = clearAndSetTimeout(sonosVolumeTimeout, () => {
+                                    that.log.debug("Existing volume: " + attributes.volume + ", set to " + lastVolumeWriteValue);
 
-                                    that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'setVolume', {
+                                    that.client.runCommand(callback, devData.deviceid, 'setVolume', {
                                         value1: lastVolumeWriteValue
                                     });
                                 }, 1000);
                             }
                         });
 
-                    that.platform.addAttributeUsage('volume', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    that.platform.addAttributeUsage('volume', devData.deviceid, thisCharacteristic);
                 }
 
-                if (accessory.context.deviceData.capabilities['Audio Mute']) {
+                if (capabilities['Audio Mute']) {
                     thisCharacteristic = accessory.getOrAddService(Service.Speaker).getCharacteristic(Characteristic.Mute)
-                        .on('get', function(callback) {
-                            callback(null, accessory.context.deviceData.attributes.mute === 'muted');
+                        .on('get', (callback) => {
+                            callback(null, attributes.mute === 'muted');
                         })
-                        .on('set', function(value, callback) {
+                        .on('set', (value, callback) => {
                             if (value === 'muted') {
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'mute');
+                                that.client.runCommand(callback, devData.deviceid, 'mute');
                             } else {
-                                that.client.runCommand(callback, accessory.context.deviceData.deviceid, 'unmute');
+                                that.client.runCommand(callback, devData.deviceid, 'unmute');
                             }
                         });
-                    that.platform.addAttributeUsage('mute', accessory.context.deviceData.deviceid, thisCharacteristic);
+                    that.platform.addAttributeUsage('mute', devData.deviceid, thisCharacteristic);
                 }
             }
             accessory.context.deviceGroups = deviceGroups;
             console.log(deviceGroups)
         }
-        
-        that.loadData(accessory, accessory.context.deviceData)
-            .then((b) => {
-                accessory = b;
-                resolve(accessory);
-            })
-            .catch((err) => {
-                resolve(accessory);
-            })
-            // return accessory
-            // });
+
+        return that.loadData(accessory, devData) || accessory;
+        // .then((b) => {
+        //     accessory = b;
+        //     return accessory;
+        // })
+        // .catch((err) => {
+        //     return accessory;
+        // })
+        // });
     }
 
     loadData(accessory, deviceData) {
         let that = this;
-        return new Promise((resolve, reject) => {
-            if (deviceData !== undefined) {
-                this.log.debug('Setting device data from existing data');
-                accessory.context.deviceData = deviceData;
-                for (let i = 0; i < accessory.services.length; i++) {
-                    for (let j = 0; j < accessory.services[i].characteristics.length; j++) {
-                        accessory.services[i].characteristics[j].getValue();
-                    }
+        // return new Promise((resolve, reject) => {
+        if (deviceData !== undefined) {
+            this.log.debug('Setting device data from existing data');
+            accessory.context.deviceData = deviceData;
+            for (let i = 0; i < accessory.services.length; i++) {
+                for (let j = 0; j < accessory.services[i].characteristics.length; j++) {
+                    accessory.services[i].characteristics[j].getValue();
                 }
-            } else {
-                this.log.debug('Fetching Device Data');
-                this.client.getDevice(accessory.deviceid)
-                    .then((data) => {
-                        if (data === undefined) {
-                            resolve(accessory);
-                        }
-                        accessory.device = data;
-                        for (let i = 0; i < accessory.services.length; i++) {
-                            for (let j = 0; j < accessory.services[i].characteristics.length; j++) {
-                                accessory.services[i].characteristics[j].getValue();
-                            }
-                        }
-                        resolve(accessory);
-                    })
-                    .catch((err) => {
-                        that.log.error('Failed to get Device Data for ' + accessory.deviceid, err);
-                        resolve(undefined);
-                    });
             }
-        });
+            return accessory;
+        } else {
+            this.log.debug('Fetching Device Data');
+            this.client.getDevice(accessory.deviceid)
+                .then((data) => {
+                    if (data === undefined) {
+                        return accessory;
+                    }
+                    accessory.device = data;
+                    for (let i = 0; i < accessory.services.length; i++) {
+                        for (let j = 0; j < accessory.services[i].characteristics.length; j++) {
+                            accessory.services[i].characteristics[j].getValue();
+                        }
+                    }
+                    return accessory;
+                })
+                .catch((err) => {
+                    that.log.error('Failed to get Device Data for ' + accessory.deviceid, err);
+                    return accessory;
+                });
+        }
+        // });
     }
 
     getAccessoryKey(accessory) {
