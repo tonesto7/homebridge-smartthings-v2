@@ -26,41 +26,47 @@ module.exports = class ST_Accessories {
 
     async PopulateAccessory(accessory, deviceData) {
         // console.log("AccessoryDevice: ", accessory, deviceData);
-        accessory.deviceid = deviceData.deviceid;
-        accessory.name = deviceData.name;
-        accessory.state = {};
-        accessory.device = deviceData;
-        accessory.deviceGroups = [];
-        let that = this;
+        try {
+            accessory.deviceid = deviceData.deviceid;
+            accessory.name = deviceData.name;
+            accessory.state = {};
+            accessory.device = deviceData;
+            accessory.deviceGroups = [];
+            let that = this;
 
-        //Removing excluded capabilities from config
-        for (let i = 0; i < deviceData.excludedCapabilities.length; i++) {
-            let excludedCapability = deviceData.excludedCapabilities[i];
-            if (deviceData.capabilities[excludedCapability] !== undefined) {
-                this.log.debug("Removing capability: " + excludedCapability + " for deviceData: " + deviceData.name);
-                delete deviceData.capabilities[excludedCapability];
+            //Removing excluded capabilities from config
+            for (let i = 0; i < deviceData.excludedCapabilities.length; i++) {
+                let excludedCapability = deviceData.excludedCapabilities[i];
+                if (deviceData.capabilities[excludedCapability] !== undefined) {
+                    this.log.debug("Removing capability: " + excludedCapability + " for deviceData: " + deviceData.name);
+                    delete deviceData.capabilities[excludedCapability];
+                }
             }
+
+            // Attach helper to accessory
+            accessory.getOrAddService = this.getOrAddService.bind(accessory);
+            accessory.hasDeviceGroup = this.hasDeviceGroup.bind(accessory);
+            accessory.hasAttribute = this.hasAttribute.bind(accessory);
+            accessory.hasCapability = this.hasCapability.bind(accessory);
+            accessory.hasCommand = this.hasCommand.bind(accessory);
+
+            accessory.context.name = deviceData.name;
+            accessory.context.deviceid = deviceData.deviceid;
+            accessory.context.deviceData = deviceData;
+
+            accessory.getOrAddService(Service.AccessoryInformation)
+                .setCharacteristic(Characteristic.Identify, (deviceData.capabilities['Switch'] !== undefined))
+                .setCharacteristic(Characteristic.FirmwareRevision, deviceData.firmwareVersion)
+                .setCharacteristic(Characteristic.Manufacturer, deviceData.manufacturerName)
+                .setCharacteristic(Characteristic.Model, `${that.myUtils.toTitleCase(deviceData.modelName)}`)
+                .setCharacteristic(Characteristic.Name, deviceData.name)
+                .setCharacteristic(Characteristic.SerialNumber, deviceData.serialNumber);
+
+            return await this.initializeDeviceCharacteristics(accessory);
+        } catch (ex) {
+            this.log.error(ex)
+            return accessory;
         }
-
-        // Attach helper to accessory
-        accessory.getOrAddService = this.getOrAddService.bind(accessory);
-        accessory.hasDeviceGroup = this.hasDeviceGroup.bind(accessory);
-        accessory.hasAttribute = this.hasAttribute.bind(accessory);
-        accessory.hasCapability = this.hasCapability.bind(accessory);
-        accessory.hasCommand = this.hasCommand.bind(accessory);
-
-        accessory.context.name = deviceData.name;
-        accessory.context.deviceid = deviceData.deviceid;
-        accessory.context.deviceData = deviceData;
-
-        accessory.getOrAddService(Service.AccessoryInformation)
-            .setCharacteristic(Characteristic.Identify, (deviceData.capabilities['Switch'] !== undefined))
-            .setCharacteristic(Characteristic.FirmwareRevision, deviceData.firmwareVersion)
-            .setCharacteristic(Characteristic.Manufacturer, deviceData.manufacturerName)
-            .setCharacteristic(Characteristic.Model, `${that.myUtils.toTitleCase(deviceData.modelName)}`)
-            .setCharacteristic(Characteristic.Name, deviceData.name)
-            .setCharacteristic(Characteristic.SerialNumber, deviceData.serialNumber);
-        return await this.initializeDeviceCharacteristics(accessory);
         // console.log(accessory)
         // return accessory;
     }
@@ -89,19 +95,24 @@ module.exports = class ST_Accessories {
     }
 
     async CreateFromCachedAccessory(accessory) {
-        let deviceid = accessory.context.deviceid;
-        let name = accessory.context.name;
-        this.log.debug("Initializing Cached Device " + deviceid);
-        accessory.deviceid = deviceid;
-        accessory.name = name;
-        accessory.state = {};
-        accessory.deviceGroups = []
-        accessory.getOrAddService = this.getOrAddService.bind(accessory);
-        accessory.hasDeviceGroup = this.hasDeviceGroup.bind(accessory);
-        accessory.hasAttribute = this.hasAttribute.bind(accessory);
-        accessory.hasCapability = this.hasCapability.bind(accessory);
-        accessory.hasCommand = this.hasCommand.bind(accessory);
-        return await this.initializeDeviceCharacteristics(accessory)
+        try {
+            let deviceid = accessory.context.deviceid;
+            let name = accessory.context.name;
+            this.log.debug("Initializing Cached Device " + deviceid);
+            accessory.deviceid = deviceid;
+            accessory.name = name;
+            accessory.state = {};
+            accessory.deviceGroups = []
+            accessory.getOrAddService = this.getOrAddService.bind(accessory);
+            accessory.hasDeviceGroup = this.hasDeviceGroup.bind(accessory);
+            accessory.hasAttribute = this.hasAttribute.bind(accessory);
+            accessory.hasCapability = this.hasCapability.bind(accessory);
+            accessory.hasCommand = this.hasCommand.bind(accessory);
+            return await this.initializeDeviceCharacteristics(accessory)
+        } catch (ex) {
+            this.log.error(ex)
+            return accessory;
+        }
     }
 
     initializeDeviceCharacteristics(accessory) {
@@ -158,7 +169,7 @@ module.exports = class ST_Accessories {
 
                     thisCharacteristic = accessory.getOrAddService(Service.WindowCovering).setCharacteristic(Characteristic.PositionState, Characteristic.PositionState.STOPPED);
                 } else if (isLight === true || commands.setLevel) {
-                    deviceGroups.push('lights');
+                    deviceGroups.push('light');
                     thisCharacteristic = accessory.getOrAddService(Service.Lightbulb).getCharacteristic(Characteristic.On)
                         .on('get', (callback) => {
                             callback(null, attributes.switch === 'on');
@@ -170,7 +181,6 @@ module.exports = class ST_Accessories {
                                 that.client.runCommand(callback, devData.deviceid, 'off');
                             }
                         });
-                    console.log('light')
                     that.platform.addAttributeUsage('switch', devData.deviceid, thisCharacteristic);
                     thisCharacteristic = accessory.getOrAddService(Service.Lightbulb).getCharacteristic(Characteristic.Brightness)
                         .on('get', (callback) => {
@@ -333,7 +343,7 @@ module.exports = class ST_Accessories {
 
             //Defines Speaker Device
             if (isSpeaker === true) {
-                accessory.deviceGroups.push('speakers');
+                deviceGroups.push('speakers');
                 thisCharacteristic = accessory.getOrAddService(Service.Speaker).getCharacteristic(Characteristic.Volume)
                     .on('get', (callback) => {
                         callback(null, parseInt(attributes.level || 0));
@@ -361,7 +371,7 @@ module.exports = class ST_Accessories {
                 that.platform.addAttributeUsage('mute', devData.deviceid, thisCharacteristic);
             }
             //Handles Standalone Fan with no levels
-            if (isFan === true && (capabilities['Fan Light'] !== undefined || capabilities['FanLight'] !== undefined || !accessory.deviceGroups.length)) {
+            if (isFan === true && (capabilities['Fan Light'] !== undefined || capabilities['FanLight'] !== undefined || (Object.keys(deviceGroups).length < 1))) {
                 deviceGroups.push('fans');
                 thisCharacteristic = accessory.getOrAddService(Service.Fanv2).getCharacteristic(Characteristic.Active)
                     .on('get', (callback) => {
@@ -501,7 +511,7 @@ module.exports = class ST_Accessories {
             }
 
             // This should catch the remaining switch devices that are specially defined
-            if (capabilities['Switch'] !== undefined && (capabilities['Fan Light'] !== undefined || capabilities['FanLight'] !== undefined || !accessory.deviceGroups.length)) {
+            if (capabilities['Switch'] !== undefined && (capabilities['Fan Light'] !== undefined || capabilities['FanLight'] !== undefined || (Object.keys(deviceGroups).length < 1))) {
                 //Handles Standalone Fan with no levels
                 if (isLight === true) {
                     deviceGroups.push('light');
@@ -735,7 +745,7 @@ module.exports = class ST_Accessories {
                 accessory.getOrAddService(Service.BatteryService).setCharacteristic(Characteristic.ChargingState, Characteristic.ChargingState.NOT_CHARGING);
                 that.platform.addAttributeUsage('battery', devData.deviceid, thisCharacteristic);
             }
-            if (capabilities['Energy Meter'] !== undefined && !capabilities.Switch && !accessory.deviceGroups.length) {
+            if (capabilities['Energy Meter'] !== undefined && !capabilities.Switch && (Object.keys(deviceGroups).length < 1)) {
                 deviceGroups.push('energy_meter')
                 thisCharacteristic = accessory.getOrAddService(Service.Outlet).addCharacteristic(this.CommunityTypes.KilowattHours)
                     .on('get', (callback) => {

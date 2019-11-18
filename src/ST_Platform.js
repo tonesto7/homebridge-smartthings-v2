@@ -66,9 +66,10 @@ module.exports = class ST_Platform {
         };
     }
     didFinishLaunching() {
+        this.log.debug("didFinishLaunching")
         if (this.asyncCallWait !== 0) {
             this.log.debug("Configuration of cached accessories not done, wait for a bit...", that.asyncCallWait);
-            setTimeout(this.didFinishLaunching.bind(that), 1000);
+            setTimeout(this.didFinishLaunching.bind(this), 1000);
             return;
         }
         this.log('Fetching ' + platformName + ' devices. This can take a while depending on the number of devices are configured!');
@@ -165,7 +166,7 @@ module.exports = class ST_Platform {
     }
 
     getNewAccessory(device) {
-        const UUID = this.uuid.isValid(device.deviceid) ? device.deviceid : this.uuid.generate(device.deviceid);
+        const UUID = this.uuid.generate(device.deviceid);
         this.log('UUID:', UUID)
         const accessory = new PlatformAccessory(device.name, UUID);
         this.SmartThingsAccessories.PopulateAccessory(accessory, device);
