@@ -41,7 +41,6 @@ module.exports = class ST_Platform {
         this.configItems = this.getConfigItems();
 
         this.deviceCache = {};
-        this.firstpoll = true;
         this.attributeLookup = {};
         this.knownCapabilities = knownCapabilities;
         this.unknownCapabilities = [];
@@ -76,6 +75,10 @@ module.exports = class ST_Platform {
         this.deviceCache[devid] = data;
     }
 
+    remDeviceCacheItem(devid) {
+        delete this.deviceCache[devid];
+    }
+
     didFinishLaunching() {
         this.log(`Fetching ${platformName} Devices. NOTICE: This may take a moment if you have a large number of devices being loaded!`);
         setInterval(this.refreshDevices.bind(this), this.polling_seconds * 1000);
@@ -101,18 +104,22 @@ module.exports = class ST_Platform {
         let starttime = new Date();
         return new Promise((resolve) => {
             try {
-                that.log.debug('Refreshing All Device Data');
+                that.log('Refreshing All Device Data');
                 this.client.getDevices()
                     .then(resp => {
                         // console.log(resp);
                         if (resp && resp.deviceList && resp.deviceList instanceof Array) {
                             that.log.debug('Received All Device Data');
-                            resp.deviceList.forEach(device => {
-                                device.excludedCapabilities = that.excludedCapabilities[device.deviceid] || ["None"];
-                                that.log.debug("Processing device id: " + device.deviceid);
-                                that.addDevice(device);
-                                that.firstpoll = false;
-                            });
+                            const toAdd = this.SmartThingsAccessories.diffAdd(resp.deviceList);
+                            const toUpdate = this.SmartThingsAccessories.intersection(resp.deviceList);
+                            const toRemove = this.SmartThingsAccessories.diffRemove(resp.deviceList);
+                            console.log('Devices to Remove:', toRemove.map(i => i.name));
+                            console.log('Devices to Update:', toUpdate.map(i => i.name));
+                            console.log('Devices to Add:', toAdd.map(i => i.name))
+
+                            toRemove.forEach(accessory => this.removeAccessory(accessory));
+                            toUpdate.forEach(device => this.updateDevice(device));
+                            toAdd.forEach(device => this.addDevice(device));
                         };
                         if (resp && resp.location) {
                             that.temperature_unit = resp.location.temperature_scale;
@@ -124,10 +131,11 @@ module.exports = class ST_Platform {
                         }
                         that.log(`Total Device Initialization Process Time: (${Math.round((new Date() - starttime) / 1000)} seconds)`);
                         that.log(`Unknown Capabilities: ${JSON.stringify(that.unknownCapabilities)}`);
-                        that.log(`DeviceCache Size: (${Object.keys(this.getDeviceCache()).length})`)
-                        resolve(true);
-                    }).catch((err) => {
+                        that.log(`DeviceCache Size: (${Object.keys(this.SmartThingsAccessories.getAll()).length})`)
+                    })
+                    .catch((err) => {
                         that.log.error(err);
+                        resolve(true);
                     })
             } catch (e) {
                 this.log.error("Failed to refresh devices.", e);
@@ -142,33 +150,52 @@ module.exports = class ST_Platform {
         return accessory;
     }
 
+    // addDeviceOld(device) {
+    //     let cacheDevice = this.getDeviceCacheItem(device.deviceid);
+    //     let accessory;
+    //     const uuid1 = (cacheDevice !== undefined) ? cacheDevice.UUID : undefined
+    //     const uuid2 = (cacheDevice !== undefined && cacheDevice.context !== undefined && cacheDevice.context.uuid !== undefined) ? cacheDevice.context.uuid : undefined;
+    //     const cur_uuid = uuid1 || uuid2 || undefined;
+    //     const new_uuid = this.uuid.generate(`smartthings_v2_${device.deviceid}`);
+    //     if (cur_uuid !== undefined && cur_uuid === new_uuid) {
+    //         this.log(`Loading Existing Device (${device.name}) | (${device.deviceid})`);
+    //         accessory = this.SmartThingsAccessories.updateAccessoryState(cacheDevice, device);
+    //         this.updDeviceCacheItem(device.deviceid, accessory);
+    //         return false;
+    //     } else {
+    //         this.log(`Initializing New Device (${device.name}) | (${device.deviceid})`);
+    //         accessory = this.getNewAccessory(device, new_uuid);
+    //         this.homebridge.registerPlatformAccessories(pluginName, platformName, [accessory]);
+    //         this.SmartThingsAccessories.add(accessory);
+    //         this.updDeviceCacheItem(accessory.deviceid, accessory);
+    //         this.log(`Added: ${accessory.name} (${accessory.deviceid})`);
+    //         return true;
+    //     }
+    // }
+
     addDevice(device) {
-        let cacheDevice = this.getDeviceCacheItem(device.deviceid);
         let accessory;
-        const uuid1 = (cacheDevice !== undefined) ? cacheDevice.UUID : undefined
-        const uuid2 = (cacheDevice !== undefined && cacheDevice.context !== undefined && cacheDevice.context.uuid !== undefined) ? cacheDevice.context.uuid : undefined;
-        const cur_uuid = uuid1 || uuid2 || undefined;
         const new_uuid = this.uuid.generate(`smartthings_v2_${device.deviceid}`);
-        // this.log(`Cache Item | Existing: (${(cur_uuid !== undefined && cur_uuid === new_uuid)}) | UUID: ${cur_uuid} | Generated UUID: ${new_uuid}`);
-        if (cur_uuid !== undefined && cur_uuid === new_uuid) {
-            this.log(`Loading Existing Device (${device.name}) | (${device.deviceid})`);
-            accessory = this.SmartThingsAccessories.loadData(cacheDevice, device);
-            this.updDeviceCacheItem(device.deviceid, accessory);
-        } else {
-            this.log(`Initializing New Device (${device.name}) | (${device.deviceid})`);
-            accessory = this.getNewAccessory(device, new_uuid);
-            this.homebridge.registerPlatformAccessories(pluginName, platformName, [accessory]);
-            this.SmartThingsAccessories.add(accessory);
-            this.updDeviceCacheItem(accessory.deviceid, accessory);
-            this.log(`Added: ${accessory.name} (${accessory.deviceid})`);
-        }
+        device.excludedCapabilities = this.excludedCapabilities[device.deviceid] || ["None"];
+        this.log(`Initializing New Device (${device.name}) | (${device.deviceid})`);
+        accessory = this.getNewAccessory(device, new_uuid);
+        accessory.reachable = true;
+        this.homebridge.registerPlatformAccessories(pluginName, platformName, [accessory]);
+        this.SmartThingsAccessories.add(accessory);
+        // this.updDeviceCacheItem(accessory.deviceid, accessory);
+        this.log(`Added: ${accessory.name} (${accessory.deviceid})`);
     }
 
-    configureAccessory(accessory) {
-        this.log("Configure Cached Accessory: " + accessory.displayName + ", UUID: " + accessory.UUID);
-        let cachedAccessory = this.SmartThingsAccessories.CreateFromCachedAccessory(accessory, this);
-        this.updDeviceCacheItem(accessory.context.deviceData.deviceid, cachedAccessory);
-    };
+    updateDevice(device) {
+        let cacheDevice = this.SmartThingsAccessories.get(device);
+        let accessory;
+        device.excludedCapabilities = this.excludedCapabilities[device.deviceid] || ["None"];
+        this.log(`Loading Existing Device (${device.name}) | (${device.deviceid})`);
+        accessory = this.SmartThingsAccessories.updateAccessoryState(cacheDevice, device);
+        accessory.reachable = true;
+        this.SmartThingsAccessories.add(accessory);
+        // this.updDeviceCacheItem(device.deviceid, accessory);
+    }
 
     ignoreDevice(data) {
         const [device, reason] = data;
@@ -179,13 +206,20 @@ module.exports = class ST_Platform {
     }
 
     removeAccessory(accessory) {
+        this.log(accessory);
         if (this.SmartThingsAccessories.remove(accessory)) {
-            this.api.unregisterPlatformAccessories(pluginName, platformName, [
-                accessory
-            ]);
-            this.log(`Removed: ${accessory.context.name} (${accessory.context.deviceid })`);
+            // this.remDeviceCacheItem(accessory.context.deviceid);
+            this.homebridge.unregisterPlatformAccessories(pluginName, platformName, [accessory]);
+            this.log(`Removed: ${accessory.context.name} (${accessory.context.deviceid})`);
         }
     }
+
+    configureAccessory(accessory) {
+        this.log("Configure Cached Accessory: " + accessory.displayName + ", UUID: " + accessory.UUID);
+        let cachedAccessory = this.SmartThingsAccessories.CreateFromCachedAccessory(accessory, this);
+        // this.updDeviceCacheItem(accessory.context.deviceData.deviceid, cachedAccessory);
+        this.SmartThingsAccessories.add(cachedAccessory);
+    };
 
     addAttributeUsage(attribute, deviceid, mycharacteristic) {
         if (!this.attributeLookup[attribute]) {
@@ -214,13 +248,13 @@ module.exports = class ST_Platform {
     }
 
     processFieldUpdate(attributeSet, that) {
-        if (!(that.attributeLookup[attributeSet.attribute] && that.attributeLookup[attributeSet.attribute][attributeSet.device])) {
+        if (!(this.attributeLookup[attributeSet.attribute] && this.attributeLookup[attributeSet.attribute][attributeSet.device])) {
             return;
         }
-        let myUsage = that.attributeLookup[attributeSet.attribute][attributeSet.device];
+        let myUsage = this.attributeLookup[attributeSet.attribute][attributeSet.device];
         if (myUsage instanceof Array) {
             for (let j = 0; j < myUsage.length; j++) {
-                let accessory = that.getDeviceCacheItem(attributeSet.device);
+                let accessory = this.SmartThingsAccessories.get(attributeSet.device);
                 if (accessory) {
                     accessory.context.deviceData.attributes[attributeSet.attribute] = attributeSet.value;
                     myUsage[j].getValue();

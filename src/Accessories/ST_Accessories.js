@@ -1,7 +1,6 @@
 const {
     knownCapabilities
 } = require('../Constants');
-const autoBind = require('auto-bind');
 const _ = require("lodash");
 var Service, Characteristic;
 
@@ -20,7 +19,6 @@ module.exports = class ST_Accessories {
         this.client = platform.client;
         this.comparator = this.comparator.bind(this);
         this._accessories = {};
-        7
         this._ignored = {};
     }
 
@@ -1047,16 +1045,15 @@ module.exports = class ST_Accessories {
             this.log.debug(deviceGroups)
         }
 
-        return that.loadData(accessory, devData) || accessory;
+        return that.updateAccessoryState(accessory, devData) || accessory;
     }
 
-    loadData(accessory, deviceData) {
+    updateAccessoryState(accessory, deviceData) {
         let that = this;
         // return new Promise((resolve, reject) => {
         if (deviceData !== undefined) {
             this.log.debug('Setting device data from existing data');
             accessory.context.deviceData = deviceData;
-            accessory.reachable = true;
             for (let i = 0; i < accessory.services.length; i++) {
                 for (let j = 0; j < accessory.services[i].characteristics.length; j++) {
                     accessory.services[i].characteristics[j].getValue();
@@ -1071,7 +1068,6 @@ module.exports = class ST_Accessories {
                         return accessory;
                     }
                     accessory.context.deviceData = data;
-                    accessory.reachable = true;
                     for (let i = 0; i < accessory.services.length; i++) {
                         for (let j = 0; j < accessory.services[i].characteristics.length; j++) {
                             accessory.services[i].characteristics[j].getValue();
@@ -1110,33 +1106,34 @@ module.exports = class ST_Accessories {
         return this.services;
     }
 
-    getAccessoryKey(accessory) {
-        const context = accessory.context || accessory;
-        return `${context.object_type}/${context.object_id}`;
+    getAccessoryId(accessory) {
+        const id = accessory.deviceid || accessory.context.deviceid || undefined;
+        return id;
     }
 
     get(device) {
-        const key = this.getAccessoryKey(device);
+        const key = this.getAccessoryId(device);
         return this._accessories[key];
     }
-
+    getAll() {
+        return this._accessories;
+    }
     ignore(device) {
-        const key = this.getAccessoryKey(device);
+        const key = this.getAccessoryId(device);
         if (this._ignored[key]) {
             return false;
         }
-
         this._ignored[key] = device;
         return true;
     }
 
     add(accessory) {
-        const key = this.getAccessoryKey(accessory);
+        const key = this.getAccessoryId(accessory);
         return (this._accessories[key] = accessory);
     }
 
     remove(accessory) {
-        const key = this.getAccessoryKey(accessory);
+        const key = this.getAccessoryId(accessory);
         const _accessory = this._accessories[key];
         delete this._accessories[key];
         return _accessory;
@@ -1163,7 +1160,7 @@ module.exports = class ST_Accessories {
 
     comparator(accessory1, accessory2) {
         return (
-            this.getAccessoryKey(accessory1) === this.getAccessoryKey(accessory2)
+            this.getAccessoryId(accessory1) === this.getAccessoryId(accessory2)
         );
     }
 };
