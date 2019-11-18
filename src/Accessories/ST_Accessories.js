@@ -7,7 +7,6 @@ var Service, Characteristic;
 
 module.exports = class ST_Accessories {
     constructor(platform) {
-        // const { uuid } = this.api.hap;
         this.platform = platform;
         this.configItems = platform.getConfigItems();
         this.temperature_unit = platform.temperature_unit;
@@ -21,16 +20,16 @@ module.exports = class ST_Accessories {
         this.client = platform.client;
         this.comparator = this.comparator.bind(this);
         this._accessories = {};
+        7
         this._ignored = {};
     }
 
-    async PopulateAccessory(accessory, deviceData) {
+    PopulateAccessory(accessory, deviceData) {
         // console.log("AccessoryDevice: ", accessory, deviceData);
         try {
             accessory.deviceid = deviceData.deviceid;
             accessory.name = deviceData.name;
             accessory.state = {};
-            accessory.device = deviceData;
             accessory.deviceGroups = [];
             let that = this;
 
@@ -50,9 +49,10 @@ module.exports = class ST_Accessories {
             accessory.hasCapability = this.hasCapability.bind(accessory);
             accessory.hasCommand = this.hasCommand.bind(accessory);
 
+            accessory.context.deviceData = deviceData;
             accessory.context.name = deviceData.name;
             accessory.context.deviceid = deviceData.deviceid;
-            accessory.context.deviceData = deviceData;
+            accessory.context.uuid = accessory.UUID || this.uuid.generate(`smartthings_v2_${accessory.deviceid}`);
 
             accessory.getOrAddService(Service.AccessoryInformation)
                 .setCharacteristic(Characteristic.Identify, (deviceData.capabilities['Switch'] !== undefined))
@@ -62,45 +62,21 @@ module.exports = class ST_Accessories {
                 .setCharacteristic(Characteristic.Name, deviceData.name)
                 .setCharacteristic(Characteristic.SerialNumber, deviceData.serialNumber);
 
-            return await this.initializeDeviceCharacteristics(accessory);
+            return this.initializeDeviceCharacteristics(accessory);
         } catch (ex) {
             this.log.error(ex)
             return accessory;
         }
-        // console.log(accessory)
-        // return accessory;
     }
 
-    getOrAddService(svc) {
-        let s = this.getService(svc);
-        if (!s) { s = this.addService(svc); }
-        return s;
-    };
-
-    hasDeviceGroup(grp) {
-        return (this.deviceGroups.includes(grp))
-    };
-    hasCapability(val) {
-        val = val.replace(/\s/g, '');
-        return (this.context.deviceData.capabilities.includes(val))
-    };
-    hasAttribute(val) {
-        return (this.context.deviceData.attributes.includes(val))
-    };
-    hasCommand(val) {
-        return (this.context.deviceData.commands.includes(val))
-    };
-    getServices() {
-        return this.services;
-    }
-
-    async CreateFromCachedAccessory(accessory) {
+    CreateFromCachedAccessory(accessory) {
         try {
             let deviceid = accessory.context.deviceid;
             let name = accessory.context.name;
             this.log.debug("Initializing Cached Device " + deviceid);
             accessory.deviceid = deviceid;
             accessory.name = name;
+            accessory.context.uuid = accessory.UUID || this.uuid.generate(`smartthings_v2_${accessory.deviceid}`);
             accessory.state = {};
             accessory.deviceGroups = []
             accessory.getOrAddService = this.getOrAddService.bind(accessory);
@@ -108,7 +84,7 @@ module.exports = class ST_Accessories {
             accessory.hasAttribute = this.hasAttribute.bind(accessory);
             accessory.hasCapability = this.hasCapability.bind(accessory);
             accessory.hasCommand = this.hasCommand.bind(accessory);
-            return await this.initializeDeviceCharacteristics(accessory)
+            return this.initializeDeviceCharacteristics(accessory)
         } catch (ex) {
             this.log.error(ex)
             return accessory;
@@ -126,8 +102,6 @@ module.exports = class ST_Accessories {
         // return new Promise((resolve, reject) => {
         let deviceGroups = []
         let thisCharacteristic;
-        // log(JSON.stringify(accessory.context.deviceData));
-
         let attributes = accessory.context.deviceData.attributes;
         let capabilities = accessory.context.deviceData.capabilities;
         let commands = accessory.context.deviceData.commands;
@@ -145,7 +119,7 @@ module.exports = class ST_Accessories {
             if ((capabilities['Switch Level'] !== undefined || capabilities['SwitchLevel'] !== undefined) && !isSpeaker && !isFan && !isMode && !isRoutine) {
                 if (isWindowShade || commands.levelOpenClose || commands.presetPosition) {
                     // This is a Window Shade
-                    deviceGroups.push('window_shades');
+                    deviceGroups.push('window_shade');
                     thisCharacteristic = accessory.getOrAddService(Service.WindowCovering).getCharacteristic(Characteristic.TargetPosition)
                         .on('get', (callback) => {
                             callback(null, parseInt(attributes.level));
@@ -218,7 +192,7 @@ module.exports = class ST_Accessories {
             }
 
             if (capabilities['Garage Door Control'] !== undefined || capabilities['GarageDoorControl'] !== undefined) {
-                deviceGroups.push('garage_doors');
+                deviceGroups.push('garage_door');
                 thisCharacteristic = accessory.getOrAddService(Service.GarageDoorOpener).getCharacteristic(Characteristic.TargetDoorState)
                     .on('get', (callback) => {
                         if (attributes.door === 'closed' || attributes.door === 'closing') {
@@ -262,7 +236,7 @@ module.exports = class ST_Accessories {
                 accessory.getOrAddService(Service.GarageDoorOpener).setCharacteristic(Characteristic.ObstructionDetected, false);
             }
             if (capabilities['Lock'] !== undefined && !capabilities['Thermostat']) {
-                deviceGroups.push('locks');
+                deviceGroups.push('lock');
                 thisCharacteristic = accessory.getOrAddService(Service.LockMechanism).getCharacteristic(Characteristic.LockCurrentState)
                     .on('get', (callback) => {
                         switch (attributes.lock) {
@@ -412,7 +386,7 @@ module.exports = class ST_Accessories {
             }
             if (isMode === true) {
                 deviceGroups.push('mode');
-                that.log('Mode: (' + accessory.name + ')');
+                // that.log('Mode: (' + accessory.name + ')');
                 thisCharacteristic = accessory.getOrAddService(Service.Switch).getCharacteristic(Characteristic.On)
                     .on('get', (callback) => {
                         callback(null, attributes.switch === 'on');
@@ -428,7 +402,7 @@ module.exports = class ST_Accessories {
             }
             if (isRoutine === true) {
                 deviceGroups.push('routine');
-                that.log('Routine: (' + accessory.name + ')');
+                // that.log('Routine: (' + accessory.name + ')');
                 thisCharacteristic = accessory.getOrAddService(Service.Switch).getCharacteristic(Characteristic.On)
                     .on('get', (callback) => {
                         callback(null, attributes.switch === 'on');
@@ -1070,18 +1044,10 @@ module.exports = class ST_Accessories {
                 }
             }
             accessory.context.deviceGroups = deviceGroups;
-            console.log(deviceGroups)
+            this.log.debug(deviceGroups)
         }
 
         return that.loadData(accessory, devData) || accessory;
-        // .then((b) => {
-        //     accessory = b;
-        //     return accessory;
-        // })
-        // .catch((err) => {
-        //     return accessory;
-        // })
-        // });
     }
 
     loadData(accessory, deviceData) {
@@ -1090,6 +1056,7 @@ module.exports = class ST_Accessories {
         if (deviceData !== undefined) {
             this.log.debug('Setting device data from existing data');
             accessory.context.deviceData = deviceData;
+            accessory.reachable = true;
             for (let i = 0; i < accessory.services.length; i++) {
                 for (let j = 0; j < accessory.services[i].characteristics.length; j++) {
                     accessory.services[i].characteristics[j].getValue();
@@ -1103,7 +1070,8 @@ module.exports = class ST_Accessories {
                     if (data === undefined) {
                         return accessory;
                     }
-                    accessory.device = data;
+                    accessory.context.deviceData = data;
+                    accessory.reachable = true;
                     for (let i = 0; i < accessory.services.length; i++) {
                         for (let j = 0; j < accessory.services[i].characteristics.length; j++) {
                             accessory.services[i].characteristics[j].getValue();
@@ -1117,6 +1085,29 @@ module.exports = class ST_Accessories {
                 });
         }
         // });
+    }
+
+    getOrAddService(svc) {
+        let s = this.getService(svc);
+        if (!s) { s = this.addService(svc); }
+        return s;
+    };
+
+    hasDeviceGroup(grp) {
+        return (this.deviceGroups.includes(grp))
+    };
+    hasCapability(val) {
+        val = val.replace(/\s/g, '');
+        return (this.context.deviceData.capabilities.includes(val))
+    };
+    hasAttribute(val) {
+        return (this.context.deviceData.attributes.includes(val))
+    };
+    hasCommand(val) {
+        return (this.context.deviceData.commands.includes(val))
+    };
+    getServices() {
+        return this.services;
     }
 
     getAccessoryKey(accessory) {

@@ -52,7 +52,6 @@ module.exports = class ST_Platform {
         this.homebridge.on('didFinishLaunching', function() {
             this.didFinishLaunching();
         }.bind(this));
-        this.asyncCallWait = 0;
     }
 
     getConfigItems() {
@@ -65,32 +64,25 @@ module.exports = class ST_Platform {
             direct_ip: this.config['direct_ip'] || this.myUtils.getIPAddress()
         };
     }
+
+    getDeviceCache() {
+        return this.deviceCache || {};
+    }
+    getDeviceCacheItem(devid) {
+        return this.deviceCache[devid] || undefined;
+    }
+
+    updDeviceCacheItem(devid, data) {
+        this.deviceCache[devid] = data;
+    }
+
     didFinishLaunching() {
-        this.log.debug("didFinishLaunching")
-        if (this.asyncCallWait !== 0) {
-            this.log.debug("Configuration of cached accessories not done, wait for a bit...", that.asyncCallWait);
-            setTimeout(this.didFinishLaunching.bind(this), 1000);
-            return;
-        }
-        this.log('Fetching ' + platformName + ' devices. This can take a while depending on the number of devices are configured!');
+        this.log(`Fetching ${platformName} Devices. NOTICE: This may take a moment if you have a large number of devices being loaded!`);
         setInterval(this.refreshDevices.bind(this), this.polling_seconds * 1000);
         let that = this;
         let starttime = new Date();
         this.refreshDevices()
             .then(() => {
-                // Initialize Update Mechanism for realtime-ish updates.
-                // let timeElapsedinSeconds = Math.round((new Date() - starttime) / 1000);
-                // if (timeElapsedinSeconds >= that.polling_seconds) {
-                //     that.log(`It took ${timeElapsedinSeconds} seconds to get all data | polling_seconds is set to ${that.polling_seconds}`);
-                //     that.log(' Changing polling_seconds to ' + (timeElapsedinSeconds * 2) + ' seconds');
-                //     that.polling_seconds = timeElapsedinSeconds * 2;
-                // } else if (that.polling_seconds < 30) {
-                //     that.log('polling_seconds really shouldn\'t be smaller than 30 seconds. Setting it to 30 seconds');
-                //     that.polling_seconds = 30;
-                // }
-                // // that.processAccessoryCallback(foundAccessories || []);
-                // setInterval(that.refreshDevices.bind(that), that.polling_seconds * 1000);
-
                 that.WebServerInit(that)
                     .catch((err) => that.log('WebServerInit Error: ', err))
                     .then((resp) => {
@@ -106,41 +98,19 @@ module.exports = class ST_Platform {
 
     refreshDevices() {
         let that = this;
-
+        let starttime = new Date();
         return new Promise((resolve) => {
-            let foundAccessories = [];
             try {
                 that.log.debug('Refreshing All Device Data');
                 this.client.getDevices()
                     .then(resp => {
                         // console.log(resp);
-                        that.log.debug('Received All Device Data');
-                        // success
                         if (resp && resp.deviceList && resp.deviceList instanceof Array) {
+                            that.log.debug('Received All Device Data');
                             resp.deviceList.forEach(device => {
-                                let accessory;
                                 device.excludedCapabilities = that.excludedCapabilities[device.deviceid] || ["None"];
                                 that.log.debug("Processing device id: " + device.deviceid);
-
-                                if (that.deviceCache[device.deviceid]) {
-                                    that.log("Existing device, loading...");
-                                    accessory = that.deviceCache[device.deviceid];
-                                    that.SmartThingsAccessories.loadData(accessory, device);
-                                } else {
-                                    accessory = that.addDevice(device);
-                                    // that.log(accessory);
-                                    if (accessory !== undefined) {
-                                        if (accessory.services.length <= 1 || accessory.deviceGroup === 'unknown') {
-                                            if (that.firstpoll) {
-                                                that.log.debug('Device Skipped - Group ' + accessory.deviceGroup + ', Name ' + accessory.name + ', ID ' + accessory.deviceid + ', JSON: ' + JSON.stringify(device));
-                                            }
-                                        } else {
-                                            // that.log("Device Added - Group " + accessory.deviceGroup + ", Name " + accessory.name + ", ID " + accessory.deviceid); //+", JSON: "+ JSON.stringify(device));
-                                            that.deviceCache[device.deviceid] = accessory;
-                                            foundAccessories.push(accessory);
-                                        }
-                                    }
-                                }
+                                that.addDevice(device);
                                 that.firstpoll = false;
                             });
                         };
@@ -152,8 +122,9 @@ module.exports = class ST_Platform {
                                 that.client.updateGlobals(that.local_hub_ip, that.local_commands);
                             }
                         }
-                        that.log("Devices refreshed");
-                        that.log('Unknown Capabilities: ' + JSON.stringify(that.unknownCapabilities));
+                        that.log(`Total Device Initialization Process Time: (${Math.round((new Date() - starttime) / 1000)} seconds)`);
+                        that.log(`Unknown Capabilities: ${JSON.stringify(that.unknownCapabilities)}`);
+                        that.log(`DeviceCache Size: (${Object.keys(this.getDeviceCache()).length})`)
                         resolve(true);
                     }).catch((err) => {
                         that.log.error(err);
@@ -165,22 +136,39 @@ module.exports = class ST_Platform {
         });
     }
 
-    getNewAccessory(device) {
-        const UUID = this.uuid.generate(device.deviceid);
-        this.log('UUID:', UUID)
-        const accessory = new PlatformAccessory(device.name, UUID);
+    getNewAccessory(device, UUID) {
+        let accessory = new PlatformAccessory(device.name, UUID);
         this.SmartThingsAccessories.PopulateAccessory(accessory, device);
         return accessory;
     }
 
     addDevice(device) {
-        this.log.debug("New Device, initializing...");
-        const accessory = this.getNewAccessory(device);
-        this.homebridge.registerPlatformAccessories(pluginName, platformName, [accessory]);
-        this.SmartThingsAccessories.add(accessory);
-        this.deviceCache[accessory.deviceid] = accessory;
-        this.log(`Added: ${accessory.name} (${accessory.context.deviceid})`);
+        let cacheDevice = this.getDeviceCacheItem(device.deviceid);
+        let accessory;
+        const uuid1 = (cacheDevice !== undefined) ? cacheDevice.UUID : undefined
+        const uuid2 = (cacheDevice !== undefined && cacheDevice.context !== undefined && cacheDevice.context.uuid !== undefined) ? cacheDevice.context.uuid : undefined;
+        const cur_uuid = uuid1 || uuid2 || undefined;
+        const new_uuid = this.uuid.generate(`smartthings_v2_${device.deviceid}`);
+        // this.log(`Cache Item | Existing: (${(cur_uuid !== undefined && cur_uuid === new_uuid)}) | UUID: ${cur_uuid} | Generated UUID: ${new_uuid}`);
+        if (cur_uuid !== undefined && cur_uuid === new_uuid) {
+            this.log(`Loading Existing Device (${device.name}) | (${device.deviceid})`);
+            accessory = this.SmartThingsAccessories.loadData(cacheDevice, device);
+            this.updDeviceCacheItem(device.deviceid, accessory);
+        } else {
+            this.log(`Initializing New Device (${device.name}) | (${device.deviceid})`);
+            accessory = this.getNewAccessory(device, new_uuid);
+            this.homebridge.registerPlatformAccessories(pluginName, platformName, [accessory]);
+            this.SmartThingsAccessories.add(accessory);
+            this.updDeviceCacheItem(accessory.deviceid, accessory);
+            this.log(`Added: ${accessory.name} (${accessory.deviceid})`);
+        }
     }
+
+    configureAccessory(accessory) {
+        this.log("Configure Cached Accessory: " + accessory.displayName + ", UUID: " + accessory.UUID);
+        let cachedAccessory = this.SmartThingsAccessories.CreateFromCachedAccessory(accessory, this);
+        this.updDeviceCacheItem(accessory.context.deviceData.deviceid, cachedAccessory);
+    };
 
     ignoreDevice(data) {
         const [device, reason] = data;
@@ -198,12 +186,6 @@ module.exports = class ST_Platform {
             this.log(`Removed: ${accessory.context.name} (${accessory.context.deviceid })`);
         }
     }
-
-    configureAccessory(accessory) {
-        this.log("Configure Cached Accessory: " + accessory.displayName + ", UUID: " + accessory.UUID);
-        let cachedAccessory = this.SmartThingsAccessories.CreateFromCachedAccessory(accessory, this);
-        this.deviceCache[cachedAccessory.deviceid] = cachedAccessory;
-    };
 
     addAttributeUsage(attribute, deviceid, mycharacteristic) {
         if (!this.attributeLookup[attribute]) {
@@ -238,7 +220,7 @@ module.exports = class ST_Platform {
         let myUsage = that.attributeLookup[attributeSet.attribute][attributeSet.device];
         if (myUsage instanceof Array) {
             for (let j = 0; j < myUsage.length; j++) {
-                let accessory = that.deviceCache[attributeSet.device];
+                let accessory = that.getDeviceCacheItem(attributeSet.device);
                 if (accessory) {
                     accessory.context.deviceData.attributes[attributeSet.attribute] = attributeSet.value;
                     myUsage[j].getValue();
