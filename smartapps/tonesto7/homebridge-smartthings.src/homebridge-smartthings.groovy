@@ -4,12 +4,12 @@
  *  Copyright 2018, 2019 Anthony Santilli
  */
 
-String appVersion() { return "2.0.0" }
-String appModified() { return "11-07-2019" }
-String platform() { return "SmartThings" }
-String pluginName() { return "${platform()}-v2" }
-String appIconUrl() { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/hb_tonesto7@2x.png" }
-String getAppImg(imgName) { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/${imgName}" }
+String appVersion()         { return "2.0.0" }
+String appModified()        { return "11-18-2019" }
+String platform()           { return "SmartThings" }
+String pluginName()         { return "${platform()}-v2" }
+String appIconUrl()         { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/hb_tonesto7@2x.png" }
+String getAppImg(imgName)   { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/${imgName}" }
 
 definition(
     name: "Homebridge v2 (${platform()})",
@@ -66,6 +66,7 @@ def mainPage() {
             input "removeButton", "capability.button", title: "Remove Buttons from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("button.png")
             input "removeContact", "capability.contactSensor", title: "Remove Contact from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("contact.png")
             input "removeLevel", "capability.switchLevel", title: "Remove Level from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("speed_knob.png")
+            input "removeLock", "capability.lock", title: "Remove Lock from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("lock.png")
             input "removeMotion", "capability.motionSensor", title: "Remove Motion from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("motion.png")
             input "removePower", "capability.powerMeter", title: "Remove Power Meter from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("power.png")
             input "removePresence", "capability.presenceSensor", title: "Remove Presence from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("presence.png")
@@ -543,6 +544,7 @@ def deviceCapabilityList(device) {
     if(settings?.removeButton && items["Button"] && isDeviceInInput('removeButton', device?.id)) { items?.remove("Button");  if(showLogs) { log.debug "Filtering Button"; } }
     if(settings?.removeContact && items["Contact Sensor"] && isDeviceInInput('removeContact', device?.id)) { items?.remove("Contact Sensor");  if(showLogs) { log.debug "Filtering Contact"; } }
     if(settings?.removeLevel && items["Switch Level"] && isDeviceInInput('removeLevel', device?.id)) { items?.remove("Switch Level");  if(showLogs) { log.debug "Filtering Level"; } }
+    if(settings?.removeLock && items["Lock"] && isDeviceInInput('removeLock', device?.id)) { items?.remove("Lock");  if(showLogs) { log.debug "Filtering Lock"; } }
     if(settings?.removeMotion && items["Motion Sensor"] && isDeviceInInput('removeMotion', device?.id)) { items?.remove("Motion Sensor");  if(showLogs) { log.debug "Filtering Motion"; } }
     if(settings?.removePower && items["Power Meter"] && isDeviceInInput('removePower', device?.id)) { items?.remove("Power Meter");  if(showLogs) { log.debug "Filtering Power Meter"; } }
     if(settings?.removePresence && items["Presence Sensor"] && isDeviceInInput('removePresence', device?.id)) { items?.remove("Presence Sensor");  if(showLogs) { log.debug "Filtering Presence"; } }
@@ -642,6 +644,7 @@ def registerChangeHandler(devices, showlog=false) {
                 if(att == "temperature" && settings.removeTemp && isDeviceInInput('removeTemp', device?.id)) {return}
                 if(att == "contact" && settings.removeContact && isDeviceInInput('removeContact', device?.id)) {return}
                 if(att == "level" && settings.removeLevel && isDeviceInInput('removeLevel', device?.id)) { return }
+                if(att == "lock" && settings?.removeLock && isDeviceInInput('removeLock', device?.id)) { return }
                 if(att == "motion" && settings.removeMotion && isDeviceInInput('removeMotion', device?.id)) { return }
                 if(att == "power" && settings.removePower && isDeviceInInput('removePower', device?.id)) { return }
                 if(att == "presence" && settings.removePresence && isDeviceInInput('removePresence', device?.id)) { return }
