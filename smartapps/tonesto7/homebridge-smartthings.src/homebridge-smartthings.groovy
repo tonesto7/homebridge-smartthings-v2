@@ -102,8 +102,9 @@ def mainPage() {
 def confirmPage() {
     return dynamicPage(name: "confirmPage", title: "Confirm Page", install: true, uninstall:true) {
         section("") {
-            paragraph "Would you like to restart the Homebridge Service to apply any device changes you made?", required: true, state: null, image: getAppImg("info.png")
-            input "restartService", "bool", title: "Restart Homebridge plugin when you press Save?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("reset2.png")
+            paragraph "As of v2.0 restarting the service is no longer required to apply any device changes you made.\n\nPressing Done/Save will tell the service to refresh your device data.", required: true, state: null, image: getAppImg("info.png")
+            // paragraph "Would you like to restart the Homebridge Service to apply any device changes you made?", required: true, state: null, image: getAppImg("info.png")
+            // input "restartService", "bool", title: "Restart Homebridge plugin when you press Save?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("reset2.png")
         }
     }
 }
@@ -169,6 +170,7 @@ def initialize() {
         attemptServiceRestart()
         settingUpdate("restartService", "false", "bool")
     }
+    runIn(15, "sendDeviceRefreshCmd")
     runIn((settings?.restartService ? 60 : 10), "updateServicePrefs")
 }
 
@@ -795,6 +797,12 @@ private activateDirectUpdates(isLocal=false) {
 private attemptServiceRestart(isLocal=false) {
     log.trace "attemptServiceRestart: ${state?.directIP}:${state?.directPort}${isLocal ? " | (Local)" : ""}"
     def result = new physicalgraph.device.HubAction(method: "GET", path: "/restart", headers: [HOST: "${state?.directIP}:${state?.directPort}"])
+    sendHubCommand(result)
+}
+
+private sendDeviceRefreshCmd(isLocal=false) {
+    log.trace "sendDeviceRefreshCmd: ${state?.directIP}:${state?.directPort}${isLocal ? " | (Local)" : ""}"
+    def result = new physicalgraph.device.HubAction(method: "GET", path: "/refreshDevices", headers: [HOST: "${state?.directIP}:${state?.directPort}"])
     sendHubCommand(result)
 }
 

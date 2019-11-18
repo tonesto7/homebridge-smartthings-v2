@@ -296,6 +296,13 @@ module.exports = class ST_Platform {
                     }, parseInt(delay));
                     res.send('OK');
                 });
+                webApp.get('/refreshDevices', (req, res) => {
+                    that.log('refreshDevices...');
+                    let delay = (10 * 1000);
+                    that.log('Received request from ' + platformName + ' to refresh devices');
+                    that.refreshDevices();
+                    res.send('OK');
+                });
 
                 webApp.post('/updateprefs', (req, res) => {
                     that.log(platformName + ' Hub Sent Preference Updates');
