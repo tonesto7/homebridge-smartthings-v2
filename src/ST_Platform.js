@@ -7,7 +7,7 @@ const {
 } = require("./Constants"),
     myUtils = require("./MyUtils"),
     SmartThingsClient = require("./ST_Client"),
-    SmartThingsAccessories = require("./Accessories/ST_Accessories"),
+    SmartThingsAccessories = require("./ST_Accessories"),
     express = require("express"),
     bodyParser = require("body-parser"),
     logger = require("./Logger.js").Logger,

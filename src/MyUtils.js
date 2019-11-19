@@ -1,6 +1,6 @@
 const {
     platformName,
-    platformDesc,
+    // platformDesc,
     packageFile
 } = require("./Constants"),
     _ = require("lodash"),

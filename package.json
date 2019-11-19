@@ -6,7 +6,7 @@
         "express": "4.17.1",
         "request-promise-native": "^1.0.8",
         "compare-versions": "^3.5.1",
-        "auto-bind": "^3.0.0"
+        "require-all": "^3.0.0"
     },
     "devDependencies": {
         "eslint": "^6.6.0",
