@@ -47,9 +47,6 @@ module.exports = class ST_Platform {
         this.client = new SmartThingsClient(this);
 
         this.SmartThingsAccessories = new SmartThingsAccessories(this);
-        this.log.warn('Warn Log Test');
-        this.log.alert('Alert Log Test');
-        this.log.notice('Notice Log Test');
 
         this.homebridge.on("didFinishLaunching", this.didFinishLaunching.bind(this));
     }
