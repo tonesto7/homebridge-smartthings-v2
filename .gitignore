@@ -94,3 +94,6 @@ AWS_Files/Testing/input.json
 .vscode/settings.json
 website/
 
+config.json
+accessories
+persist

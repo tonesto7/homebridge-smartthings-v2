@@ -5,14 +5,15 @@
  */
 
 String appVersion()         { return "2.0.0" }
-String appModified()        { return "11-18-2019" }
+String appModified()        { return "11-19-2019" }
+String branch()             { return "refactor" }
 String platform()           { return "SmartThings" }
 String pluginName()         { return "${platform()}-v2" }
-String appIconUrl()         { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/hb_tonesto7@2x.png" }
-String getAppImg(imgName)   { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/${imgName}" }
+String appIconUrl()         { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/${branch()}/images/hb_tonesto7@2x.png" }
+String getAppImg(imgName)   { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/${branch()}/images/${imgName}" }
 
 definition(
-    name: "Homebridge v2 (${platform()})",
+    name: "Homebridge v2",
     namespace: "tonesto7",
     author: "Anthony Santilli",
     description: "Provides the API interface between Homebridge (HomeKit) and ${platform()}",
@@ -22,15 +23,22 @@ definition(
     iconX3Url: "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/hb_tonesto7@3x.png",
     oauth: true)
 
+{
+	appSetting "devMode"
+}
+
 preferences {
     page(name: "mainPage")
+    page(name: "capFilterPage")
+    page(name: "virtDevicePage")
+    page(name: "developmentPage")
+    page(name: "settingsPage")
     page(name: "confirmPage")
 }
 
 def appInfoSect()	{
 	section() {
         paragraph "${app?.name}\nv${appVersion()}", image: appIconUrl()
-        paragraph "Any Device Changes will require a restart of the Homebridge Service", required: true, state: null, image: getAppImg("error.png")
     }
 }
 
@@ -54,13 +62,66 @@ def mainPage() {
             input "switchList", "capability.switch", title: "Switch Devices: (${switchList ? switchList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("switch.png")
             input "deviceList", "capability.refresh", title: "Other Devices: (${deviceList ? deviceList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("devices2.png")
         }
+
+        section("Capability Filtering:") {
+            Boolean conf = (removeBattery || removeButton || removeContact || removeLevel || removeLock || removeMotion || removePower || removePresence || removeSwitch || removeTamper || removeTemp)
+            href "capFilterPage", title: "Filter out capabilities from your devices", required: false, image: getAppImg("filter.png"), state: (conf ? "complete" : null), description: (conf ? "Tap to modify..." : "Tap to configure")
+        }
+
+        section("Virtual Devices:") {
+            Boolean conf = (modeList || routineList)
+            def desc = "Create virtual mode or routines devices\n\n${conf ? "Tap to modify..." : "Tap to configure"}"
+            href "virtDevicePage", title: "Configure Virtual Devices", required: false, image: getAppImg("devices.png"), state: (conf ? "complete" : null), description: desc
+        }
+
+        section("Smart Home Monitor (SHM):") {
+            input "addSecurityDevice", "bool", title: "Allow SHM Control in HomeKit?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("alarm_home.png")
+        }
+        section("Plugin Options:") {
+            input "allowLocalCmds", "bool", title: "Send HomeKit Commands Locally?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("command2.png")
+        }
+        section("Review Configuration:") {
+            Integer devCnt = getDeviceCnt()
+            href url: getAppEndpointUrl("config"), style: "embedded", required: false, title: "View the Configuration Data for Homebridge", description: "Tap, select, copy, then click \"Done\"", state: "complete", image: getAppImg("info.png")
+            if(devCnt > 148) {
+                paragraph "Notice:\nHomebridge Allows for 149 Devices per Bridge!!!", image: getAppImg("error.png"), state: null, required: true
+            }
+            paragraph "Devices Selected: (${devCnt})", image: getAppImg("info.png"), state: "complete"
+        }
+        section("App Preferences:") {
+            href "settingsPage", title: "App Settings", required: false, image: getAppImg("settings.png")
+            label title: "App Label (optional)", description: "Rename this App", defaultValue: app?.name, required: false, image: getAppImg("name_tag.png")
+        }
+        if(devMode()) {
+            section("Dev Mode Options") {
+                input "sendViaNgrok", "bool", title: "Communicate with Plugin via Ngrok Http?", defaultValue: false, submitOnChange: true, image: getAppImg("command2.png")
+                if(sendViaNgrok) { input "ngrokHttpUrl", "text", title: "Enter the ngrok code from the url", required: true, submitOnChange: true }
+            }
+            section("Other Settings:") {
+                input "restartService", "bool", title: "Restart Homebridge plugin when you press Save?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("reset2.png")
+            }
+        }
+    }
+}
+
+def settingsPage() {
+    return dynamicPage(name: "settingsPage", title: "", install: false, uninstall: false) {
+        section("Logging:") {
+            input "showEventLogs", "bool", title: "Show Events in Live Logs?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("debug.png")
+            input "showDebugLogs", "bool", title: "Debug Logging?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("debug.png")
+        }
+    }
+}
+
+def capFilterPage() {
+    return dynamicPage(name: "capFilterPage", title: "Filter out capabilities", install: false, uninstall: false) {
         section("Restrict Temp Device Creation") {
             input "noTemp", "bool", title: "Remove Temp from All Contacts and Water Sensors?", required: false, defaultValue: false, submitOnChange: true
             if(settings?.noTemp) {
                 input "sensorAllowTemp", "capability.sensor", title: "Allow Temp on these Sensors", multiple: true, submitOnChange: true, required: false, image: getAppImg("temperature.png")
             }
         }
-        section("Remove Capabilities from Devices Creation", hideable: true, hidden: false) {
+        section("Remove Capabilities from Devices") {
             paragraph "This will allow you to filter out certain capabilities from creating unneeded devices under HomeKit"
             input "removeBattery", "capability.battery", title: "Remove Battery from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("battery.png")
             input "removeButton", "capability.button", title: "Remove Buttons from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("button.png")
@@ -74,6 +135,11 @@ def mainPage() {
             input "removeTamper", "capability.tamperAlert", title: "Remove Tamper from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("tamper.jpg")
             input "removeTemp", "capability.temperatureMeasurement", title: "Remove Temp from these Sensors", multiple: true, submitOnChange: true, required: false, image: getAppImg("temperature.png")
         }
+    }
+}
+
+def virtDevicePage() {
+    return dynamicPage(name: "virtDevicePage", title: "", install: false, uninstall: false) {
         section("Create Devices for Modes in HomeKit?") {
             paragraph title: "What are these for?", "A virtual switch will be created for each mode in HomeKit.\nThe switch will be ON when that mode is active.", state: "complete", image: getAppImg("info.png")
             def modes = location?.modes?.sort{it?.name}?.collect { [(it?.id):it?.name] }
@@ -84,40 +150,15 @@ def mainPage() {
             def routines = location.helloHome?.getPhrases()?.sort { it?.label }?.collect { [(it?.id):it?.label] }
             input "routineList", "enum", title: "Create Devices for these Routines", required: false, multiple: true, options: routines, submitOnChange: true, image: getAppImg("routine.png")
         }
-        section("Smart Home Monitor Support (SHM):") {
-            input "addSecurityDevice", "bool", title: "Allow SHM Control in HomeKit?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("alarm_home.png")
-        }
-        section("Review Configuration:") {
-            href url: getAppEndpointUrl("config"), style: "embedded", required: false, title: "View the Configuration Data for Homebridge", description: "Tap, select, copy, then click \"Done\""
-            paragraph "Selected Device Count:\n${getDeviceCnt()}", image: getAppImg("info.png")
-        }
-        section("Options:") {
-            input "showLogs", "bool", title: "Show Events in Live Logs?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("debug.png")
-            input "allowLocalCmds", "bool", title: "Send HomeKit Commands Locally?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("command2.png")
-            label title: "SmartApp Label (optional)", description: "Rename this App", defaultValue: app?.name, required: false, image: getAppImg("name_tag.png")
-        }
     }
 }
 
 def confirmPage() {
     return dynamicPage(name: "confirmPage", title: "Confirm Page", install: true, uninstall:true) {
         section("") {
-            paragraph "As of v2.0 restarting the service is no longer required to apply any device changes you made.\n\nPressing Done/Save will tell the service to refresh your device data.", required: true, state: null, image: getAppImg("info.png")
-            // paragraph "Would you like to restart the Homebridge Service to apply any device changes you made?", required: true, state: null, image: getAppImg("info.png")
-            // input "restartService", "bool", title: "Restart Homebridge plugin when you press Save?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("reset2.png")
+            paragraph "Restarting the service is no longer required to apply any device changes under homekit.\n\nPressing Done/Save to tell the service to refresh your device data.", state: "complete", image: getAppImg("info.png")
         }
     }
-}
-
-def sectionTitleStr(title) 	{ return "<h2>$title</h2>" }
-def inputTitleStr(title) 	{ return "<u>$title</u>" }
-def pageTitleStr(title) 	{ return "<h1>$title</h1>" }
-def imgTitle(imgSrc, imgWidth, imgHeight, titleStr, color=null) {
-    def imgStyle = ""
-    imgStyle += imgWidth ? "width: ${imgWidth}px !important;" : ""
-    imgStyle += imgHeight ? "${imgWidth ? " " : ""}height: ${imgHeight}px !important;" : ""
-    if(color) { return """<div style="color: ${color}; font-weight: bold;"><img style="${imgStyle}" src="${imgSrc}"> ${titleStr}</img></div>""" }
-    else { return """<img style="${imgStyle}" src="${imgSrc}"> ${titleStr}</img>""" }
 }
 
 def getDeviceCnt() {
@@ -542,17 +583,17 @@ def deviceCapabilityList(device) {
         }
         if(remTemp) { items?.remove("Temperature Measurement") }
     }
-    if(settings?.removeBattery && items["Battery"] && isDeviceInInput('removeBattery', device?.id)) { items?.remove("Battery"); if(showLogs) { log.debug "Filtering Battery"; } }
-    if(settings?.removeButton && items["Button"] && isDeviceInInput('removeButton', device?.id)) { items?.remove("Button");  if(showLogs) { log.debug "Filtering Button"; } }
-    if(settings?.removeContact && items["Contact Sensor"] && isDeviceInInput('removeContact', device?.id)) { items?.remove("Contact Sensor");  if(showLogs) { log.debug "Filtering Contact"; } }
-    if(settings?.removeLevel && items["Switch Level"] && isDeviceInInput('removeLevel', device?.id)) { items?.remove("Switch Level");  if(showLogs) { log.debug "Filtering Level"; } }
-    if(settings?.removeLock && items["Lock"] && isDeviceInInput('removeLock', device?.id)) { items?.remove("Lock");  if(showLogs) { log.debug "Filtering Lock"; } }
-    if(settings?.removeMotion && items["Motion Sensor"] && isDeviceInInput('removeMotion', device?.id)) { items?.remove("Motion Sensor");  if(showLogs) { log.debug "Filtering Motion"; } }
-    if(settings?.removePower && items["Power Meter"] && isDeviceInInput('removePower', device?.id)) { items?.remove("Power Meter");  if(showLogs) { log.debug "Filtering Power Meter"; } }
-    if(settings?.removePresence && items["Presence Sensor"] && isDeviceInInput('removePresence', device?.id)) { items?.remove("Presence Sensor");  if(showLogs) { log.debug "Filtering Presence"; } }
-    if(settings?.removeSwitch && items["Switch"] && isDeviceInInput('removeSwitch', device?.id)) { items?.remove("Switch");  if(showLogs) { log.debug "Filtering Switch"; } }
-    if(settings?.removeTamper && items["Tamper Alert"] && isDeviceInInput('removeTamper', device?.id)) { items?.remove("Tamper Alert");  if(showLogs) { log.debug "Filtering Tamper"; } }
-    if(settings?.removeTemp && items["Temperature Measurement"] && isDeviceInInput('removeTemp', device?.id)) { items?.remove("Temperature Measurement");  if(showLogs) { log.debug "Filtering Temp"; } }
+    if(settings?.removeBattery && items["Battery"] && isDeviceInInput('removeBattery', device?.id)) { items?.remove("Battery"); if(showDebugLogs) { log.debug "Filtering Battery"; } }
+    if(settings?.removeButton && items["Button"] && isDeviceInInput('removeButton', device?.id)) { items?.remove("Button");  if(showDebugLogs) { log.debug "Filtering Button"; } }
+    if(settings?.removeContact && items["Contact Sensor"] && isDeviceInInput('removeContact', device?.id)) { items?.remove("Contact Sensor");  if(showDebugLogs) { log.debug "Filtering Contact"; } }
+    if(settings?.removeLevel && items["Switch Level"] && isDeviceInInput('removeLevel', device?.id)) { items?.remove("Switch Level");  if(showDebugLogs) { log.debug "Filtering Level"; } }
+    if(settings?.removeLock && items["Lock"] && isDeviceInInput('removeLock', device?.id)) { items?.remove("Lock");  if(showDebugLogs) { log.debug "Filtering Lock"; } }
+    if(settings?.removeMotion && items["Motion Sensor"] && isDeviceInInput('removeMotion', device?.id)) { items?.remove("Motion Sensor");  if(showDebugLogs) { log.debug "Filtering Motion"; } }
+    if(settings?.removePower && items["Power Meter"] && isDeviceInInput('removePower', device?.id)) { items?.remove("Power Meter");  if(showDebugLogs) { log.debug "Filtering Power Meter"; } }
+    if(settings?.removePresence && items["Presence Sensor"] && isDeviceInInput('removePresence', device?.id)) { items?.remove("Presence Sensor");  if(showDebugLogs) { log.debug "Filtering Presence"; } }
+    if(settings?.removeSwitch && items["Switch"] && isDeviceInInput('removeSwitch', device?.id)) { items?.remove("Switch");  if(showDebugLogs) { log.debug "Filtering Switch"; } }
+    if(settings?.removeTamper && items["Tamper Alert"] && isDeviceInInput('removeTamper', device?.id)) { items?.remove("Tamper Alert");  if(showDebugLogs) { log.debug "Filtering Tamper"; } }
+    if(settings?.removeTemp && items["Temperature Measurement"] && isDeviceInInput('removeTemp', device?.id)) { items?.remove("Temperature Measurement");  if(showDebugLogs) { log.debug "Filtering Temp"; } }
     return items
 }
 
@@ -714,7 +755,7 @@ def changeHandler(evt) {
     if (sendEvt && state?.directIP != "" && sendItems?.size()) {
         //Send Using the Direct Mechanism
         sendItems?.each { send->
-            if(settings?.showLogs) {
+            if(settings?.showEventLogs) {
                 String unitStr = ""
                 switch(send?.evtAttr as String) {
                     case "temperature":
@@ -737,25 +778,48 @@ def changeHandler(evt) {
                 }
                 log.debug "Sending${" ${send?.evtSource}" ?: ""} Event (${send?.evtDeviceName} | ${send?.evtAttr.toUpperCase()}: ${send?.evtValue}${unitStr}) to Homebridge at (${state?.directIP}:${state?.directPort})"
             }
-            def params = [
-                method: "POST",
-                path: "/update",
-                headers: [
-                    HOST: "${state?.directIP}:${state?.directPort}",
-                    'Content-Type': 'application/json'
-                ],
-                body: [
-                    change_name: send?.evtDeviceName,
-                    change_device: send?.evtDeviceId,
-                    change_attribute: send?.evtAttr,
-                    change_value: send?.evtValue,
-                    change_date: send?.evtDate
-                ]
-            ]
-            def result = new physicalgraph.device.HubAction(params)
-            // def result = new hubitat.device.HubAction(params)
-            sendHubCommand(result)
+            sendHttpPost("update", [
+                change_name: send?.evtDeviceName,
+                change_device: send?.evtDeviceId,
+                change_attribute: send?.evtAttr,
+                change_value: send?.evtValue,
+                change_date: send?.evtDate
+            ])
         }
+    }
+}
+
+private sendHttpGet(path, contentType) {
+    if(settings?.sendViaNgrok && settings?.ngrokHttpUrl) {
+        httpGet([
+            uri: "https://${settings?.ngrokHttpUrl}.ngrok.io",
+            path: "/${path}",
+            contentType: contentType
+        ])
+    } else { sendHubCommand(new physicalgraph.device.HubAction(method: "GET", path: "/${path}", headers: [HOST: "${state?.directIP}:${state?.directPort}"])) }
+}
+
+private sendHttpPost(path, body, contentType = "application/json") {
+    if(settings?.sendViaNgrok && settings?.ngrokHttpUrl) {
+        Map params = [
+            uri: "https://${settings?.ngrokHttpUrl}.ngrok.io",
+            path: "/${path}",
+            contentType: contentType,
+            body: body
+        ]
+        httpPost(params)
+    } else {
+        Map params = [
+            method: "POST",
+            path: "/${path}",
+            headers: [
+                HOST: "${state?.directIP}:${state?.directPort}",
+                'Content-Type': contentType
+            ],
+            body: body
+        ]
+        def result = new physicalgraph.device.HubAction(params)
+        sendHubCommand(result)
     }
 }
 
@@ -788,40 +852,31 @@ void settingUpdate(name, value, type=null) {
 	else if (name && type == null){ app?.updateSetting(name.toString(), value) }
 }
 
+Boolean devMode() {
+	return (appSettings?.devMode?.toString() == "true")
+}
+
 private activateDirectUpdates(isLocal=false) {
     log.trace "activateDirectUpdates: ${state?.directIP}:${state?.directPort}${isLocal ? " | (Local)" : ""}"
-    def result = new physicalgraph.device.HubAction(method: "GET", path: "/initial", headers: [HOST: "${state?.directIP}:${state?.directPort}"])
-    sendHubCommand(result)
+    sendHttpGet("initial", "text/plain")
 }
 
 private attemptServiceRestart(isLocal=false) {
     log.trace "attemptServiceRestart: ${state?.directIP}:${state?.directPort}${isLocal ? " | (Local)" : ""}"
-    def result = new physicalgraph.device.HubAction(method: "GET", path: "/restart", headers: [HOST: "${state?.directIP}:${state?.directPort}"])
-    sendHubCommand(result)
+    sendHttpGet("restart","text/plain")
 }
 
 private sendDeviceRefreshCmd(isLocal=false) {
     log.trace "sendDeviceRefreshCmd: ${state?.directIP}:${state?.directPort}${isLocal ? " | (Local)" : ""}"
-    def result = new physicalgraph.device.HubAction(method: "GET", path: "/refreshDevices", headers: [HOST: "${state?.directIP}:${state?.directPort}"])
-    sendHubCommand(result)
+    sendHttpGet("refreshDevices", "text/plain")
 }
 
 private updateServicePrefs(isLocal=false) {
     log.trace "updateServicePrefs: ${state?.directIP}:${state?.directPort}${isLocal ? " | (Local)" : ""}"
-    def params = [
-        method: "POST",
-        path: "/updateprefs",
-        headers: [
-            HOST: "${state?.directIP}:${state?.directPort}",
-            'Content-Type': 'application/json'
-        ],
-        body: [
-            local_commands: (settings?.allowLocalCmds != false),
-            local_hub_ip: location?.hubs[0]?.localIP
-        ]
-    ]
-    def result = new physicalgraph.device.HubAction(params)
-    sendHubCommand(result)
+    sendHttpPost("updateprefs", [
+        local_commands: (settings?.allowLocalCmds != false),
+        local_hub_ip: location?.hubs[0]?.localIP
+    ])
 }
 
 def enableDirectUpdates() {

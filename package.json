@@ -5,16 +5,32 @@
         "chalk": "^3.0.0",
         "express": "4.17.1",
         "request-promise-native": "^1.0.8",
+        "compare-versions": "^3.5.1",
         "auto-bind": "^3.0.0"
     },
     "devDependencies": {
         "eslint": "^6.6.0",
-        "eslint-config-prettier": "^6.6.0"
+        "eslint-config-prettier": "^6.7.0",
+        "eslint-plugin-prettier": "^3.1.1",
+        "lint-staged": "^9.4.3",
+        "prettier": "^1.19.1",
+        "husky": "^3.1.0"
     },
     "description": "SmartThings plugin for HomeBridge",
     "engines": {
         "homebridge": ">=0.4.0",
         "node": ">=0.12.0"
+    },
+    "husky": {
+        "hooks": {
+            "pre-commit": "lint-staged"
+        }
+    },
+    "lint-staged": {
+        "*.js": [
+            "prettier --write",
+            "git add"
+        ]
     },
     "homepage": "https://github.com/tonesto7/homebridge-smartthings-2.0/#readme",
     "keywords": [
@@ -23,6 +39,11 @@
         "homekit",
         "homebridge"
     ],
+    "scripts": {
+        "test": "eslint .",
+        "prettier": "prettier --write src/**/*.js",
+        "start": "homebridge -D -P . -U ."
+    },
     "license": "ISC",
     "name": "homebridge-smartthings-v2",
     "preferGlobal": true,
