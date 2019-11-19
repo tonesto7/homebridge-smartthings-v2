@@ -21,11 +21,6 @@
         "homebridge": ">=0.4.0",
         "node": ">=0.12.0"
     },
-    "husky": {
-        "hooks": {
-            "pre-commit": "lint-staged"
-        }
-    },
     "lint-staged": {
         "*.js": [
             "prettier --write",

@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 'use strict';
 // THIS FILE IS AUTO-GENERATED - DO NOT MODIFY
 
