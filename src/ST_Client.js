@@ -1,5 +1,6 @@
 const {
-    platformName
+    platformName,
+    platformDesc
 } = require("./Constants");
 const rp = require("request-promise-native");
 const url = require("url");
@@ -24,9 +25,9 @@ module.exports = class ST_Client {
         }
 
         updateGlobals(hubIp, useLocal = false) {
-            this.platform.log("Updating globals: " + hubIp + ", " + useLocal);
+            this.platform.log(`Updating Global Values | HubIP: ${hubIp} | UseLocal: ${useLocal}`);
             this.hubIp = hubIp;
-            this.useLocal = useLocal === true;
+            this.useLocal = (useLocal === true);
         }
 
         getDevices() {
@@ -132,7 +133,7 @@ module.exports = class ST_Client {
             delete config.qs;
         }
         return new Promise((resolve) => {
-            that.log(`Sending Start Direct Request to ${platformName} | SendToLocalHub: (${sendLocal})`);
+            that.log(`Sending StartDirect Request to ${platformDesc} | SendToLocalHub: (${sendLocal})`);
             rp(config)
                 .then((body) => {
                     // that.log('sendStartDirect Resp:', body);

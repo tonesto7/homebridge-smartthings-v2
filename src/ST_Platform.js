@@ -2,9 +2,10 @@ const {
     knownCapabilities,
     pluginName,
     platformName,
+    platformDesc,
     pluginVersion
-} = require("./Constants");
-const myUtils = require("./MyUtils"),
+} = require("./Constants"),
+    myUtils = require("./MyUtils"),
     SmartThingsClient = require("./ST_Client"),
     SmartThingsAccessories = require("./Accessories/ST_Accessories"),
     express = require("express"),
@@ -18,8 +19,7 @@ module.exports = class ST_Platform {
     constructor(log, config, api) {
         this.config = config;
         this.homebridge = api;
-        this.log = logger.withPrefix(`${this.config["name"]}`);
-        this.logFile = logger.withPrefix(`${this.config["name"]} ${pluginVersion}`);
+        this.log = logger.withPrefix(`${this.config["name"]} (${pluginVersion})`);
         this.log(`Homebridge Version: ${api.version}`);
         this.log(`${platformName} Plugin Version: ${pluginVersion}`);
         this.Service = api.hap.Service;
@@ -27,7 +27,7 @@ module.exports = class ST_Platform {
         PlatformAccessory = api.platformAccessory;
         this.uuid = api.hap.uuid;
         if (config === undefined || config === null || config.app_url === undefined || config.app_url === null || config.app_id === undefined || config.app_id === null) {
-            log.debug(platformName + " Plugin not configured. Skipping");
+            this.log.warn(`${platformName} Plugin is not Configured | Skipping...`);
             return;
         }
         this.polling_seconds = config["polling_seconds"] || 3600;
@@ -47,6 +47,9 @@ module.exports = class ST_Platform {
         this.client = new SmartThingsClient(this);
 
         this.SmartThingsAccessories = new SmartThingsAccessories(this);
+        this.log.warn('Warn Log Test');
+        this.log.alert('Alert Log Test');
+        this.log.notice('Notice Log Test');
 
         this.homebridge.on("didFinishLaunching", this.didFinishLaunching.bind(this));
     }
@@ -78,7 +81,7 @@ module.exports = class ST_Platform {
     }
 
     didFinishLaunching() {
-        this.log(`Fetching ${platformName} Devices. NOTICE: This may take a moment if you have a large number of devices being loaded!`);
+        this.log(`Fetching ${platformName} Devices. NOTICE: This may take a moment if you have a large number of device data is being loaded!`);
         setInterval(this.refreshDevices.bind(this), this.polling_seconds * 1000);
         let that = this;
         this.refreshDevices()
@@ -86,7 +89,7 @@ module.exports = class ST_Platform {
                 that.WebServerInit(that)
                     .catch(err => that.log.error("WebServerInit Error: ", err))
                     .then(resp => {
-                        if (resp.status === "OK") that.client.sendStartDirect();
+                        if (resp && resp.status === "OK") that.client.sendStartDirect();
                     });
             })
             .catch(err => {
@@ -105,13 +108,13 @@ module.exports = class ST_Platform {
                     .then(resp => {
                         // console.log(resp);
                         if (resp && resp.deviceList && resp.deviceList instanceof Array) {
-                            that.log.debug("Received All Device Data");
+                            // that.log.debug("Received All Device Data");
                             const toCreate = this.SmartThingsAccessories.diffAdd(resp.deviceList);
                             const toUpdate = this.SmartThingsAccessories.intersection(resp.deviceList);
                             const toRemove = this.SmartThingsAccessories.diffRemove(resp.deviceList);
                             that.log.warn(`Devices to Remove: (${Object.keys(toRemove).length})`, toRemove.map(i => i.name));
                             that.log.info(`Devices to Update: (${Object.keys(toUpdate).length})`);
-                            that.log.info(`Devices to Create: (${Object.keys(toCreate).length})`, toCreate.map(i => i.name));
+                            that.log.good(`Devices to Create: (${Object.keys(toCreate).length})`, toCreate.map(i => i.name));
 
                             toRemove.forEach(accessory => this.removeAccessory(accessory));
                             toUpdate.forEach(device => this.updateDevice(device));
@@ -125,9 +128,9 @@ module.exports = class ST_Platform {
                                 that.client.updateGlobals(that.local_hub_ip, that.local_commands);
                             }
                         }
-                        that.log(`Total Device Initialization Process Time: (${Math.round((new Date() - starttime) / 1000)} seconds)`);
-                        that.log(`Unknown Capabilities: ${JSON.stringify(that.unknownCapabilities)}`);
-                        that.log(`DeviceCache Size: (${Object.keys(this.SmartThingsAccessories.getAll()).length})`);
+                        that.log.alert(`Total Initialization Time: (${Math.round((new Date() - starttime) / 1000)} seconds)`);
+                        that.log.notice(`Unknown Capabilities: ${JSON.stringify(that.unknownCapabilities)}`);
+                        that.log.info(`${platformDesc} DeviceCache Size: (${Object.keys(this.SmartThingsAccessories.getAll()).length})`);
                         resolve(true);
                     })
                     .catch(err => {
@@ -325,7 +328,6 @@ module.exports = class ST_Platform {
                     if (req.body.length < 3) return;
                     let body = JSON.parse(JSON.stringify(req.body));
                     if (body && that.isValidRequestor(body.access_token, body.app_id, 'update')) {
-                        // console.log('update: ', body);
                         if (Object.keys(body).length > 3) {
                             let newChange = {
                                 deviceid: body.change_device,
@@ -333,7 +335,7 @@ module.exports = class ST_Platform {
                                 value: body.change_value,
                                 date: body.change_date
                             };
-                            that.log(`Change Event: (${body.change_name}) [${(body.change_attribute ? body.change_attribute.toUpperCase() : "unknown")}] is ${body.change_value}`);
+                            that.log.notice(`Change Event: (${body.change_name}) [${(body.change_attribute ? body.change_attribute.toUpperCase() : "unknown")}] is ${body.change_value}`);
                             that.processDeviceAttributeUpdate(newChange);
                         }
                         res.send({
