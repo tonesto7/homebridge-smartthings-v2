@@ -783,7 +783,9 @@ def changeHandler(evt) {
                 change_device: send?.evtDeviceId,
                 change_attribute: send?.evtAttr,
                 change_value: send?.evtValue,
-                change_date: send?.evtDate
+                change_date: send?.evtDate,
+                app_id: app?.getId(),
+                access_token: state?.accessToken
             ])
         }
     }
@@ -858,22 +860,33 @@ Boolean devMode() {
 
 private activateDirectUpdates(isLocal=false) {
     log.trace "activateDirectUpdates: ${state?.directIP}:${state?.directPort}${isLocal ? " | (Local)" : ""}"
-    sendHttpGet("initial", "text/plain")
+    sendHttpPost("initial", [
+        app_id: app?.getId(),
+        access_token: state?.accessToken
+    ])
 }
 
 private attemptServiceRestart(isLocal=false) {
     log.trace "attemptServiceRestart: ${state?.directIP}:${state?.directPort}${isLocal ? " | (Local)" : ""}"
-    sendHttpGet("restart","text/plain")
+    sendHttpPost("restart", [
+        app_id: app?.getId(),
+        access_token: state?.accessToken
+    ])
 }
 
 private sendDeviceRefreshCmd(isLocal=false) {
     log.trace "sendDeviceRefreshCmd: ${state?.directIP}:${state?.directPort}${isLocal ? " | (Local)" : ""}"
-    sendHttpGet("refreshDevices", "text/plain")
+    sendHttpPost("refreshDevices", [
+        app_id: app?.getId(),
+        access_token: state?.accessToken
+    ])
 }
 
 private updateServicePrefs(isLocal=false) {
     log.trace "updateServicePrefs: ${state?.directIP}:${state?.directPort}${isLocal ? " | (Local)" : ""}"
     sendHttpPost("updateprefs", [
+        app_id: app?.getId(),
+        access_token: state?.accessToken,
         local_commands: (settings?.allowLocalCmds != false),
         local_hub_ip: location?.hubs[0]?.localIP
     ])
@@ -884,6 +897,8 @@ def enableDirectUpdates() {
     state?.directIP = params?.ip
     state?.directPort = params?.port
     activateDirectUpdates()
+    def resultJson = new groovy.json.JsonOutput().toJson({ status: 'OK'})
+    render contentType: "application/json", data: resultJson
 }
 
 mappings {
@@ -894,7 +909,6 @@ mappings {
         path("/:id/command/:command")		{ action: [POST: "authError"] }
         path("/:id/query")					{ action: [GET: "authError"] }
         path("/:id/attribute/:attribute") 	{ action: [GET: "authError"] }
-        path("/getUpdates")					{ action: [GET: "authError"] }
         path("/startDirect/:ip/:port")		{ action: [GET: "authError"] }
     } else {
         path("/devices")					{ action: [GET: "getAllData"] }
@@ -903,7 +917,6 @@ mappings {
         path("/:id/command/:command")		{ action: [POST: "deviceCommand"] }
         path("/:id/query")					{ action: [GET: "deviceQuery"] }
         path("/:id/attribute/:attribute")	{ action: [GET: "deviceAttribute"] }
-        path("/getUpdates")					{ action: [GET: "getChangeEvents"] }
-        path("/startDirect/:ip/:port")		{ action: [GET: "enableDirectUpdates"] }
+        path("/startDirect/:ip/:port")		{ action: [POST: "enableDirectUpdates"] }
     }
 }

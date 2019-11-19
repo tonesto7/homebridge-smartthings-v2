@@ -177,9 +177,9 @@ module.exports = class ST_Accessories {
             .on("set", (value, callback) => {
               if (commands.close && value === 0) {
                 // setLevel: 0, not responding on spring fashion blinds
-                that.client.runCommand(callback, devData.deviceid, "close");
+                that.client.sendDeviceCommand(callback, devData.deviceid, "close");
               } else {
-                that.client.runCommand(callback, devData.deviceid, "setLevel", {
+                that.client.sendDeviceCommand(callback, devData.deviceid, "setLevel", {
                   value1: value
                 });
               }
@@ -217,9 +217,9 @@ module.exports = class ST_Accessories {
             })
             .on("set", (value, callback) => {
               if (value) {
-                that.client.runCommand(callback, devData.deviceid, "on");
+                that.client.sendDeviceCommand(callback, devData.deviceid, "on");
               } else {
-                that.client.runCommand(callback, devData.deviceid, "off");
+                that.client.sendDeviceCommand(callback, devData.deviceid, "off");
               }
             });
           that.addToAttributeStore(
@@ -234,7 +234,7 @@ module.exports = class ST_Accessories {
               callback(null, parseInt(attributes.level));
             })
             .on("set", (value, callback) => {
-              that.client.runCommand(callback, devData.deviceid, "setLevel", {
+              that.client.sendDeviceCommand(callback, devData.deviceid, "setLevel", {
                 value1: value
               });
             });
@@ -251,7 +251,7 @@ module.exports = class ST_Accessories {
                 callback(null, Math.round(attributes.hue * 3.6));
               })
               .on("set", (value, callback) => {
-                that.client.runCommand(callback, devData.deviceid, "setHue", {
+                that.client.sendDeviceCommand(callback, devData.deviceid, "setHue", {
                   value1: Math.round(value / 3.6)
                 });
               });
@@ -267,7 +267,7 @@ module.exports = class ST_Accessories {
                 callback(null, parseInt(attributes.saturation));
               })
               .on("set", (value, callback) => {
-                that.client.runCommand(
+                that.client.sendDeviceCommand(
                   callback,
                   devData.deviceid,
                   "setSaturation",
@@ -305,13 +305,13 @@ module.exports = class ST_Accessories {
           })
           .on("set", (value, callback) => {
             if (value === Characteristic.TargetDoorState.OPEN || value === 0) {
-              that.client.runCommand(callback, devData.deviceid, "open");
+              that.client.sendDeviceCommand(callback, devData.deviceid, "open");
               attributes.door = "opening";
             } else if (
               value === Characteristic.TargetDoorState.CLOSED ||
               value === 1
             ) {
-              that.client.runCommand(callback, devData.deviceid, "close");
+              that.client.sendDeviceCommand(callback, devData.deviceid, "close");
               attributes.door = "closing";
             }
           });
@@ -382,10 +382,10 @@ module.exports = class ST_Accessories {
           })
           .on("set", (value, callback) => {
             if (value === 1 || value === true) {
-              that.client.runCommand(callback, devData.deviceid, "lock");
+              that.client.sendDeviceCommand(callback, devData.deviceid, "lock");
               attributes.lock = "locked";
             } else {
-              that.client.runCommand(callback, devData.deviceid, "unlock");
+              that.client.sendDeviceCommand(callback, devData.deviceid, "unlock");
               attributes.lock = "unlocked";
             }
           });
@@ -439,9 +439,9 @@ module.exports = class ST_Accessories {
           .on("set", (value, callback) => {
             // if (attributes.inStandby !== 'true') {
             if (value) {
-              that.client.runCommand(callback, devData.deviceid, "on");
+              that.client.sendDeviceCommand(callback, devData.deviceid, "on");
             } else {
-              that.client.runCommand(callback, devData.deviceid, "off");
+              that.client.sendDeviceCommand(callback, devData.deviceid, "off");
             }
             // }
           });
@@ -459,7 +459,7 @@ module.exports = class ST_Accessories {
           })
           .on("set", (value, callback) => {
             if (value > 0) {
-              that.client.runCommand(callback, devData.deviceid, "setLevel", {
+              that.client.sendDeviceCommand(callback, devData.deviceid, "setLevel", {
                 value1: value
               });
             }
@@ -478,9 +478,9 @@ module.exports = class ST_Accessories {
           })
           .on("set", (value, callback) => {
             if (value) {
-              that.client.runCommand(callback, devData.deviceid, "mute");
+              that.client.sendDeviceCommand(callback, devData.deviceid, "mute");
             } else {
-              that.client.runCommand(callback, devData.deviceid, "unmute");
+              that.client.sendDeviceCommand(callback, devData.deviceid, "unmute");
             }
           });
         that.addToAttributeStore("mute", devData.deviceid, thisCharacteristic);
@@ -501,9 +501,9 @@ module.exports = class ST_Accessories {
           })
           .on("set", (value, callback) => {
             if (value) {
-              that.client.runCommand(callback, devData.deviceid, "on");
+              that.client.sendDeviceCommand(callback, devData.deviceid, "on");
             } else {
-              that.client.runCommand(callback, devData.deviceid, "off");
+              that.client.sendDeviceCommand(callback, devData.deviceid, "off");
             }
           });
         that.addToAttributeStore(
@@ -531,7 +531,7 @@ module.exports = class ST_Accessories {
               if (value >= 0 && value <= 100) {
                 // clearTimeout(waitTimer);
                 // that.log('Sending Fan value of ' + value);
-                that.client.runCommand(callback, devData.deviceid, "setLevel", {
+                that.client.sendDeviceCommand(callback, devData.deviceid, "setLevel", {
                   value1: parseInt(value)
                 });
               }
@@ -554,7 +554,7 @@ module.exports = class ST_Accessories {
           })
           .on("set", (value, callback) => {
             if (value && attributes.switch === "off") {
-              that.client.runCommand(callback, devData.deviceid, "mode", {
+              that.client.sendDeviceCommand(callback, devData.deviceid, "mode", {
                 value1: accessory.name.toString()
               });
             }
@@ -576,7 +576,7 @@ module.exports = class ST_Accessories {
           })
           .on("set", (value, callback) => {
             if (value) {
-              that.client.runCommand(callback, devData.deviceid, "routine", {
+              that.client.sendDeviceCommand(callback, devData.deviceid, "routine", {
                 value1: accessory.name.toString()
               });
               setTimeout(() => {
@@ -603,7 +603,7 @@ module.exports = class ST_Accessories {
         //     })
         //     .on('set', (value, callback) =>{
         //         if (value && attributes.switch === 'off') {
-        //             that.client.runCommand(callback, devData.deviceid, 'button');
+        //             that.client.sendDeviceCommand(callback, devData.deviceid, 'button');
         //         }
         //     });
         // that.addToAttributeStore('switch', devData.deviceid, thisCharacteristic);
@@ -703,9 +703,9 @@ module.exports = class ST_Accessories {
             })
             .on("set", (value, callback) => {
               if (value) {
-                that.client.runCommand(callback, devData.deviceid, "on");
+                that.client.sendDeviceCommand(callback, devData.deviceid, "on");
               } else {
-                that.client.runCommand(callback, devData.deviceid, "off");
+                that.client.sendDeviceCommand(callback, devData.deviceid, "off");
               }
             });
           that.addToAttributeStore(
@@ -723,9 +723,9 @@ module.exports = class ST_Accessories {
             })
             .on("set", (value, callback) => {
               if (value) {
-                that.client.runCommand(callback, devData.deviceid, "on");
+                that.client.sendDeviceCommand(callback, devData.deviceid, "on");
               } else {
-                that.client.runCommand(callback, devData.deviceid, "off");
+                that.client.sendDeviceCommand(callback, devData.deviceid, "off");
               }
             });
           that.addToAttributeStore(
@@ -1315,19 +1315,19 @@ module.exports = class ST_Accessories {
           .on("set", (value, callback) => {
             switch (value) {
               case Characteristic.TargetHeatingCoolingState.COOL:
-                that.client.runCommand(callback, devData.deviceid, "cool");
+                that.client.sendDeviceCommand(callback, devData.deviceid, "cool");
                 attributes.thermostatMode = "cool";
                 break;
               case Characteristic.TargetHeatingCoolingState.HEAT:
-                that.client.runCommand(callback, devData.deviceid, "heat");
+                that.client.sendDeviceCommand(callback, devData.deviceid, "heat");
                 attributes.thermostatMode = "heat";
                 break;
               case Characteristic.TargetHeatingCoolingState.AUTO:
-                that.client.runCommand(callback, devData.deviceid, "auto");
+                that.client.sendDeviceCommand(callback, devData.deviceid, "auto");
                 attributes.thermostatMode = "auto";
                 break;
               case Characteristic.TargetHeatingCoolingState.OFF:
-                that.client.runCommand(callback, devData.deviceid, "off");
+                that.client.sendDeviceCommand(callback, devData.deviceid, "off");
                 attributes.thermostatMode = "off";
                 break;
             }
@@ -1434,7 +1434,7 @@ module.exports = class ST_Accessories {
             // Set the appropriate temperature unit based on the mode
             switch (attributes.thermostatMode) {
               case "cool": {
-                that.client.runCommand(
+                that.client.sendDeviceCommand(
                   callback,
                   devData.deviceid,
                   "setCoolingSetpoint",
@@ -1447,7 +1447,7 @@ module.exports = class ST_Accessories {
               }
               case "emergency heat":
               case "heat": {
-                that.client.runCommand(
+                that.client.sendDeviceCommand(
                   callback,
                   devData.deviceid,
                   "setHeatingSetpoint",
@@ -1466,7 +1466,7 @@ module.exports = class ST_Accessories {
                 let cur = attributes.temperature;
                 let isHighTemp = Math.abs(high - cur) < Math.abs(cur - low);
                 if (isHighTemp) {
-                  that.client.runCommand(
+                  that.client.sendDeviceCommand(
                     callback,
                     devData.deviceid,
                     "setCoolingSetpoint",
@@ -1475,7 +1475,7 @@ module.exports = class ST_Accessories {
                     }
                   );
                 } else {
-                  that.client.runCommand(
+                  that.client.sendDeviceCommand(
                     null,
                     devData.deviceid,
                     "setHeatingSetpoint",
@@ -1539,7 +1539,7 @@ module.exports = class ST_Accessories {
             } else {
               temp = value * 1.8 + 32;
             }
-            that.client.runCommand(
+            that.client.sendDeviceCommand(
               callback,
               devData.deviceid,
               "setHeatingSetpoint",
@@ -1574,7 +1574,7 @@ module.exports = class ST_Accessories {
             } else {
               temp = value * 1.8 + 32;
             }
-            that.client.runCommand(
+            that.client.sendDeviceCommand(
               callback,
               devData.deviceid,
               "setCoolingSetpoint",
@@ -1629,7 +1629,7 @@ module.exports = class ST_Accessories {
           })
           .on("set", (value, callback) => {
             // that.log('setAlarm: ' + value + ' | ' + that.myUtils.convertAlarmState(value, false, Characteristic));
-            that.client.runCommand(
+            that.client.sendDeviceCommand(
               callback,
               devData.deviceid,
               that.myUtils.convertAlarmState(value, false, Characteristic)
@@ -1679,7 +1679,7 @@ module.exports = class ST_Accessories {
                         lastVolumeWriteValue
                     );
 
-                    that.client.runCommand(
+                    that.client.sendDeviceCommand(
                       callback,
                       devData.deviceid,
                       "setVolume",
@@ -1709,9 +1709,9 @@ module.exports = class ST_Accessories {
             })
             .on("set", (value, callback) => {
               if (value === "muted") {
-                that.client.runCommand(callback, devData.deviceid, "mute");
+                that.client.sendDeviceCommand(callback, devData.deviceid, "mute");
               } else {
-                that.client.runCommand(callback, devData.deviceid, "unmute");
+                that.client.sendDeviceCommand(callback, devData.deviceid, "unmute");
               }
             });
           that.addToAttributeStore(
