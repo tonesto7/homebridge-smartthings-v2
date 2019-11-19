@@ -1,5 +1,5 @@
-var chalk = require('chalk');
-var util = require('util');
+const chalk = require('chalk');
+const util = require('util');
 
 'use strict';
 

@@ -83,20 +83,17 @@ module.exports = class ST_Platform {
         this.log(`Fetching ${platformName} Devices. NOTICE: This may take a moment if you have a large number of devices being loaded!`);
         setInterval(this.refreshDevices.bind(this), this.polling_seconds * 1000);
         let that = this;
-        let starttime = new Date();
         this.refreshDevices()
             .then(() => {
                 that.WebServerInit(that)
-                    .catch((err) => that.log('WebServerInit Error: ', err))
+                    .catch((err) => that.log.error('WebServerInit Error: ', err))
                     .then((resp) => {
                         if (resp === 'OK')
                             that.client.startDirect(null);
-                    }).catch((err) => {
-                        that.log.error(err);
-                    })
+                    });
             }).catch((err) => {
                 that.log.error(err);
-            })
+            });
     }
 
     refreshDevices() {
@@ -104,7 +101,7 @@ module.exports = class ST_Platform {
         let starttime = new Date();
         return new Promise((resolve) => {
             try {
-                that.log('Refreshing All Device Data');
+                that.log.debug('Refreshing All Device Data');
                 this.client.getDevices()
                     .then(resp => {
                         // console.log(resp);
@@ -113,9 +110,9 @@ module.exports = class ST_Platform {
                             const toAdd = this.SmartThingsAccessories.diffAdd(resp.deviceList);
                             const toUpdate = this.SmartThingsAccessories.intersection(resp.deviceList);
                             const toRemove = this.SmartThingsAccessories.diffRemove(resp.deviceList);
-                            console.log('Devices to Remove:', toRemove.map(i => i.name));
-                            console.log('Devices to Update:', toUpdate.map(i => i.name));
-                            console.log('Devices to Add:', toAdd.map(i => i.name))
+                            that.log.warn('Devices to Remove:', toRemove.map(i => i.name));
+                            that.log.info('Devices to Update:', toUpdate.map(i => i.name));
+                            that.log.info('Devices to Create:', toAdd.map(i => i.name));
 
                             toRemove.forEach(accessory => this.removeAccessory(accessory));
                             toUpdate.forEach(device => this.updateDevice(device));
@@ -131,12 +128,13 @@ module.exports = class ST_Platform {
                         }
                         that.log(`Total Device Initialization Process Time: (${Math.round((new Date() - starttime) / 1000)} seconds)`);
                         that.log(`Unknown Capabilities: ${JSON.stringify(that.unknownCapabilities)}`);
-                        that.log(`DeviceCache Size: (${Object.keys(this.SmartThingsAccessories.getAll()).length})`)
+                        that.log(`DeviceCache Size: (${Object.keys(this.SmartThingsAccessories.getAll()).length})`);
+                        resolve(true);
                     })
                     .catch((err) => {
                         that.log.error(err);
-                        resolve(true);
-                    })
+                        resolve(false);
+                    });
             } catch (e) {
                 this.log.error("Failed to refresh devices.", e);
                 resolve(false);
@@ -150,40 +148,16 @@ module.exports = class ST_Platform {
         return accessory;
     }
 
-    // addDeviceOld(device) {
-    //     let cacheDevice = this.getDeviceCacheItem(device.deviceid);
-    //     let accessory;
-    //     const uuid1 = (cacheDevice !== undefined) ? cacheDevice.UUID : undefined
-    //     const uuid2 = (cacheDevice !== undefined && cacheDevice.context !== undefined && cacheDevice.context.uuid !== undefined) ? cacheDevice.context.uuid : undefined;
-    //     const cur_uuid = uuid1 || uuid2 || undefined;
-    //     const new_uuid = this.uuid.generate(`smartthings_v2_${device.deviceid}`);
-    //     if (cur_uuid !== undefined && cur_uuid === new_uuid) {
-    //         this.log(`Loading Existing Device (${device.name}) | (${device.deviceid})`);
-    //         accessory = this.SmartThingsAccessories.updateAccessoryState(cacheDevice, device);
-    //         this.updDeviceCacheItem(device.deviceid, accessory);
-    //         return false;
-    //     } else {
-    //         this.log(`Initializing New Device (${device.name}) | (${device.deviceid})`);
-    //         accessory = this.getNewAccessory(device, new_uuid);
-    //         this.homebridge.registerPlatformAccessories(pluginName, platformName, [accessory]);
-    //         this.SmartThingsAccessories.add(accessory);
-    //         this.updDeviceCacheItem(accessory.deviceid, accessory);
-    //         this.log(`Added: ${accessory.name} (${accessory.deviceid})`);
-    //         return true;
-    //     }
-    // }
-
     addDevice(device) {
         let accessory;
         const new_uuid = this.uuid.generate(`smartthings_v2_${device.deviceid}`);
         device.excludedCapabilities = this.excludedCapabilities[device.deviceid] || ["None"];
-        this.log(`Initializing New Device (${device.name}) | (${device.deviceid})`);
+        this.log(`Initializing New Device (${device.name} | ${device.deviceid})`);
         accessory = this.getNewAccessory(device, new_uuid);
         accessory.reachable = true;
         this.homebridge.registerPlatformAccessories(pluginName, platformName, [accessory]);
         this.SmartThingsAccessories.add(accessory);
-        // this.updDeviceCacheItem(accessory.deviceid, accessory);
-        this.log(`Added: ${accessory.name} (${accessory.deviceid})`);
+        this.log(`Added Device: (${accessory.name} | ${accessory.deviceid})`);
     }
 
     updateDevice(device) {
@@ -194,7 +168,6 @@ module.exports = class ST_Platform {
         accessory = this.SmartThingsAccessories.updateAccessoryState(cacheDevice, device);
         accessory.reachable = true;
         this.SmartThingsAccessories.add(accessory);
-        // this.updDeviceCacheItem(device.deviceid, accessory);
     }
 
     ignoreDevice(data) {
@@ -208,7 +181,6 @@ module.exports = class ST_Platform {
     removeAccessory(accessory) {
         this.log(accessory);
         if (this.SmartThingsAccessories.remove(accessory)) {
-            // this.remDeviceCacheItem(accessory.context.deviceid);
             this.homebridge.unregisterPlatformAccessories(pluginName, platformName, [accessory]);
             this.log(`Removed: ${accessory.context.name} (${accessory.context.deviceid})`);
         }
@@ -217,19 +189,8 @@ module.exports = class ST_Platform {
     configureAccessory(accessory) {
         this.log("Configure Cached Accessory: " + accessory.displayName + ", UUID: " + accessory.UUID);
         let cachedAccessory = this.SmartThingsAccessories.CreateFromCachedAccessory(accessory, this);
-        // this.updDeviceCacheItem(accessory.context.deviceData.deviceid, cachedAccessory);
         this.SmartThingsAccessories.add(cachedAccessory);
     };
-
-    addAttributeUsage(attribute, deviceid, mycharacteristic) {
-        if (!this.attributeLookup[attribute]) {
-            this.attributeLookup[attribute] = {};
-        }
-        if (!this.attributeLookup[attribute][deviceid]) {
-            this.attributeLookup[attribute][deviceid] = [];
-        }
-        this.attributeLookup[attribute][deviceid].push(mycharacteristic);
-    }
 
     doIncrementalUpdate() {
         let that = this;
@@ -247,19 +208,18 @@ module.exports = class ST_Platform {
         }
     }
 
-    processFieldUpdate(attributeSet, that) {
-        if (!(this.attributeLookup[attributeSet.attribute] && this.attributeLookup[attributeSet.attribute][attributeSet.device])) {
-            return;
-        }
-        let myUsage = this.attributeLookup[attributeSet.attribute][attributeSet.device];
-        if (myUsage instanceof Array) {
-            for (let j = 0; j < myUsage.length; j++) {
-                let accessory = this.SmartThingsAccessories.get(attributeSet.device);
+    processFieldUpdate(change) {
+        let attrObj = this.SmartThingsAccessories.getAttributeStoreItem(change.attribute, change.deviceid);
+        let accessory = this.SmartThingsAccessories.get(change);
+        if (!attrObj || !accessory) return;
+        if (attrObj instanceof Array) {
+            attrObj.forEach(item => {
                 if (accessory) {
-                    accessory.context.deviceData.attributes[attributeSet.attribute] = attributeSet.value;
-                    myUsage[j].getValue();
+                    accessory.context.deviceData.attributes[change.attribute] = change.value;
+                    item.getValue();
+                    // this.log(item);
                 }
-            }
+            });
         }
     }
 
@@ -269,6 +229,7 @@ module.exports = class ST_Platform {
         return new Promise((resolve) => {
             try {
                 let ip = that.configItems.direct_ip || that.myUtils.getIPAddress();
+                that.log('WebServer Initiated...');
                 // Start the HTTP Server
                 webApp.listen(that.configItems.direct_port, () => {
                     that.log(`Direct Connect is Listening On ${ip}:${that.configItems.direct_port}`);
@@ -296,9 +257,9 @@ module.exports = class ST_Platform {
                     }, parseInt(delay));
                     res.send('OK');
                 });
+
                 webApp.get('/refreshDevices', (req, res) => {
                     that.log('refreshDevices...');
-                    let delay = (10 * 1000);
                     that.log('Received request from ' + platformName + ' to refresh devices');
                     that.refreshDevices();
                     res.send('OK');
@@ -336,13 +297,13 @@ module.exports = class ST_Platform {
                     // console.log('update: ', data);
                     if (Object.keys(data).length > 3) {
                         let newChange = {
-                            device: data.change_device,
+                            deviceid: data.change_device,
                             attribute: data.change_attribute,
                             value: data.change_value,
                             date: data.change_date
                         };
                         that.log('Change Event:', '(' + data.change_name + ') [' + (data.change_attribute ? data.change_attribute.toUpperCase() : 'unknown') + '] is ' + data.change_value);
-                        that.processFieldUpdate(newChange, that);
+                        that.processFieldUpdate(newChange);
                     }
                     res.send('OK');
                 });
