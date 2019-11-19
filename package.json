@@ -7,6 +7,10 @@
         "request-promise-native": "^1.0.8",
         "auto-bind": "^3.0.0"
     },
+    "devDependencies": {
+        "eslint": "^6.6.0",
+        "eslint-config-prettier": "^6.6.0"
+    },
     "description": "SmartThings plugin for HomeBridge",
     "engines": {
         "homebridge": ">=0.4.0",
