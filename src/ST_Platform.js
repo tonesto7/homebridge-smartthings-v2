@@ -224,7 +224,7 @@ module.exports = class ST_Platform {
             attrObj.forEach(characteristic => {
                 // this.log(characteristic);
                 accessory.context.deviceData.attributes[change.attribute] = change.value;
-                characteristic.updateValue();
+                characteristic.updateValue(change.value);
             });
         }
     }
