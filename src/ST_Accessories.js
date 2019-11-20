@@ -27,13 +27,10 @@ module.exports = class ST_Accessories {
     }
 
     PopulateAccessory(accessory, deviceData) {
-        // console.log("AccessoryDevice: ", accessory, deviceData);
         try {
             accessory.deviceid = deviceData.deviceid;
             accessory.name = deviceData.name;
             accessory.state = {};
-            let that = this;
-
             //Removing excluded capabilities from config
             deviceData.excludedCapabilities.forEach(cap => {
                 if (cap !== undefined) {
@@ -41,23 +38,11 @@ module.exports = class ST_Accessories {
                     delete deviceData.capabilities[cap];
                 }
             });
-
-            // Attach helper to accessory
-            accessory.getOrAddService = this.getOrAddService.bind(accessory);
             accessory.context.deviceData = deviceData;
             accessory.context.name = deviceData.name;
             accessory.context.deviceid = deviceData.deviceid;
             accessory.context.uuid = accessory.UUID || this.uuid.generate(`smartthings_v2_${accessory.deviceid}`);
-
-            accessory
-                .getOrAddService(Service.AccessoryInformation)
-                .setCharacteristic(Characteristic.Identify, deviceData.capabilities["Switch"])
-                .setCharacteristic(Characteristic.FirmwareRevision, deviceData.firmwareVersion)
-                .setCharacteristic(Characteristic.Manufacturer, deviceData.manufacturerName)
-                .setCharacteristic(Characteristic.Model, `${that.myUtils.toTitleCase(deviceData.modelName)}`)
-                .setCharacteristic(Characteristic.Name, deviceData.name)
-                .setCharacteristic(Characteristic.SerialNumber, deviceData.serialNumber);
-
+            accessory.getOrAddService = this.getOrAddService.bind(accessory);
             return this.initializeDeviceCharacteristics(accessory);
         } catch (ex) {
             this.log.error(ex);
@@ -69,13 +54,10 @@ module.exports = class ST_Accessories {
         try {
             let deviceid = accessory.context.deviceid;
             let name = accessory.context.name;
-            this.log.debug("Initializing Cached Device " + deviceid);
+            this.log.debug(`Initializing Cached Device ${deviceid}`);
             accessory.deviceid = deviceid;
             accessory.name = name;
-            accessory.context.uuid =
-                accessory.UUID ||
-                this.uuid.generate(`smartthings_v2_${accessory.deviceid}`);
-            accessory.state = {};
+            accessory.context.uuid = accessory.UUID || this.uuid.generate(`smartthings_v2_${accessory.deviceid}`);
             accessory.getOrAddService = this.getOrAddService.bind(accessory);
             return this.initializeDeviceCharacteristics(accessory);
         } catch (ex) {
@@ -85,12 +67,12 @@ module.exports = class ST_Accessories {
     }
 
     initializeDeviceCharacteristics(accessory) {
-        // Get the Capabilities List
         for (let index in accessory.context.deviceData.capabilities) {
             if (knownCapabilities.indexOf(index) === -1 && this.platform.unknownCapabilities.indexOf(index) === -1) {
                 this.platform.unknownCapabilities.push(index);
             }
         }
+
         let that = this;
         let deviceGroups = [];
         let thisChar;
@@ -99,6 +81,14 @@ module.exports = class ST_Accessories {
         let commands = accessory.context.deviceData.commands;
         let devData = accessory.context.deviceData;
         accessory.reachable = true;
+        accessory
+            .getOrAddService(Service.AccessoryInformation)
+            .setCharacteristic(Characteristic.FirmwareRevision, devData.firmwareVersion)
+            .setCharacteristic(Characteristic.Manufacturer, devData.manufacturerName)
+            .setCharacteristic(Characteristic.Model, `${that.myUtils.toTitleCase(devData.modelName)}`)
+            .setCharacteristic(Characteristic.Name, devData.name)
+            .setCharacteristic(Characteristic.SerialNumber, devData.serialNumber);
+
         let hasCapability = (obj) => {
             let keys = Object.keys(capabilities);
             if (obj instanceof Array) {
@@ -131,7 +121,7 @@ module.exports = class ST_Accessories {
         let isLight = (hasCapability(['Light Bulb', 'Fan Light', 'Bulb']) || devData.name.includes('light'));
         let isSpeaker = hasCapability(['Speaker']);
         let isSonos = (devData.manufacturerName === "Sonos");
-        let isThermostat = (hasCapability('Thermostat'));
+        let isThermostat = (hasCapability('Thermostat') || (hasCapability('Thermostat Operating State') && hasCapability('Thermostat Mode')));
         if (devData && capabilities) {
             if (hasCapability('Switch Level') && !isSpeaker && !isFan && !isMode && !isRoutine) {
 
@@ -334,10 +324,10 @@ module.exports = class ST_Accessories {
                     .getOrAddService(Service.Speaker)
                     .getCharacteristic(Characteristic.Mute)
                     .on("get", (callback) => {
-                        callback(null, (attributes.mute === "muted"));
+                        callback(null, that.attributeStateTransform('mute', attributes.mute));
                     })
                     .on("set", (value, callback) => {
-                        that.client.sendDeviceCommand(callback, devData.deviceid, (value ? "mute" : "unmute"));
+                        that.client.sendDeviceCommand(callback, devData.deviceid, (value === "muted") ? "mute" : "unmute");
                     });
                 that.storeCharacteristicItem("mute", devData.deviceid, thisChar);
             }
@@ -1007,16 +997,13 @@ module.exports = class ST_Accessories {
                             callback(null, that.attributeStateTransform('mute', attributes.mute));
                         })
                         .on("set", (value, callback) => {
-                            if (value === "muted") {
-                                that.client.sendDeviceCommand(callback, devData.deviceid, "mute");
-                            } else {
-                                that.client.sendDeviceCommand(callback, devData.deviceid, "unmute");
-                            }
+                            that.client.sendDeviceCommand(callback, devData.deviceid, (value === "muted") ? "mute" : "unmute");
                         });
                     that.storeCharacteristicItem("mute", devData.deviceid, thisChar);
                 }
             }
             accessory.context.deviceGroups = deviceGroups;
+            accessory.context.deviceData.attributes = attributes;
             this.log.debug(deviceGroups);
         }
 
@@ -1171,13 +1158,6 @@ module.exports = class ST_Accessories {
                     accessory.services[i].characteristics[j].getValue();
                 }
             }
-            accessory
-                .getOrAddService(Service.AccessoryInformation)
-                .setCharacteristic(Characteristic.FirmwareRevision, deviceData.firmwareVersion)
-                .setCharacteristic(Characteristic.Manufacturer, deviceData.manufacturerName)
-                .setCharacteristic(Characteristic.Model, `${that.myUtils.toTitleCase(deviceData.modelName)}`)
-                .setCharacteristic(Characteristic.Name, deviceData.name)
-                .setCharacteristic(Characteristic.SerialNumber, deviceData.serialNumber);
             return accessory;
         } else {
             this.log.debug("Fetching Device Data");
