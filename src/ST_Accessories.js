@@ -32,7 +32,6 @@ module.exports = class ST_Accessories {
             accessory.deviceid = deviceData.deviceid;
             accessory.name = deviceData.name;
             accessory.state = {};
-            accessory.deviceGroups = [];
             let that = this;
 
             //Removing excluded capabilities from config
@@ -82,7 +81,6 @@ module.exports = class ST_Accessories {
                 accessory.UUID ||
                 this.uuid.generate(`smartthings_v2_${accessory.deviceid}`);
             accessory.state = {};
-            accessory.deviceGroups = [];
             accessory.getOrAddService = this.getOrAddService.bind(accessory);
             accessory.hasDeviceGroup = this.hasDeviceGroup.bind(accessory);
             accessory.hasAttribute = this.hasAttribute.bind(accessory);
@@ -111,22 +109,22 @@ module.exports = class ST_Accessories {
         let devData = accessory.context.deviceData;
 
         let hasCapability = (obj) => {
-            if (obj instanceof Array && capabilities && Object.keys(capabilities).length) {
+            let keys = Object.keys(capabilities);
+            if (obj instanceof Array) {
                 obj.forEach(i => {
-                    if (capabilities[i] || capabilities[i.toString().replace(/\s/g, "")]) return true;
+                    if (keys.includes(i) || keys.includes(i.toString().replace(/\s/g, ""))) return true;
                 });
-            } else if (obj instanceof String) {
-                if (capabilities[obj.toString()] || capabilities[obj.toString().replace(/\s/g, "")]) return true;
+            } else {
+                if (keys.includes(obj) || keys.includes(obj.toString().replace(/\s/g, ""))) return true;
             }
             return false;
         };
         let hasAttribute = (attr) => {
-            return (attributes[attr] !== undefined);
+            return Object.keys(attributes).includes(attr);
         };
         let hasCommand = (cmd) => {
-            return (commands[cmd] !== undefined);
+            return Object.keys(commands).includes(cmd);
         };
-
 
         let isMode = capabilities["Mode"] !== undefined;
         let isRoutine = capabilities["Routine"] !== undefined;
@@ -136,7 +134,6 @@ module.exports = class ST_Accessories {
         let isSpeaker = hasCapability(['Speaker']);
         let isSonos = (devData.manufacturerName === "Sonos");
         let isThermostat = (hasCapability('Thermostat'));
-
         if (devData && capabilities) {
             if (hasCapability('Switch Level') && !isSpeaker && !isFan && !isMode && !isRoutine) {
 
@@ -146,7 +143,7 @@ module.exports = class ST_Accessories {
                     thisChar = accessory
                         .getOrAddService(Service.WindowCovering)
                         .getCharacteristic(Characteristic.TargetPosition)
-                        .on("get", callback => {
+                        .on("get", (callback) => {
                             callback(null, parseInt(attributes.level));
                         })
                         .on("set", (value, callback) => {
@@ -160,6 +157,7 @@ module.exports = class ST_Accessories {
                             }
                         });
                     that.storeCharacteristicItem("level", devData.deviceid, thisChar);
+
                     thisChar = accessory
                         .getOrAddService(Service.WindowCovering)
                         .getCharacteristic(Characteristic.CurrentPosition)
@@ -176,7 +174,7 @@ module.exports = class ST_Accessories {
                     thisChar = accessory
                         .getOrAddService(Service.Lightbulb)
                         .getCharacteristic(Characteristic.On)
-                        .on("get", callback => {
+                        .on("get", (callback) => {
                             callback(null, attributes.switch === "on");
                         })
                         .on("set", (value, callback) => {
@@ -187,10 +185,11 @@ module.exports = class ST_Accessories {
                             }
                         });
                     that.storeCharacteristicItem("switch", devData.deviceid, thisChar);
+
                     thisChar = accessory
                         .getOrAddService(Service.Lightbulb)
                         .getCharacteristic(Characteristic.Brightness)
-                        .on("get", callback => {
+                        .on("get", (callback) => {
                             callback(null, parseInt(attributes.level));
                         })
                         .on("set", (value, callback) => {
@@ -199,11 +198,12 @@ module.exports = class ST_Accessories {
                             });
                         });
                     that.storeCharacteristicItem("level", devData.deviceid, thisChar);
-                    if (capabilities["Color Control"] || capabilities["ColorControl"]) {
+
+                    if (hasCapability("Color Control")) {
                         thisChar = accessory
                             .getOrAddService(Service.Lightbulb)
                             .getCharacteristic(Characteristic.Hue)
-                            .on("get", callback => {
+                            .on("get", (callback) => {
                                 callback(null, Math.round(attributes.hue * 3.6));
                             })
                             .on("set", (value, callback) => {
@@ -212,20 +212,17 @@ module.exports = class ST_Accessories {
                                 });
                             });
                         that.storeCharacteristicItem("hue", devData.deviceid, thisChar);
+
                         thisChar = accessory
                             .getOrAddService(Service.Lightbulb)
                             .getCharacteristic(Characteristic.Saturation)
-                            .on("get", callback => {
+                            .on("get", (callback) => {
                                 callback(null, parseInt(attributes.saturation));
                             })
                             .on("set", (value, callback) => {
-                                that.client.sendDeviceCommand(
-                                    callback,
-                                    devData.deviceid,
-                                    "setSaturation", {
-                                        value1: value
-                                    }
-                                );
+                                that.client.sendDeviceCommand(callback, devData.deviceid, "setSaturation", {
+                                    value1: value
+                                });
                             });
                         that.storeCharacteristicItem("saturation", devData.deviceid, thisChar);
                     }
@@ -237,7 +234,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.GarageDoorOpener)
                     .getCharacteristic(Characteristic.TargetDoorState)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         if (attributes.door === "closed" || attributes.door === "closing") {
                             callback(null, Characteristic.TargetDoorState.CLOSED);
                         } else if (
@@ -264,7 +261,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.GarageDoorOpener)
                     .getCharacteristic(Characteristic.CurrentDoorState)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         switch (attributes.door) {
                             case "open":
                                 callback(null, Characteristic.TargetDoorState.OPEN);
@@ -293,7 +290,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.LockMechanism)
                     .getCharacteristic(Characteristic.LockCurrentState)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         switch (attributes.lock) {
                             case "locked":
                                 callback(null, Characteristic.LockCurrentState.SECURED);
@@ -311,7 +308,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.LockMechanism)
                     .getCharacteristic(Characteristic.LockTargetState)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         switch (attributes.lock) {
                             case "locked":
                                 callback(null, Characteristic.LockCurrentState.SECURED);
@@ -345,7 +342,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.Valve)
                     .getCharacteristic(Characteristic.InUse)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(
                             null,
                             attributes.valve === "open" ?
@@ -359,7 +356,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.Valve)
                     .getCharacteristic(Characteristic.ValveType)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(null, valveType);
                     });
                 that.storeCharacteristicItem("valve", devData.deviceid, thisChar);
@@ -368,7 +365,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.Valve)
                     .getCharacteristic(Characteristic.Active)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(
                             null,
                             attributes.valve === "open" ?
@@ -394,7 +391,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.Speaker)
                     .getCharacteristic(Characteristic.Volume)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(null, parseInt(attributes.level || 0));
                     })
                     .on("set", (value, callback) => {
@@ -409,7 +406,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.Speaker)
                     .getCharacteristic(Characteristic.Mute)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(null, attributes.mute === "muted");
                     })
                     .on("set", (value, callback) => {
@@ -428,7 +425,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.Fanv2)
                     .getCharacteristic(Characteristic.Active)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(null, attributes.switch === "on");
                     })
                     .on("set", (value, callback) => {
@@ -449,7 +446,7 @@ module.exports = class ST_Accessories {
                     thisChar = accessory
                         .getOrAddService(Service.Fanv2)
                         .getCharacteristic(Characteristic.RotationSpeed)
-                        .on("get", callback => {
+                        .on("get", (callback) => {
                             callback(null, fanLvl);
                         })
                         .on("set", (value, callback) => {
@@ -471,7 +468,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.Switch)
                     .getCharacteristic(Characteristic.On)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(null, attributes.switch === "on");
                     })
                     .on("set", (value, callback) => {
@@ -490,7 +487,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.Switch)
                     .getCharacteristic(Characteristic.On)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(null, attributes.switch === "on");
                     })
                     .on("set", (value, callback) => {
@@ -528,7 +525,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.StatelessProgrammableSwitch)
                     .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         // Reset value to force `change` to fire for repeated presses
                         this.value = -1;
 
@@ -604,7 +601,7 @@ module.exports = class ST_Accessories {
                     thisChar = accessory
                         .getOrAddService(Service.Lightbulb)
                         .getCharacteristic(Characteristic.On)
-                        .on("get", callback => {
+                        .on("get", (callback) => {
                             callback(null, attributes.switch === "on");
                         })
                         .on("set", (value, callback) => {
@@ -620,7 +617,7 @@ module.exports = class ST_Accessories {
                     thisChar = accessory
                         .getOrAddService(Service.Switch)
                         .getCharacteristic(Characteristic.On)
-                        .on("get", callback => {
+                        .on("get", (callback) => {
                             callback(null, attributes.switch === "on");
                         })
                         .on("set", (value, callback) => {
@@ -647,7 +644,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.SmokeSensor)
                     .getCharacteristic(Characteristic.SmokeDetected)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         if (attributes.smoke === "clear") {
                             callback(null, Characteristic.SmokeDetected.SMOKE_NOT_DETECTED);
                         } else {
@@ -659,7 +656,7 @@ module.exports = class ST_Accessories {
                     thisChar = accessory
                         .getOrAddService(Service.SmokeSensor)
                         .getCharacteristic(Characteristic.StatusTampered)
-                        .on("get", callback => {
+                        .on("get", (callback) => {
                             callback(
                                 null,
                                 attributes.tamper === "detected" ?
@@ -675,7 +672,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.CarbonMonoxideSensor)
                     .getCharacteristic(Characteristic.CarbonMonoxideDetected)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         if (attributes.carbonMonoxide === "clear") {
                             callback(
                                 null,
@@ -693,7 +690,7 @@ module.exports = class ST_Accessories {
                     thisChar = accessory
                         .getOrAddService(Service.CarbonMonoxideSensor)
                         .getCharacteristic(Characteristic.StatusTampered)
-                        .on("get", callback => {
+                        .on("get", (callback) => {
                             callback(
                                 null,
                                 attributes.tamper === "detected" ?
@@ -709,7 +706,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.CarbonDioxideSensor)
                     .getCharacteristic(Characteristic.CarbonDioxideDetected)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         if (attributes.carbonDioxideMeasurement < 2000) {
                             callback(
                                 null,
@@ -726,7 +723,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.CarbonDioxideSensor)
                     .getCharacteristic(Characteristic.CarbonDioxideLevel)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         if (attributes.carbonDioxideMeasurement >= 0) {
                             callback(null, attributes.carbonDioxideMeasurement);
                         }
@@ -736,7 +733,7 @@ module.exports = class ST_Accessories {
                     thisChar = accessory
                         .getOrAddService(Service.CarbonDioxideSensor)
                         .getCharacteristic(Characteristic.StatusTampered)
-                        .on("get", callback => {
+                        .on("get", (callback) => {
                             callback(
                                 null,
                                 attributes.tamper === "detected" ?
@@ -752,7 +749,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.MotionSensor)
                     .getCharacteristic(Characteristic.MotionDetected)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(null, attributes.motion === "active");
                     });
                 that.storeCharacteristicItem("motion", devData.deviceid, thisChar);
@@ -760,7 +757,7 @@ module.exports = class ST_Accessories {
                     thisChar = accessory
                         .getOrAddService(Service.MotionSensor)
                         .getCharacteristic(Characteristic.StatusTampered)
-                        .on("get", callback => {
+                        .on("get", (callback) => {
                             callback(
                                 null,
                                 attributes.tamper === "detected" ?
@@ -776,7 +773,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.LeakSensor)
                     .getCharacteristic(Characteristic.LeakDetected)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         let reply = Characteristic.LeakDetected.LEAK_DETECTED;
                         if (attributes.water === "dry") {
                             reply = Characteristic.LeakDetected.LEAK_NOT_DETECTED;
@@ -788,7 +785,7 @@ module.exports = class ST_Accessories {
                     thisChar = accessory
                         .getOrAddService(Service.LeakSensor)
                         .getCharacteristic(Characteristic.StatusTampered)
-                        .on("get", callback => {
+                        .on("get", (callback) => {
                             callback(
                                 null,
                                 attributes.tamper === "detected" ?
@@ -804,7 +801,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.OccupancySensor)
                     .getCharacteristic(Characteristic.OccupancyDetected)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(null, attributes.presence === "present");
                     });
                 that.storeCharacteristicItem("presence", devData.deviceid, thisChar);
@@ -812,7 +809,7 @@ module.exports = class ST_Accessories {
                     thisChar = accessory
                         .getOrAddService(Service.OccupancySensor)
                         .getCharacteristic(Characteristic.StatusTampered)
-                        .on("get", callback => {
+                        .on("get", (callback) => {
                             callback(
                                 null,
                                 attributes.tamper === "detected" ?
@@ -828,7 +825,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.HumiditySensor)
                     .getCharacteristic(Characteristic.CurrentRelativeHumidity)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(null, Math.round(attributes.humidity));
                     });
                 that.storeCharacteristicItem("humidity", devData.deviceid, thisChar);
@@ -836,7 +833,7 @@ module.exports = class ST_Accessories {
                     thisChar = accessory
                         .getOrAddService(Service.HumiditySensor)
                         .getCharacteristic(Characteristic.StatusTampered)
-                        .on("get", callback => {
+                        .on("get", (callback) => {
                             callback(
                                 null,
                                 attributes.tamper === "detected" ?
@@ -856,7 +853,7 @@ module.exports = class ST_Accessories {
                         minValue: parseFloat(-50),
                         maxValue: parseFloat(100)
                     })
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(
                             null,
                             that.myUtils.tempConversion(
@@ -870,7 +867,7 @@ module.exports = class ST_Accessories {
                     thisChar = accessory
                         .getOrAddService(Service.TemperatureSensor)
                         .getCharacteristic(Characteristic.StatusTampered)
-                        .on("get", callback => {
+                        .on("get", (callback) => {
                             callback(
                                 null,
                                 attributes.tamper === "detected" ?
@@ -887,7 +884,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.LightSensor)
                     .getCharacteristic(Characteristic.CurrentAmbientLightLevel)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(null, Math.ceil(attributes.illuminance));
                     });
                 that.storeCharacteristicItem("illuminance", devData.deviceid, thisChar);
@@ -897,7 +894,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.ContactSensor)
                     .getCharacteristic(Characteristic.ContactSensorState)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         if (attributes.contact === "closed") {
                             callback(
                                 null,
@@ -915,7 +912,7 @@ module.exports = class ST_Accessories {
                     thisChar = accessory
                         .getOrAddService(Service.ContactSensor)
                         .getCharacteristic(Characteristic.StatusTampered)
-                        .on("get", callback => {
+                        .on("get", (callback) => {
                             callback(
                                 null,
                                 attributes.tamper === "detected" ?
@@ -931,7 +928,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.BatteryService)
                     .getCharacteristic(Characteristic.BatteryLevel)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(null, Math.round(attributes.battery));
                     });
                 that.storeCharacteristicItem("battery", devData.deviceid, thisChar);
@@ -939,7 +936,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.BatteryService)
                     .getCharacteristic(Characteristic.StatusLowBattery)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         let battStatus =
                             attributes.battery < 20 ?
                             Characteristic.StatusLowBattery.BATTERY_LEVEL_LOW :
@@ -960,7 +957,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.Outlet)
                     .addCharacteristic(this.CommunityTypes.KilowattHours)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(null, Math.round(attributes.energy));
                     });
                 that.storeCharacteristicItem("energy", devData.deviceid, thisChar);
@@ -971,7 +968,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.Outlet)
                     .addCharacteristic(this.CommunityTypes.Watts)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(null, Math.round(attributes.power));
                     });
                 that.storeCharacteristicItem("power", devData.deviceid, thisChar);
@@ -1010,7 +1007,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.Thermostat)
                     .getCharacteristic(Characteristic.CurrentHeatingCoolingState)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         switch (attributes.thermostatOperatingState) {
                             case "pending cool":
                             case "cooling":
@@ -1032,7 +1029,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.Thermostat)
                     .getCharacteristic(Characteristic.TargetHeatingCoolingState)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         switch (attributes.thermostatMode) {
                             case "cool":
                                 callback(null, Characteristic.TargetHeatingCoolingState.COOL);
@@ -1098,7 +1095,7 @@ module.exports = class ST_Accessories {
                     thisChar = accessory
                         .getOrAddService(Service.Thermostat)
                         .getCharacteristic(Characteristic.CurrentRelativeHumidity)
-                        .on("get", callback => {
+                        .on("get", (callback) => {
                             callback(null, parseInt(attributes.humidity));
                         });
                     that.storeCharacteristicItem("humidity", devData.deviceid, thisChar);
@@ -1106,7 +1103,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.Thermostat)
                     .getCharacteristic(Characteristic.CurrentTemperature)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(
                             null,
                             that.myUtils.tempConversion(
@@ -1120,7 +1117,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.Thermostat)
                     .getCharacteristic(Characteristic.TargetTemperature)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         let temp;
                         switch (attributes.thermostatMode) {
                             case "cool":
@@ -1225,7 +1222,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.Thermostat)
                     .getCharacteristic(Characteristic.TemperatureDisplayUnits)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         if (that.temperature_unit === "C") {
                             callback(null, Characteristic.TemperatureDisplayUnits.CELSIUS);
                         } else {
@@ -1236,7 +1233,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.Thermostat)
                     .getCharacteristic(Characteristic.HeatingThresholdTemperature)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(
                             null,
                             that.myUtils.tempConversion(
@@ -1266,7 +1263,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.Thermostat)
                     .getCharacteristic(Characteristic.CoolingThresholdTemperature)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         callback(
                             null,
                             that.myUtils.tempConversion(
@@ -1302,7 +1299,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.SecuritySystem)
                     .getCharacteristic(Characteristic.SecuritySystemCurrentState)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         // that.log('alarm1: ' + attributes.alarmSystemStatus + ' | ' + that.myUtils.convertAlarmState(attributes.alarmSystemStatus, true, Characteristic));
                         callback(
                             null,
@@ -1318,7 +1315,7 @@ module.exports = class ST_Accessories {
                 thisChar = accessory
                     .getOrAddService(Service.SecuritySystem)
                     .getCharacteristic(Characteristic.SecuritySystemTargetState)
-                    .on("get", callback => {
+                    .on("get", (callback) => {
                         // that.log('alarm2: ' + attributes.alarmSystemStatus + ' | ' + that.myUtils.convertAlarmState(attributes.alarmSystemStatus, true, Characteristic));
                         callback(
                             null,
@@ -1355,7 +1352,7 @@ module.exports = class ST_Accessories {
                     thisChar = accessory
                         .getOrAddService(Service.Speaker)
                         .getCharacteristic(Characteristic.Volume)
-                        .on("get", callback => {
+                        .on("get", (callback) => {
                             that.log.debug("Reading sonos volume " + attributes.volume);
                             callback(null, parseInt(attributes.volume || 0));
                         })
@@ -1397,7 +1394,7 @@ module.exports = class ST_Accessories {
                     thisChar = accessory
                         .getOrAddService(Service.Speaker)
                         .getCharacteristic(Characteristic.Mute)
-                        .on("get", callback => {
+                        .on("get", (callback) => {
                             callback(null, attributes.mute === "muted");
                         })
                         .on("set", (value, callback) => {

@@ -200,12 +200,31 @@ module.exports = class ST_Platform {
         }
     }
 
+    processFieldUpdateOld(attributeSet, that) {
+        // that.log("Processing Update");
+        // that.log(attributeSet);
+        if (!(that.attributeLookup[attributeSet.attribute] && that.attributeLookup[attributeSet.attribute][attributeSet.device])) {
+            return;
+        }
+        var myUsage = that.attributeLookup[attributeSet.attribute][attributeSet.device];
+        if (myUsage instanceof Array) {
+            for (var j = 0; j < myUsage.length; j++) {
+                var accessory = that.deviceLookup[attributeSet.device];
+                if (accessory) {
+                    accessory.device.attributes[attributeSet.attribute] = attributeSet.value;
+                    myUsage[j].getValue();
+                }
+            }
+        }
+    }
+
     processDeviceAttributeUpdate(change) {
         let attrObj = this.SmartThingsAccessories.getAttributeStoreItem(change.attribute, change.deviceid);
         let accessory = this.SmartThingsAccessories.get(change);
         if (!attrObj || !accessory) return;
         if (attrObj instanceof Array) {
             attrObj.forEach(item => {
+                // this.log(accessory.context.deviceData.attributes[change.attribute]);
                 accessory.context.deviceData.attributes[change.attribute] = change.value;
                 item.getValue();
             });
