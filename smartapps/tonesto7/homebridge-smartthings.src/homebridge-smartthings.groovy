@@ -240,12 +240,13 @@ def renderDevices() {
 
 def getDeviceData(type, sItem) {
     // log.debug "getDeviceData($type, $sItem)"
-    def curType = null
-    def devId = sItem
-    def obj = null
-    def name = null
+    String curType = null
+    String devId = sItem
+    Boolean isVirtual = false
+    String firmware = null
+    String name = null
     def attrVal = null
-    def isVirtual = false
+    def obj = null
     switch(type) {
         case "routineList":
             isVirtual = true
@@ -268,6 +269,12 @@ def getDeviceData(type, sItem) {
         default:
             curType = "device"
             obj = sItem
+            // Define firmware variable and initialize it out of device handler attribute`
+            try {
+            	if (sItem?.hasAttribute("firmware")) {
+	                firmware = sItem?.currentValue("firmware")?.toString()
+            	}
+            } catch (ex) { }
             break
     }
     if(curType && obj) {
@@ -279,7 +286,7 @@ def getDeviceData(type, sItem) {
             manufacturerName: (!isVirtual ? sItem?.getManufacturerName() : pluginName()) ?: pluginName(),
             modelName: !isVirtual ? (sItem?.getModelName() ?: sItem?.getTypeName()) : "${curType} Device",
             serialNumber: !isVirtual ? sItem?.getDeviceNetworkId() : "${curType}${devId}",
-            firmwareVersion: "1.0.0",
+            firmwareVersion: firmware ?: "1.0.0",
             lastTime: !isVirtual ? (sItem?.getLastActivity() ?: null) : now(),
             capabilities: !isVirtual ? deviceCapabilityList(sItem) : ["${curType}": 1],
             commands: !isVirtual ? deviceCommandList(sItem) : [on:[]],
@@ -445,13 +452,13 @@ private processCmd(devId, cmd, value1, value2, local=false) {
     if(settings?.addSecurityDevice != false && devId == "alarmSystemStatus_${location?.id}") {
         setSecurityMode(command)
         CommandReply("Success", "Security Alarm, Command $command")
-    }  else if (settings?.modeList && command == "mode") {
+    }  else if (settings?.modeList && command == "mode" && devId) {
         log.debug "Virtual Mode Received: ${value1}"
-        if(value1) { changeMode(value1 as String) }
+        changeMode(devId)
         CommandReply("Success", "Mode Device, Command $command")
-    } else if (settings?.routineList && command == "routine") {
+    } else if (settings?.routineList && command == "routine" && devId) {
         log.debug "Virtual Routine Received: ${value1}"
-        if(value1) { runRoutine(value1) }
+        runRoutine(devId)
         CommandReply("Success", "Routine Device, Command $command")
     } else {
         if (!device) {
@@ -481,20 +488,24 @@ private processCmd(devId, cmd, value1, value2, local=false) {
     }
 }
 
-def changeMode(mode) {
-    if(mode) {
-        mode = mode.replace("Mode - ", "")
-        log.info "Setting the Location Mode to (${mode})..."
-        setLocationMode(mode)
-        state.lastMode = mode
+def changeMode(modeId) {
+    if(modeId) {
+        def mode = findVirtModeDevice(modeId)
+        if(mode) {
+            log.info"Setting the Location Mode to (${mode})..."
+            // setLocationMode(mode)
+            state?.lastMode = mode
+        } else { log.error("Unable to find a matching mode for the id: ${modeId}") }
     }
 }
 
-def runRoutine(rt) {
-    if(rt) {
-        rt = rt.replace("Routine - ", "")
-        log.info "Executing the (${rt}) Routine..."
-        location?.helloHome?.execute(rt)
+def runRoutine(rtId, rtName) {
+    if(rtId) {
+        def rt = findVirtRoutineDevice(rtId)
+        if(rt?.name) {
+            log.info "Executing the (${rt?.name}) Routine..."
+            // location?.helloHome?.execute(rt?.name)
+        } else { log.error("Unable to find a matching routine for the id: ${rtId}") }
     }
 }
 

@@ -253,59 +253,60 @@ module.exports = class ST_Accessories {
 
             if (hasCapability('Lock')) {
                 deviceGroups.push("lock");
-                thisChar = accessory
-                    .getOrAddService(Service.LockMechanism)
-                    .getCharacteristic(Characteristic.LockCurrentState)
-                    .on("get", (callback) => {
-                        callback(null, this.attributeStateTransform('lock', attributes.lock));
-                    });
-                that.storeCharacteristicItem("lock", devData.deviceid, thisChar);
+                accessory = that.device_types.lock(accessory, devData);
+                // thisChar = accessory
+                //     .getOrAddService(Service.LockMechanism)
+                //     .getCharacteristic(Characteristic.LockCurrentState)
+                //     .on("get", (callback) => {
+                //         callback(null, this.attributeStateTransform('lock', attributes.lock));
+                //     });
+                // that.storeCharacteristicItem("lock", devData.deviceid, thisChar);
 
-                thisChar = accessory
-                    .getOrAddService(Service.LockMechanism)
-                    .getCharacteristic(Characteristic.LockTargetState)
-                    .on("get", (callback) => {
-                        callback(null, this.attributeStateTransform('lock', attributes.lock));
-                    })
-                    .on("set", (value, callback) => {
-                        that.client.sendDeviceCommand(callback, devData.deviceid, (value === 1 || value === true) ? "lock" : "unlock");
-                        attributes.lock = (value === 1 || value === true) ? "locked" : "unlocked";
-                    });
-                that.storeCharacteristicItem("lock", devData.deviceid, thisChar);
+                // thisChar = accessory
+                //     .getOrAddService(Service.LockMechanism)
+                //     .getCharacteristic(Characteristic.LockTargetState)
+                //     .on("get", (callback) => {
+                //         callback(null, this.attributeStateTransform('lock', attributes.lock));
+                //     })
+                //     .on("set", (value, callback) => {
+                //         that.client.sendDeviceCommand(callback, devData.deviceid, (value === 1 || value === true) ? "lock" : "unlock");
+                //         attributes.lock = (value === 1 || value === true) ? "locked" : "unlocked";
+                //     });
+                // that.storeCharacteristicItem("lock", devData.deviceid, thisChar);
             }
 
             if (hasCapability('Valve')) {
                 that.log("valve: " + attributes.valve);
                 deviceGroups.push("valve");
-                //Gets the inUse Characteristic
-                thisChar = accessory
-                    .getOrAddService(Service.Valve)
-                    .getCharacteristic(Characteristic.InUse)
-                    .on("get", (callback) => {
-                        callback(null, this.attributeStateTransform('valve', attributes.valve));
-                    });
-                that.storeCharacteristicItem("valve", devData.deviceid, thisChar);
+                accessory = that.device_types.valve(accessory, devData);
+                // thisChar = accessory
+                //     .getOrAddService(Service.Valve)
+                //     .getCharacteristic(Characteristic.InUse)
+                //     .on("get", (callback) => {
+                //         callback(null, this.attributeStateTransform('valve', attributes.valve));
+                //     });
+                // that.storeCharacteristicItem("valve", devData.deviceid, thisChar);
 
-                //Defines the valve type (irrigation or generic)
-                thisChar = accessory
-                    .getOrAddService(Service.Valve)
-                    .getCharacteristic(Characteristic.ValveType)
-                    .on("get", (callback) => {
-                        callback(null, 0);
-                    });
-                that.storeCharacteristicItem("valve", devData.deviceid, thisChar);
+                // //Defines the valve type (irrigation or generic)
+                // thisChar = accessory
+                //     .getOrAddService(Service.Valve)
+                //     .getCharacteristic(Characteristic.ValveType)
+                //     .on("get", (callback) => {
+                //         callback(null, 0);
+                //     });
+                // that.storeCharacteristicItem("valve", devData.deviceid, thisChar);
 
-                //Defines Valve State (opened/closed)
-                thisChar = accessory
-                    .getOrAddService(Service.Valve)
-                    .getCharacteristic(Characteristic.Active)
-                    .on("get", (callback) => {
-                        callback(null, this.attributeStateTransform('valve', attributes.valve));
-                    })
-                    .on("set", (value, callback) => {
-                        that.client.sendDeviceCommand(callback, devData.deviceid, (value ? "on" : "off"));
-                    });
-                that.storeCharacteristicItem("valve", devData.deviceid, thisChar);
+                // //Defines Valve State (opened/closed)
+                // thisChar = accessory
+                //     .getOrAddService(Service.Valve)
+                //     .getCharacteristic(Characteristic.Active)
+                //     .on("get", (callback) => {
+                //         callback(null, this.attributeStateTransform('valve', attributes.valve));
+                //     })
+                //     .on("set", (value, callback) => {
+                //         that.client.sendDeviceCommand(callback, devData.deviceid, (value ? "on" : "off"));
+                //     });
+                // that.storeCharacteristicItem("valve", devData.deviceid, thisChar);
             }
 
             //Defines Speaker Device
@@ -341,84 +342,85 @@ module.exports = class ST_Accessories {
             //Handles Standalone Fan with no levels
             if (isFan && (hasCapability('Fan Light') || !hasDeviceGroups())) {
                 deviceGroups.push("fans");
-                thisChar = accessory
-                    .getOrAddService(Service.Fanv2)
-                    .getCharacteristic(Characteristic.Active)
-                    .on("get", (callback) => {
-                        callback(null, that.attributeStateTransform('switch', attributes.switch));
-                    })
-                    .on("set", (value, callback) => {
-                        that.client.sendDeviceCommand(callback, devData.deviceid, (value ? "on" : "off"));
-                    });
-                that.storeCharacteristicItem("switch", devData.deviceid, thisChar);
+                accessory = that.device_types.fan(accessory, devData);
+                // thisChar = accessory
+                //     .getOrAddService(Service.Fanv2)
+                //     .getCharacteristic(Characteristic.Active)
+                //     .on("get", (callback) => {
+                //         callback(null, that.attributeStateTransform('switch', attributes.switch));
+                //     })
+                //     .on("set", (value, callback) => {
+                //         that.client.sendDeviceCommand(callback, devData.deviceid, (value ? "on" : "off"));
+                //     });
+                // that.storeCharacteristicItem("switch", devData.deviceid, thisChar);
 
-                if (attributes.level !== undefined || attributes.fanSpeed !== undefined) {
-                    // let fanLvl = attributes.fanSpeed ? that.myUtils.fanSpeedConversionInt(attributes.fanSpeed, (commands['medHighSpeed'] !== undefined)) : parseInt(attributes.level);
-                    let fanLvl = parseInt(attributes.level);
-                    // that.log("Fan with (" + attributes.fanSpeed ? "fanSpeed" : "level" + ') | value: ' + fanLvl);
-                    // that.log("Fan with level at " + fanLvl);
-                    // let waitTimer;
-                    thisChar = accessory
-                        .getOrAddService(Service.Fanv2)
-                        .getCharacteristic(Characteristic.RotationSpeed)
-                        .on("get", (callback) => {
-                            callback(null, fanLvl);
-                        })
-                        .on("set", (value, callback) => {
-                            if (value >= 0 && value <= 100) {
-                                // clearTimeout(waitTimer);
-                                // that.log('Sending Fan value of ' + value);
-                                that.client.sendDeviceCommand(callback, devData.deviceid, "setLevel", {
-                                    value1: parseInt(value)
-                                });
-                            }
-                        });
-                    that.storeCharacteristicItem("level", devData.deviceid, thisChar);
-                }
+                // if (attributes.level !== undefined || attributes.fanSpeed !== undefined) {
+                //     // let fanLvl = attributes.fanSpeed ? that.myUtils.fanSpeedConversionInt(attributes.fanSpeed, (commands['medHighSpeed'] !== undefined)) : parseInt(attributes.level);
+                //     let fanLvl = parseInt(attributes.level);
+                //     // that.log("Fan with (" + attributes.fanSpeed ? "fanSpeed" : "level" + ') | value: ' + fanLvl);
+                //     // that.log("Fan with level at " + fanLvl);
+                //     // let waitTimer;
+                //     thisChar = accessory
+                //         .getOrAddService(Service.Fanv2)
+                //         .getCharacteristic(Characteristic.RotationSpeed)
+                //         .on("get", (callback) => {
+                //             callback(null, fanLvl);
+                //         })
+                //         .on("set", (value, callback) => {
+                //             if (value >= 0 && value <= 100) {
+                //                 // clearTimeout(waitTimer);
+                //                 // that.log('Sending Fan value of ' + value);
+                //                 that.client.sendDeviceCommand(callback, devData.deviceid, "setLevel", {
+                //                     value1: parseInt(value)
+                //                 });
+                //             }
+                //         });
+                //     that.storeCharacteristicItem("level", devData.deviceid, thisChar);
+                // }
             }
 
             if (isMode) {
                 deviceGroups.push("mode");
                 // that.log('Mode: (' + accessory.name + ')');
-                thisChar = accessory
-                    .getOrAddService(Service.Switch)
-                    .getCharacteristic(Characteristic.On)
-                    .on("get", (callback) => {
-                        callback(null, that.attributeStateTransform('switch', attributes.switch));
-                    })
-                    .on("set", (value, callback) => {
-                        if (value && (attributes.switch === "off")) {
-                            that.client.sendDeviceCommand(callback, devData.deviceid, "mode", {
-                                value1: accessory.name.toString()
-                            });
-                        }
-                    });
-                that.storeCharacteristicItem("switch", devData.deviceid, thisChar);
+                accessory = that.device_types.virtual_mode(accessory, devData);
+                // thisChar = accessory
+                //     .getOrAddService(Service.Switch)
+                //     .getCharacteristic(Characteristic.On)
+                //     .on("get", (callback) => {
+                //         callback(null, that.attributeStateTransform('switch', attributes.switch));
+                //     })
+                //     .on("set", (value, callback) => {
+                //         if (value && (attributes.switch === "off")) {
+                //             that.client.sendDeviceCommand(callback, devData.deviceid, "mode", {
+                //                 value1: accessory.name.toString()
+                //             });
+                //         }
+                //     });
+                // that.storeCharacteristicItem("switch", devData.deviceid, thisChar);
             }
 
             if (isRoutine) {
                 deviceGroups.push("routine");
                 // that.log('Routine: (' + accessory.name + ')');
-                thisChar = accessory
-                    .getOrAddService(Service.Switch)
-                    .getCharacteristic(Characteristic.On)
-                    .on("get", (callback) => {
-                        callback(null, that.attributeStateTransform('switch', attributes.switch));
-                    })
-                    .on("set", (value, callback) => {
-                        if (value && (attributes.switch === "off")) {
-                            that.client.sendDeviceCommand(callback, devData.deviceid, "routine", {
-                                value1: accessory.name.toString()
-                            });
-                            setTimeout(() => {
-                                console.log("routineOff...");
-                                accessory
-                                    .getOrAddService(Service.Switch)
-                                    .setCharacteristic(Characteristic.On, false);
-                            }, 2000);
-                        }
-                    });
-                that.storeCharacteristicItem("switch", devData.deviceid, thisChar);
+                accessory = that.device_types.virtual_routine(accessory, devData);
+                // thisChar = accessory
+                //     .getOrAddService(Service.Switch)
+                //     .getCharacteristic(Characteristic.On)
+                //     .on("get", (callback) => {
+                //         callback(null, that.attributeStateTransform('switch', attributes.switch));
+                //     })
+                //     .on("set", (value, callback) => {
+                //         if (value && (attributes.switch === "off")) {
+                //             that.client.sendDeviceCommand(callback, devData.deviceid, "routine");
+                //             setTimeout(() => {
+                //                 console.log("routineOff...");
+                //                 accessory
+                //                     .getOrAddService(Service.Switch)
+                //                     .setCharacteristic(Characteristic.On, false);
+                //             }, 2000);
+                //         }
+                //     });
+                // that.storeCharacteristicItem("switch", devData.deviceid, thisChar);
             }
 
             if (hasCapability("Button")) {
