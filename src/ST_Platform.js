@@ -15,6 +15,8 @@ const {
 
 var PlatformAccessory;
 
+// TODO: Handle
+
 module.exports = class ST_Platform {
     constructor(log, config, api) {
         this.config = config;
@@ -163,7 +165,7 @@ module.exports = class ST_Platform {
         let accessory;
         device.excludedCapabilities = this.excludedCapabilities[device.deviceid] || ["None"];
         this.log(`Loading Existing Device (${device.name}) | (${device.deviceid})`);
-        accessory = this.SmartThingsAccessories.loadAccesoryData(cacheDevice, device);
+        accessory = this.SmartThingsAccessories.loadAccessoryData(cacheDevice, device);
         this.SmartThingsAccessories.add(accessory);
     }
 
@@ -197,40 +199,15 @@ module.exports = class ST_Platform {
         }
     }
 
-    processFieldUpdateOld(attributeSet, that) {
-        // that.log("Processing Update");
-        // that.log(attributeSet);
-        if (!(that.attributeLookup[attributeSet.attribute] && that.attributeLookup[attributeSet.attribute][attributeSet.device])) {
-            return;
-        }
-        var myUsage = that.attributeLookup[attributeSet.attribute][attributeSet.device];
-        if (myUsage instanceof Array) {
-            for (var j = 0; j < myUsage.length; j++) {
-                var accessory = that.deviceLookup[attributeSet.device];
-                if (accessory) {
-                    accessory.device.attributes[attributeSet.attribute] = attributeSet.value;
-                    myUsage[j].getValue();
-                }
-            }
-        }
-    }
-
     processDeviceAttributeUpdate(change) {
         let attrObj = this.SmartThingsAccessories.getAttributeStoreItem(change.attribute, change.deviceid);
         let accessory = this.SmartThingsAccessories.get(change);
         if (!attrObj || !accessory) return;
         if (attrObj instanceof Array) {
-            let newValue;
-            switch (change.attribute) {
-                case "Switch":
-                    newValue = (change.value === 'on');
-                    break;
-                default:
-                    newValue = change.value;
-            }
             attrObj.forEach(characteristic => {
+                let newVal = this.SmartThingsAccessories.attributeStateTransform(change.attribute, change.value, characteristic.displayName);
                 accessory.context.deviceData.attributes[change.attribute] = change.value;
-                characteristic.updateValue(newValue);
+                characteristic.updateValue(newVal);
                 // characteristic.getValue();
             });
         }

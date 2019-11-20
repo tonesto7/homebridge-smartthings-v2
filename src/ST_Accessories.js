@@ -237,23 +237,17 @@ module.exports = class ST_Accessories {
                     .on("get", (callback) => {
                         if (attributes.door === "closed" || attributes.door === "closing") {
                             callback(null, Characteristic.TargetDoorState.CLOSED);
-                        } else if (
-                            attributes.door === "open" ||
-                            attributes.door === "opening"
-                        ) {
+                        } else if (attributes.door === "open" || attributes.door === "opening") {
                             callback(null, Characteristic.TargetDoorState.OPEN);
                         }
                     })
                     .on("set", (value, callback) => {
                         if (value === Characteristic.TargetDoorState.OPEN || value === 0) {
                             that.client.sendDeviceCommand(callback, devData.deviceid, "open");
-                            attributes.door = "opening";
-                        } else if (
-                            value === Characteristic.TargetDoorState.CLOSED ||
-                            value === 1
-                        ) {
+                            accessory.context.deviceData.attributes.door = "opening";
+                        } else if (value === Characteristic.TargetDoorState.CLOSED || value === 1) {
                             that.client.sendDeviceCommand(callback, devData.deviceid, "close");
-                            attributes.door = "closing";
+                            accessory.context.deviceData.attributes.door = "closing";
                         }
                     });
                 that.storeCharacteristicItem("door", devData.deviceid, thisChar);
@@ -285,6 +279,8 @@ module.exports = class ST_Accessories {
                     .getOrAddService(Service.GarageDoorOpener)
                     .setCharacteristic(Characteristic.ObstructionDetected, false);
             }
+
+
             if (hasCapability('Lock') && !hasCapability("Thermostat")) {
                 deviceGroups.push("lock");
                 thisChar = accessory
@@ -324,10 +320,10 @@ module.exports = class ST_Accessories {
                     .on("set", (value, callback) => {
                         if (value === 1 || value === true) {
                             that.client.sendDeviceCommand(callback, devData.deviceid, "lock");
-                            attributes.lock = "locked";
+                            accessory.context.deviceData.attributes.lock = "locked";
                         } else {
                             that.client.sendDeviceCommand(callback, devData.deviceid, "unlock");
-                            attributes.lock = "unlocked";
+                            accessory.context.deviceData.attributes.lock = "unlocked";
                         }
                     });
                 that.storeCharacteristicItem("lock", devData.deviceid, thisChar);
@@ -336,19 +332,12 @@ module.exports = class ST_Accessories {
             if (hasCapability('Valve')) {
                 that.log("valve: " + attributes.valve);
                 deviceGroups.push("valve");
-                let valveType = capabilities["Irrigation"] !== undefined ? 0 : 0;
-
                 //Gets the inUse Characteristic
                 thisChar = accessory
                     .getOrAddService(Service.Valve)
                     .getCharacteristic(Characteristic.InUse)
                     .on("get", (callback) => {
-                        callback(
-                            null,
-                            attributes.valve === "open" ?
-                            Characteristic.InUse.IN_USE :
-                            Characteristic.InUse.NOT_IN_USE
-                        );
+                        callback(null, attributes.valve === "open" ? Characteristic.InUse.IN_USE : Characteristic.InUse.NOT_IN_USE);
                     });
                 that.storeCharacteristicItem("valve", devData.deviceid, thisChar);
 
@@ -357,7 +346,7 @@ module.exports = class ST_Accessories {
                     .getOrAddService(Service.Valve)
                     .getCharacteristic(Characteristic.ValveType)
                     .on("get", (callback) => {
-                        callback(null, valveType);
+                        callback(null, 0);
                     });
                 that.storeCharacteristicItem("valve", devData.deviceid, thisChar);
 
@@ -366,21 +355,10 @@ module.exports = class ST_Accessories {
                     .getOrAddService(Service.Valve)
                     .getCharacteristic(Characteristic.Active)
                     .on("get", (callback) => {
-                        callback(
-                            null,
-                            attributes.valve === "open" ?
-                            Characteristic.InUse.IN_USE :
-                            Characteristic.InUse.NOT_IN_USE
-                        );
+                        callback(null, attributes.valve === "open" ? Characteristic.InUse.IN_USE : Characteristic.InUse.NOT_IN_USE);
                     })
                     .on("set", (value, callback) => {
-                        // if (attributes.inStandby !== 'true') {
-                        if (value) {
-                            that.client.sendDeviceCommand(callback, devData.deviceid, "on");
-                        } else {
-                            that.client.sendDeviceCommand(callback, devData.deviceid, "off");
-                        }
-                        // }
+                        that.client.sendDeviceCommand(callback, devData.deviceid, (value ? "on" : "off"));
                     });
                 that.storeCharacteristicItem("valve", devData.deviceid, thisChar);
             }
@@ -531,20 +509,11 @@ module.exports = class ST_Accessories {
 
                         switch (attributes.button) {
                             case "pushed":
-                                return callback(
-                                    null,
-                                    Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS
-                                );
+                                return callback(null, Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS);
                             case "held":
-                                return callback(
-                                    null,
-                                    Characteristic.ProgrammableSwitchEvent.LONG_PRESS
-                                );
+                                return callback(null, Characteristic.ProgrammableSwitchEvent.LONG_PRESS);
                             case "double":
-                                return callback(
-                                    null,
-                                    Characteristic.ProgrammableSwitchEvent.DOUBLE_PRESS
-                                );
+                                return callback(null, Characteristic.ProgrammableSwitchEvent.DOUBLE_PRESS);
                             default:
                                 return callback(null, null);
                         }
@@ -556,27 +525,16 @@ module.exports = class ST_Accessories {
                     for (const value of JSON.parse(attributes.supportedButtonValues)) {
                         switch (value) {
                             case "pushed":
-                                validValues.push(
-                                    Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS
-                                );
+                                validValues.push(Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS);
                                 continue;
                             case "held":
-                                validValues.push(
-                                    Characteristic.ProgrammableSwitchEvent.LONG_PRESS
-                                );
+                                validValues.push(Characteristic.ProgrammableSwitchEvent.LONG_PRESS);
                                 continue;
                             case "double":
-                                validValues.push(
-                                    Characteristic.ProgrammableSwitchEvent.DOUBLE_PRESS
-                                );
+                                validValues.push(Characteristic.ProgrammableSwitchEvent.DOUBLE_PRESS);
                                 continue;
                             default:
-                                that.log(
-                                    "Button: (" +
-                                    accessory.name +
-                                    ") unsupported button value: " +
-                                    value
-                                );
+                                that.log("Button: (" + accessory.name + ") unsupported button value: " + value);
                         }
                     }
 
@@ -595,9 +553,7 @@ module.exports = class ST_Accessories {
                 //Handles Standalone Fan with no levels
                 if (isLight) {
                     deviceGroups.push("light");
-                    if (capabilities["Fan Light"] || capabilities["FanLight"]) {
-                        that.log("FanLight: " + devData.name);
-                    }
+                    if (hasCapability("Fan Light")) that.log("FanLight: " + devData.name);
                     thisChar = accessory
                         .getOrAddService(Service.Lightbulb)
                         .getCharacteristic(Characteristic.On)
@@ -657,12 +613,7 @@ module.exports = class ST_Accessories {
                         .getOrAddService(Service.SmokeSensor)
                         .getCharacteristic(Characteristic.StatusTampered)
                         .on("get", (callback) => {
-                            callback(
-                                null,
-                                attributes.tamper === "detected" ?
-                                Characteristic.StatusTampered.TAMPERED :
-                                Characteristic.StatusTampered.NOT_TAMPERED
-                            );
+                            callback(null, attributes.tamper === "detected" ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
                         });
                     that.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
                 }
@@ -674,15 +625,9 @@ module.exports = class ST_Accessories {
                     .getCharacteristic(Characteristic.CarbonMonoxideDetected)
                     .on("get", (callback) => {
                         if (attributes.carbonMonoxide === "clear") {
-                            callback(
-                                null,
-                                Characteristic.CarbonMonoxideDetected.CO_LEVELS_NORMAL
-                            );
+                            callback(null, Characteristic.CarbonMonoxideDetected.CO_LEVELS_NORMAL);
                         } else {
-                            callback(
-                                null,
-                                Characteristic.CarbonMonoxideDetected.CO_LEVELS_ABNORMAL
-                            );
+                            callback(null, Characteristic.CarbonMonoxideDetected.CO_LEVELS_ABNORMAL);
                         }
                     });
                 that.storeCharacteristicItem("carbonMonoxide", devData.deviceid, thisChar);
@@ -691,12 +636,7 @@ module.exports = class ST_Accessories {
                         .getOrAddService(Service.CarbonMonoxideSensor)
                         .getCharacteristic(Characteristic.StatusTampered)
                         .on("get", (callback) => {
-                            callback(
-                                null,
-                                attributes.tamper === "detected" ?
-                                Characteristic.StatusTampered.TAMPERED :
-                                Characteristic.StatusTampered.NOT_TAMPERED
-                            );
+                            callback(null, attributes.tamper === "detected" ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
                         });
                     that.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
                 }
@@ -708,15 +648,9 @@ module.exports = class ST_Accessories {
                     .getCharacteristic(Characteristic.CarbonDioxideDetected)
                     .on("get", (callback) => {
                         if (attributes.carbonDioxideMeasurement < 2000) {
-                            callback(
-                                null,
-                                Characteristic.CarbonDioxideDetected.CO2_LEVELS_NORMAL
-                            );
+                            callback(null, Characteristic.CarbonDioxideDetected.CO2_LEVELS_NORMAL);
                         } else {
-                            callback(
-                                null,
-                                Characteristic.CarbonDioxideDetected.CO2_LEVELS_ABNORMAL
-                            );
+                            callback(null, Characteristic.CarbonDioxideDetected.CO2_LEVELS_ABNORMAL);
                         }
                     });
                 that.storeCharacteristicItem("carbonDioxideMeasurement", devData.deviceid, thisChar);
@@ -734,12 +668,7 @@ module.exports = class ST_Accessories {
                         .getOrAddService(Service.CarbonDioxideSensor)
                         .getCharacteristic(Characteristic.StatusTampered)
                         .on("get", (callback) => {
-                            callback(
-                                null,
-                                attributes.tamper === "detected" ?
-                                Characteristic.StatusTampered.TAMPERED :
-                                Characteristic.StatusTampered.NOT_TAMPERED
-                            );
+                            callback(null, attributes.tamper === "detected" ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
                         });
                     that.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
                 }
@@ -758,12 +687,7 @@ module.exports = class ST_Accessories {
                         .getOrAddService(Service.MotionSensor)
                         .getCharacteristic(Characteristic.StatusTampered)
                         .on("get", (callback) => {
-                            callback(
-                                null,
-                                attributes.tamper === "detected" ?
-                                Characteristic.StatusTampered.TAMPERED :
-                                Characteristic.StatusTampered.NOT_TAMPERED
-                            );
+                            callback(null, attributes.tamper === "detected" ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
                         });
                     that.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
                 }
@@ -786,12 +710,7 @@ module.exports = class ST_Accessories {
                         .getOrAddService(Service.LeakSensor)
                         .getCharacteristic(Characteristic.StatusTampered)
                         .on("get", (callback) => {
-                            callback(
-                                null,
-                                attributes.tamper === "detected" ?
-                                Characteristic.StatusTampered.TAMPERED :
-                                Characteristic.StatusTampered.NOT_TAMPERED
-                            );
+                            callback(null, attributes.tamper === "detected" ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
                         });
                     that.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
                 }
@@ -810,12 +729,7 @@ module.exports = class ST_Accessories {
                         .getOrAddService(Service.OccupancySensor)
                         .getCharacteristic(Characteristic.StatusTampered)
                         .on("get", (callback) => {
-                            callback(
-                                null,
-                                attributes.tamper === "detected" ?
-                                Characteristic.StatusTampered.TAMPERED :
-                                Characteristic.StatusTampered.NOT_TAMPERED
-                            );
+                            callback(null, attributes.tamper === "detected" ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
                         });
                     that.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
                 }
@@ -834,12 +748,7 @@ module.exports = class ST_Accessories {
                         .getOrAddService(Service.HumiditySensor)
                         .getCharacteristic(Characteristic.StatusTampered)
                         .on("get", (callback) => {
-                            callback(
-                                null,
-                                attributes.tamper === "detected" ?
-                                Characteristic.StatusTampered.TAMPERED :
-                                Characteristic.StatusTampered.NOT_TAMPERED
-                            );
+                            callback(null, attributes.tamper === "detected" ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
                         });
                     that.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
                 }
@@ -854,13 +763,7 @@ module.exports = class ST_Accessories {
                         maxValue: parseFloat(100)
                     })
                     .on("get", (callback) => {
-                        callback(
-                            null,
-                            that.myUtils.tempConversion(
-                                that.temperature_unit,
-                                attributes.temperature
-                            )
-                        );
+                        callback(null, that.myUtils.tempConversion(that.temperature_unit, attributes.temperature));
                     });
                 that.storeCharacteristicItem("temperature", devData.deviceid, thisChar);
                 if (hasCapability("Tamper Alert")) {
@@ -868,12 +771,7 @@ module.exports = class ST_Accessories {
                         .getOrAddService(Service.TemperatureSensor)
                         .getCharacteristic(Characteristic.StatusTampered)
                         .on("get", (callback) => {
-                            callback(
-                                null,
-                                attributes.tamper === "detected" ?
-                                Characteristic.StatusTampered.TAMPERED :
-                                Characteristic.StatusTampered.NOT_TAMPERED
-                            );
+                            callback(null, attributes.tamper === "detected" ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
                         });
                     that.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
                 }
@@ -896,15 +794,9 @@ module.exports = class ST_Accessories {
                     .getCharacteristic(Characteristic.ContactSensorState)
                     .on("get", (callback) => {
                         if (attributes.contact === "closed") {
-                            callback(
-                                null,
-                                Characteristic.ContactSensorState.CONTACT_DETECTED
-                            );
+                            callback(null, Characteristic.ContactSensorState.CONTACT_DETECTED);
                         } else {
-                            callback(
-                                null,
-                                Characteristic.ContactSensorState.CONTACT_NOT_DETECTED
-                            );
+                            callback(null, Characteristic.ContactSensorState.CONTACT_NOT_DETECTED);
                         }
                     });
                 that.storeCharacteristicItem("contact", devData.deviceid, thisChar);
@@ -913,12 +805,7 @@ module.exports = class ST_Accessories {
                         .getOrAddService(Service.ContactSensor)
                         .getCharacteristic(Characteristic.StatusTampered)
                         .on("get", (callback) => {
-                            callback(
-                                null,
-                                attributes.tamper === "detected" ?
-                                Characteristic.StatusTampered.TAMPERED :
-                                Characteristic.StatusTampered.NOT_TAMPERED
-                            );
+                            callback(null, attributes.tamper === "detected" ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED);
                         });
                     that.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
                 }
@@ -937,18 +824,12 @@ module.exports = class ST_Accessories {
                     .getOrAddService(Service.BatteryService)
                     .getCharacteristic(Characteristic.StatusLowBattery)
                     .on("get", (callback) => {
-                        let battStatus =
-                            attributes.battery < 20 ?
-                            Characteristic.StatusLowBattery.BATTERY_LEVEL_LOW :
-                            Characteristic.StatusLowBattery.BATTERY_LEVEL_NORMAL;
+                        let battStatus = attributes.battery < 20 ? Characteristic.StatusLowBattery.BATTERY_LEVEL_LOW : Characteristic.StatusLowBattery.BATTERY_LEVEL_NORMAL;
                         callback(null, battStatus);
                     });
                 accessory
                     .getOrAddService(Service.BatteryService)
-                    .setCharacteristic(
-                        Characteristic.ChargingState,
-                        Characteristic.ChargingState.NOT_CHARGING
-                    );
+                    .setCharacteristic(Characteristic.ChargingState, Characteristic.ChargingState.NOT_CHARGING);
                 that.storeCharacteristicItem("battery", devData.deviceid, thisChar);
             }
 
@@ -974,34 +855,6 @@ module.exports = class ST_Accessories {
                 that.storeCharacteristicItem("power", devData.deviceid, thisChar);
             }
 
-            if (hasCapability("Acceleration Sensor")) {
-                // deviceGroups.push('accel_sensor')
-            }
-            if (hasCapability('Three Axis')) {
-                // deviceGroups.push('3_axis_sensor')
-            }
-            if (hasCapability("Air Quality Sensor")) {
-                // deviceGroups.push('air_quality_sensor')
-                // thisChar = accessory.getOrAddService(Service.AirQualitySensor).getCharacteristic(Characteristic.AirQuality)
-                //     .on('get', (callback)=>{
-                //         switch (attributes.airQuality) {
-                //             case 'pending cool':
-                //             case 'cooling':
-                //                 callback(null, Characteristic.CurrentHeatingCoolingState.COOL);
-                //                 break;
-                //             case 'pending heat':
-                //             case 'heating':
-                //                 callback(null, Characteristic.CurrentHeatingCoolingState.HEAT);
-                //                 break;
-                //             default:
-                //                 // The above list should be inclusive, but we need to return something if they change stuff.
-                //                 // TODO: Double check if Smartthings can send "auto" as operatingstate. I don't think it can.
-                //                 callback(null, Characteristic.CurrentHeatingCoolingState.OFF);
-                //                 break;
-                //         }
-                //     });
-                // that.storeCharacteristicItem('thermostatOperatingState', devData.deviceid, thisChar);
-            }
             if (isThermostat) {
                 deviceGroups.push("thermostat");
                 thisChar = accessory
@@ -1104,13 +957,7 @@ module.exports = class ST_Accessories {
                     .getOrAddService(Service.Thermostat)
                     .getCharacteristic(Characteristic.CurrentTemperature)
                     .on("get", (callback) => {
-                        callback(
-                            null,
-                            that.myUtils.tempConversion(
-                                that.temperature_unit,
-                                attributes.temperature
-                            )
-                        );
+                        callback(null, that.myUtils.tempConversion(that.temperature_unit, attributes.temperature));
                     });
                 that.storeCharacteristicItem("temperature", devData.deviceid, thisChar);
 
@@ -1145,10 +992,7 @@ module.exports = class ST_Accessories {
                         if (!temp) {
                             callback("Unknown");
                         } else {
-                            callback(
-                                null,
-                                that.myUtils.tempConversion(that.temperature_unit, temp)
-                            );
+                            callback(null, that.myUtils.tempConversion(that.temperature_unit, temp));
                         }
                     })
                     .on("set", (value, callback) => {
@@ -1163,26 +1007,18 @@ module.exports = class ST_Accessories {
                         switch (attributes.thermostatMode) {
                             case "cool":
                                 {
-                                    that.client.sendDeviceCommand(
-                                        callback,
-                                        devData.deviceid,
-                                        "setCoolingSetpoint", {
-                                            value1: temp
-                                        }
-                                    );
+                                    that.client.sendDeviceCommand(callback, devData.deviceid, "setCoolingSetpoint", {
+                                        value1: temp
+                                    });
                                     attributes.coolingSetpoint = temp;
                                     break;
                                 }
                             case "emergency heat":
                             case "heat":
                                 {
-                                    that.client.sendDeviceCommand(
-                                        callback,
-                                        devData.deviceid,
-                                        "setHeatingSetpoint", {
-                                            value1: temp
-                                        }
-                                    );
+                                    that.client.sendDeviceCommand(callback, devData.deviceid, "setHeatingSetpoint", {
+                                        value1: temp
+                                    });
                                     attributes.heatingSetpoint = temp;
                                     break;
                                 }
@@ -1195,21 +1031,13 @@ module.exports = class ST_Accessories {
                                     let cur = attributes.temperature;
                                     let isHighTemp = Math.abs(high - cur) < Math.abs(cur - low);
                                     if (isHighTemp) {
-                                        that.client.sendDeviceCommand(
-                                            callback,
-                                            devData.deviceid,
-                                            "setCoolingSetpoint", {
-                                                value1: temp
-                                            }
-                                        );
+                                        that.client.sendDeviceCommand(callback, devData.deviceid, "setCoolingSetpoint", {
+                                            value1: temp
+                                        });
                                     } else {
-                                        that.client.sendDeviceCommand(
-                                            null,
-                                            devData.deviceid,
-                                            "setHeatingSetpoint", {
-                                                value1: temp
-                                            }
-                                        );
+                                        that.client.sendDeviceCommand(null, devData.deviceid, "setHeatingSetpoint", {
+                                            value1: temp
+                                        });
                                     }
                                     break;
                                 }
@@ -1234,13 +1062,7 @@ module.exports = class ST_Accessories {
                     .getOrAddService(Service.Thermostat)
                     .getCharacteristic(Characteristic.HeatingThresholdTemperature)
                     .on("get", (callback) => {
-                        callback(
-                            null,
-                            that.myUtils.tempConversion(
-                                that.temperature_unit,
-                                attributes.heatingSetpoint
-                            )
-                        );
+                        callback(null, that.myUtils.tempConversion(that.temperature_unit, attributes.heatingSetpoint));
                     })
                     .on("set", (value, callback) => {
                         // Convert the Celsius value to the appropriate unit for Smartthings
@@ -1250,13 +1072,9 @@ module.exports = class ST_Accessories {
                         } else {
                             temp = value * 1.8 + 32;
                         }
-                        that.client.sendDeviceCommand(
-                            callback,
-                            devData.deviceid,
-                            "setHeatingSetpoint", {
-                                value1: temp
-                            }
-                        );
+                        that.client.sendDeviceCommand(callback, devData.deviceid, "setHeatingSetpoint", {
+                            value1: temp
+                        });
                         attributes.heatingSetpoint = temp;
                     });
                 that.storeCharacteristicItem("heatingSetpoint", devData.deviceid, thisChar);
@@ -1280,13 +1098,9 @@ module.exports = class ST_Accessories {
                         } else {
                             temp = value * 1.8 + 32;
                         }
-                        that.client.sendDeviceCommand(
-                            callback,
-                            devData.deviceid,
-                            "setCoolingSetpoint", {
-                                value1: temp
-                            }
-                        );
+                        that.client.sendDeviceCommand(callback, devData.deviceid, "setCoolingSetpoint", {
+                            value1: temp
+                        });
                         attributes.coolingSetpoint = temp;
                     });
                 that.storeCharacteristicItem("coolingSetpoint", devData.deviceid, thisChar);
@@ -1301,14 +1115,7 @@ module.exports = class ST_Accessories {
                     .getCharacteristic(Characteristic.SecuritySystemCurrentState)
                     .on("get", (callback) => {
                         // that.log('alarm1: ' + attributes.alarmSystemStatus + ' | ' + that.myUtils.convertAlarmState(attributes.alarmSystemStatus, true, Characteristic));
-                        callback(
-                            null,
-                            that.myUtils.convertAlarmState(
-                                attributes.alarmSystemStatus,
-                                true,
-                                Characteristic
-                            )
-                        );
+                        callback(null, that.myUtils.convertAlarmState(attributes.alarmSystemStatus, true, Characteristic));
                     });
                 that.storeCharacteristicItem("alarmSystemStatus", devData.deviceid, thisChar);
 
@@ -1317,27 +1124,12 @@ module.exports = class ST_Accessories {
                     .getCharacteristic(Characteristic.SecuritySystemTargetState)
                     .on("get", (callback) => {
                         // that.log('alarm2: ' + attributes.alarmSystemStatus + ' | ' + that.myUtils.convertAlarmState(attributes.alarmSystemStatus, true, Characteristic));
-                        callback(
-                            null,
-                            that.myUtils.convertAlarmState(
-                                attributes.alarmSystemStatus.toLowerCase(),
-                                true,
-                                Characteristic
-                            )
-                        );
+                        callback(null, that.myUtils.convertAlarmState(attributes.alarmSystemStatus.toLowerCase(), true, Characteristic));
                     })
                     .on("set", (value, callback) => {
                         // that.log('setAlarm: ' + value + ' | ' + that.myUtils.convertAlarmState(value, false, Characteristic));
-                        that.client.sendDeviceCommand(
-                            callback,
-                            devData.deviceid,
-                            that.myUtils.convertAlarmState(value, false, Characteristic)
-                        );
-                        attributes.alarmSystemStatus = that.myUtils.convertAlarmState(
-                            value,
-                            false,
-                            Characteristic
-                        );
+                        that.client.sendDeviceCommand(callback, devData.deviceid, that.myUtils.convertAlarmState(value, false, Characteristic));
+                        attributes.alarmSystemStatus = that.myUtils.convertAlarmState(value, false, Characteristic);
                     });
                 that.storeCharacteristicItem("alarmSystemStatus", devData.deviceid, thisChar);
             }
@@ -1359,31 +1151,15 @@ module.exports = class ST_Accessories {
                         .on("set", (value, callback) => {
                             if (value > 0 && value !== lastVolumeWriteValue) {
                                 lastVolumeWriteValue = value;
-                                that.log.debug(
-                                    "Existing volume: " + attributes.volume + ", set to " + value
-                                );
+                                that.log.debug(`Existing volume: ${attributes.volume}, set to ${value}`);
 
                                 // Smooth continuous updates to make more responsive
-                                sonosVolumeTimeout = clearAndSetTimeout(
-                                    sonosVolumeTimeout,
-                                    () => {
-                                        that.log.debug(
-                                            "Existing volume: " +
-                                            attributes.volume +
-                                            ", set to " +
-                                            lastVolumeWriteValue
-                                        );
-
-                                        that.client.sendDeviceCommand(
-                                            callback,
-                                            devData.deviceid,
-                                            "setVolume", {
-                                                value1: lastVolumeWriteValue
-                                            }
-                                        );
-                                    },
-                                    1000
-                                );
+                                sonosVolumeTimeout = clearAndSetTimeout(sonosVolumeTimeout, () => {
+                                    that.log.debug(`Existing volume: ${attributes.volume}, set to ${lastVolumeWriteValue}`);
+                                    that.client.sendDeviceCommand(callback, devData.deviceid, "setVolume", {
+                                        value1: lastVolumeWriteValue
+                                    });
+                                }, 1000);
                             }
                         });
 
@@ -1411,10 +1187,134 @@ module.exports = class ST_Accessories {
             this.log.debug(deviceGroups);
         }
 
-        return that.loadAccesoryData(accessory, devData) || accessory;
+        return that.loadAccessoryData(accessory, devData) || accessory;
     }
 
-    loadAccesoryData(accessory, deviceData) {
+    attributeStateTransform(attr, val, charName) {
+        switch (attr) {
+            case "switch":
+                return (val === 'on');
+            case "door":
+                switch (val) {
+                    case "open":
+                        return Characteristic.TargetDoorState.OPEN;
+                    case "opening":
+                        return charName && charName === "Target Door State" ? Characteristic.TargetDoorState.OPEN : Characteristic.TargetDoorState.OPENING;
+                    case "closed":
+                        return Characteristic.TargetDoorState.CLOSED;
+                    case "closing":
+                        return charName && charName === "Target Door State" ? Characteristic.TargetDoorState.CLOSED : Characteristic.TargetDoorState.CLOSING;
+                    default:
+                        return charName && charName === "Target Door State" ? Characteristic.TargetDoorState.OPEN : Characteristic.TargetDoorState.STOPPED;
+                }
+
+            case "lock":
+                switch (val) {
+                    case "locked":
+                        return Characteristic.LockCurrentState.SECURED;
+                    case "unlocked":
+                        return Characteristic.LockCurrentState.UNSECURED;
+                    default:
+                        return Characteristic.LockCurrentState.UNKNOWN;
+                }
+
+            case "button":
+                // case "supportButtonValues":
+                switch (val) {
+                    case "pushed":
+                        return Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS;
+                    case "held":
+                        return Characteristic.ProgrammableSwitchEvent.LONG_PRESS;
+                    case "double":
+                        return Characteristic.ProgrammableSwitchEvent.DOUBLE_PRESS;
+                    default:
+                        return undefined;
+                }
+
+            case "valve":
+                return (val === "open") ? Characteristic.InUse.IN_USE : Characteristic.InUse.NOT_IN_USE;
+            case "mute":
+                return (val === 'muted');
+            case "smoke":
+                return (val === "clear") ? Characteristic.SmokeDetected.SMOKE_NOT_DETECTED : Characteristic.SmokeDetected.SMOKE_DETECTED;
+            case "carbonMonoxide":
+                return (val === "clear") ? Characteristic.CarbonMonoxideDetected.CO_LEVELS_NORMAL : Characteristic.CarbonMonoxideDetected.CO_LEVELS_ABNORMAL;
+            case "carbonDioxideMeasurement":
+                switch (charName) {
+                    case "Carbon Dioxide Detected":
+                        return (val < 2000) ? Characteristic.CarbonMonoxideDetected.CO_LEVELS_NORMAL : Characteristic.CarbonMonoxideDetected.CO_LEVELS_ABNORMAL;
+                    default:
+                        return parseInt(val);
+                }
+            case "tamper":
+                return (val === "detected") ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED;
+            case "motion":
+                return (val === "active");
+            case "water":
+                return (val === "dry") ? Characteristic.LeakDetected.LEAK_NOT_DETECTED : Characteristic.LeakDetected.LEAK_DETECTED;
+            case "contact":
+                return (val === "closed") ? Characteristic.ContactSensorState.CONTACT_DETECTED : Characteristic.ContactSensorState.CONTACT_NOT_DETECTED;
+            case "presence":
+                return (val === "present");
+            case "battery":
+                if (charName === "Status Low Battery") {
+                    return (val < 20) ? Characteristic.StatusLowBattery.BATTERY_LEVEL_LOW : Characteristic.StatusLowBattery.BATTERY_LEVEL_NORMAL;
+                } else {
+                    return Math.round(val);
+                }
+            case "hue":
+                return Math.round(val * 3.6);
+            case "temperature":
+            case "heatingSetpoint":
+            case "coolingSetpoint":
+                return this.myUtils.tempConversion(this.temperature_unit, val);
+            case "level":
+            case "fanSpeed":
+            case "saturation":
+            case "volume":
+                return parseInt(val) || 0;
+            case "illuminance":
+                return Math.ceil(val);
+
+            case "energy":
+            case "humidity":
+            case "power":
+                return Math.round(val);
+
+            case "thermostatOperatingState":
+                switch (val) {
+                    case "pending cool":
+                    case "cooling":
+                        return Characteristic.CurrentHeatingCoolingState.COOL;
+                    case "pending heat":
+                    case "heating":
+                        return Characteristic.CurrentHeatingCoolingState.HEAT;
+                    default:
+                        // The above list should be inclusive, but we need to return something if they change stuff.
+                        // TODO: Double check if Smartthings can send "auto" as operatingstate. I don't think it can.
+                        return Characteristic.CurrentHeatingCoolingState.OFF;
+                }
+
+            case "thermostatMode":
+                switch (val) {
+                    case "cool":
+                        return Characteristic.TargetHeatingCoolingState.COOL;
+                    case "emergency heat":
+                    case "heat":
+                        return Characteristic.TargetHeatingCoolingState.HEAT;
+                    case "auto":
+                        return Characteristic.TargetHeatingCoolingState.AUTO;
+                    default:
+                        return Characteristic.TargetHeatingCoolingState.OFF;
+                }
+            case "alarmSystemStatus":
+                return this.myUtils.convertAlarmState(val, true, Characteristic);
+            default:
+                return val;
+        }
+    }
+
+    loadAccessoryData(accessory, deviceData) {
         let that = this;
         // return new Promise((resolve, reject) => {
         if (deviceData !== undefined) {
@@ -1425,6 +1325,13 @@ module.exports = class ST_Accessories {
                     accessory.services[i].characteristics[j].getValue();
                 }
             }
+            accessory
+                .getOrAddService(Service.AccessoryInformation)
+                .setCharacteristic(Characteristic.FirmwareRevision, deviceData.firmwareVersion)
+                .setCharacteristic(Characteristic.Manufacturer, deviceData.manufacturerName)
+                .setCharacteristic(Characteristic.Model, `${that.myUtils.toTitleCase(deviceData.modelName)}`)
+                .setCharacteristic(Characteristic.Name, deviceData.name)
+                .setCharacteristic(Characteristic.SerialNumber, deviceData.serialNumber);
             return accessory;
         } else {
             this.log.debug("Fetching Device Data");
@@ -1436,9 +1343,7 @@ module.exports = class ST_Accessories {
                     }
                     accessory.context.deviceData = data;
                     for (let i = 0; i < accessory.services.length; i++) {
-                        for (
-                            let j = 0; j < accessory.services[i].characteristics.length; j++
-                        ) {
+                        for (let j = 0; j < accessory.services[i].characteristics.length; j++) {
                             accessory.services[i].characteristics[j].getValue();
                         }
                     }
