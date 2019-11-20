@@ -56,7 +56,7 @@ module.exports = class ST_Accessories {
 
             accessory
                 .getOrAddService(Service.AccessoryInformation)
-                .setCharacteristic(Characteristic.Identify, deviceData.capabilities["Switch"] !== undefined)
+                .setCharacteristic(Characteristic.Identify, deviceData.capabilities["Switch"])
                 .setCharacteristic(Characteristic.FirmwareRevision, deviceData.firmwareVersion)
                 .setCharacteristic(Characteristic.Manufacturer, deviceData.manufacturerName)
                 .setCharacteristic(Characteristic.Model, `${that.myUtils.toTitleCase(deviceData.modelName)}`)

@@ -176,7 +176,6 @@ module.exports = class ST_Platform {
     }
 
     removeAccessory(accessory) {
-        this.log(accessory);
         if (this.SmartThingsAccessories.remove(accessory)) {
             this.homebridge.unregisterPlatformAccessories(pluginName, platformName, [accessory]);
             this.log(`Removed: ${accessory.context.name} (${accessory.context.deviceid})`);
@@ -221,10 +220,18 @@ module.exports = class ST_Platform {
         let accessory = this.SmartThingsAccessories.get(change);
         if (!attrObj || !accessory) return;
         if (attrObj instanceof Array) {
+            let newValue;
+            switch (change.attribute) {
+                case "Switch":
+                    newValue = (change.value === 'on');
+                    break;
+                default:
+                    newValue = change.value;
+            }
             attrObj.forEach(characteristic => {
-                // this.log(characteristic);
                 accessory.context.deviceData.attributes[change.attribute] = change.value;
-                characteristic.updateValue(change.value);
+                characteristic.updateValue(newValue);
+                // characteristic.getValue();
             });
         }
     }
