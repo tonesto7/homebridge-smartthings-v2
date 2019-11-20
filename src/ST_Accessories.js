@@ -107,7 +107,7 @@ module.exports = class ST_Accessories {
         let capabilities = accessory.context.deviceData.capabilities;
         let commands = accessory.context.deviceData.commands;
         let devData = accessory.context.deviceData;
-
+        accessory.reachable = true;
         let hasCapability = (obj) => {
             let keys = Object.keys(capabilities);
             if (obj instanceof Array) {

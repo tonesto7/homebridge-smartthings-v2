@@ -153,7 +153,6 @@ module.exports = class ST_Platform {
         device.excludedCapabilities = this.excludedCapabilities[device.deviceid] || ["None"];
         this.log.debug(`Initializing New Device (${device.name} | ${device.deviceid})`);
         accessory = this.getNewAccessory(device, new_uuid);
-        accessory.reachable = true;
         this.homebridge.registerPlatformAccessories(pluginName, platformName, [accessory]);
         this.SmartThingsAccessories.add(accessory);
         this.log(`Added Device: (${accessory.name} | ${accessory.deviceid})`);
@@ -165,7 +164,6 @@ module.exports = class ST_Platform {
         device.excludedCapabilities = this.excludedCapabilities[device.deviceid] || ["None"];
         this.log(`Loading Existing Device (${device.name}) | (${device.deviceid})`);
         accessory = this.SmartThingsAccessories.loadAccesoryData(cacheDevice, device);
-        accessory.reachable = true;
         this.SmartThingsAccessories.add(accessory);
     }
 
@@ -223,10 +221,10 @@ module.exports = class ST_Platform {
         let accessory = this.SmartThingsAccessories.get(change);
         if (!attrObj || !accessory) return;
         if (attrObj instanceof Array) {
-            attrObj.forEach(item => {
-                // this.log(accessory.context.deviceData.attributes[change.attribute]);
+            attrObj.forEach(characteristic => {
+                // this.log(characteristic);
                 accessory.context.deviceData.attributes[change.attribute] = change.value;
-                item.getValue();
+                characteristic.updateValue();
             });
         }
     }
@@ -351,7 +349,7 @@ module.exports = class ST_Platform {
                                 value: body.change_value,
                                 date: body.change_date
                             };
-                            that.log.notice(`Change Event: (${body.change_name}) [${(body.change_attribute ? body.change_attribute.toUpperCase() : "unknown")}] is ${body.change_value}`);
+                            that.log.good(`Change Event: (${body.change_name}) [${(body.change_attribute ? body.change_attribute.toUpperCase() : "unknown")}] is ${body.change_value}`);
                             that.processDeviceAttributeUpdate(newChange);
                         }
                         res.send({
