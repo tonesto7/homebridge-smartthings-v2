@@ -96,7 +96,7 @@ module.exports = class ST_Client {
             };
         }
         return new Promise((resolve) => {
-            that.log(`Sending Device Command: ${cmd} | Value: ${JSON.stringify(vals) || "Nothing"} | DeviceID: (${devid}) | SendToLocalHub: (${sendLocal})`);
+            that.log.notice(`Sending Device Command: ${cmd} | Value: ${JSON.stringify(vals) || "Nothing"} | DeviceID: (${devid}) | SendToLocalHub: (${sendLocal})`);
             rp(config)
                 .then((body) => {
                     that.log.debug('sendDeviceCommand Resp:', body);

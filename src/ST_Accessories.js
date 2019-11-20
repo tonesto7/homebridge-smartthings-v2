@@ -67,6 +67,7 @@ module.exports = class ST_Accessories {
     }
 
     initializeDeviceCharacteristics(accessory) {
+        //TODO: Cleanup Unused Services from Cached Devices
         for (let index in accessory.context.deviceData.capabilities) {
             if (knownCapabilities.indexOf(index) === -1 && this.platform.unknownCapabilities.indexOf(index) === -1) {
                 this.platform.unknownCapabilities.push(index);
@@ -128,124 +129,129 @@ module.exports = class ST_Accessories {
                 if (isWindowShade) {
                     // This is a Window Shade
                     deviceGroups.push("window_shade");
-                    thisChar = accessory
-                        .getOrAddService(Service.WindowCovering)
-                        .getCharacteristic(Characteristic.TargetPosition)
-                        .on("get", (callback) => {
-                            callback(null, parseInt(attributes.level));
-                        })
-                        .on("set", (value, callback) => {
-                            if (commands.close && value === 0) {
-                                // setLevel: 0, not responding on spring fashion blinds
-                                that.client.sendDeviceCommand(callback, devData.deviceid, "close");
-                            } else {
-                                that.client.sendDeviceCommand(callback, devData.deviceid, "setLevel", {
-                                    value1: value
-                                });
-                            }
-                        });
-                    that.storeCharacteristicItem("level", devData.deviceid, thisChar);
+                    accessory = that.device_types.window_shade(accessory, devData);
+                    // thisChar = accessory
+                    //     .getOrAddService(Service.WindowCovering)
+                    //     .getCharacteristic(Characteristic.TargetPosition)
+                    //     .on("get", (callback) => {
+                    //         callback(null, parseInt(attributes.level));
+                    //     })
+                    //     .on("set", (value, callback) => {
+                    //         if (commands.close && value === 0) {
+                    //             // setLevel: 0, not responding on spring fashion blinds
+                    //             that.client.sendDeviceCommand(callback, devData.deviceid, "close");
+                    //         } else {
+                    //             that.client.sendDeviceCommand(callback, devData.deviceid, "setLevel", {
+                    //                 value1: value
+                    //             });
+                    //         }
+                    //     });
+                    // that.storeCharacteristicItem("level", devData.deviceid, thisChar);
 
-                    thisChar = accessory
-                        .getOrAddService(Service.WindowCovering)
-                        .getCharacteristic(Characteristic.CurrentPosition)
-                        .on("get", (callback) => {
-                            callback(null, parseInt(attributes.level));
-                        });
-                    that.storeCharacteristicItem("level", devData.deviceid, thisChar);
-                    thisChar = accessory
-                        .getOrAddService(Service.WindowCovering)
-                        .setCharacteristic(Characteristic.PositionState, Characteristic.PositionState.STOPPED);
+                    // thisChar = accessory
+                    //     .getOrAddService(Service.WindowCovering)
+                    //     .getCharacteristic(Characteristic.CurrentPosition)
+                    //     .on("get", (callback) => {
+                    //         callback(null, parseInt(attributes.level));
+                    //     });
+                    // that.storeCharacteristicItem("level", devData.deviceid, thisChar);
+                    // thisChar = accessory
+                    //     .getOrAddService(Service.WindowCovering)
+                    //     .setCharacteristic(Characteristic.PositionState, Characteristic.PositionState.STOPPED);
 
-                } else if (isLight === true || commands.setLevel) {
+                } else if (isLight || hasCommand('setLevel')) {
                     deviceGroups.push("light");
-                    thisChar = accessory
-                        .getOrAddService(Service.Lightbulb)
-                        .getCharacteristic(Characteristic.On)
-                        .on("get", (callback) => {
-                            callback(null, that.attributeStateTransform('switch', attributes.switch));
-                        })
-                        .on("set", (value, callback) => {
-                            that.client.sendDeviceCommand(callback, devData.deviceid, (value ? "on" : "off"));
-                        });
-                    that.storeCharacteristicItem("switch", devData.deviceid, thisChar);
+                    accessory = that.device_types.light_bulb(accessory, devData);
+                    // thisChar = accessory
+                    //     .getOrAddService(Service.Lightbulb)
+                    //     .getCharacteristic(Characteristic.On)
+                    //     .on("get", (callback) => {
+                    //         callback(null, that.attributeStateTransform('switch', attributes.switch));
+                    //     })
+                    //     .on("set", (value, callback) => {
+                    //         that.client.sendDeviceCommand(callback, devData.deviceid, (value ? "on" : "off"));
+                    //     });
+                    // that.storeCharacteristicItem("switch", devData.deviceid, thisChar);
 
-                    thisChar = accessory
-                        .getOrAddService(Service.Lightbulb)
-                        .getCharacteristic(Characteristic.Brightness)
-                        .on("get", (callback) => {
-                            callback(null, that.attributeStateTransform('level', attributes.level));
-                        })
-                        .on("set", (value, callback) => {
-                            that.client.sendDeviceCommand(callback, devData.deviceid, "setLevel", {
-                                value1: value
-                            });
-                        });
-                    that.storeCharacteristicItem("level", devData.deviceid, thisChar);
+                    accessory = that.device_types.light_level(accessory, devData);
+                    // thisChar = accessory
+                    //     .getOrAddService(Service.Lightbulb)
+                    //     .getCharacteristic(Characteristic.Brightness)
+                    //     .on("get", (callback) => {
+                    //         callback(null, that.attributeStateTransform('level', attributes.level));
+                    //     })
+                    //     .on("set", (value, callback) => {
+                    //         that.client.sendDeviceCommand(callback, devData.deviceid, "setLevel", {
+                    //             value1: value
+                    //         });
+                    //     });
+                    // that.storeCharacteristicItem("level", devData.deviceid, thisChar);
 
                     if (hasCapability("Color Control")) {
-                        thisChar = accessory
-                            .getOrAddService(Service.Lightbulb)
-                            .getCharacteristic(Characteristic.Hue)
-                            .on("get", (callback) => {
-                                callback(null, that.attributeStateTransform('hue', attributes.hue));
-                            })
-                            .on("set", (value, callback) => {
-                                that.client.sendDeviceCommand(callback, devData.deviceid, "setHue", {
-                                    value1: Math.round(value / 3.6)
-                                });
-                            });
-                        that.storeCharacteristicItem("hue", devData.deviceid, thisChar);
+                        accessory = that.device_types.light_color(accessory, devData);
+                        // thisChar = accessory
+                        //     .getOrAddService(Service.Lightbulb)
+                        //     .getCharacteristic(Characteristic.Hue)
+                        //     .on("get", (callback) => {
+                        //         callback(null, that.attributeStateTransform('hue', attributes.hue));
+                        //     })
+                        //     .on("set", (value, callback) => {
+                        //         that.client.sendDeviceCommand(callback, devData.deviceid, "setHue", {
+                        //             value1: Math.round(value / 3.6)
+                        //         });
+                        //     });
+                        // that.storeCharacteristicItem("hue", devData.deviceid, thisChar);
 
-                        thisChar = accessory
-                            .getOrAddService(Service.Lightbulb)
-                            .getCharacteristic(Characteristic.Saturation)
-                            .on("get", (callback) => {
-                                callback(null, that.attributeStateTransform('saturation', attributes.saturation));
-                            })
-                            .on("set", (value, callback) => {
-                                that.client.sendDeviceCommand(callback, devData.deviceid, "setSaturation", {
-                                    value1: value
-                                });
-                            });
-                        that.storeCharacteristicItem("saturation", devData.deviceid, thisChar);
+                        // thisChar = accessory
+                        //     .getOrAddService(Service.Lightbulb)
+                        //     .getCharacteristic(Characteristic.Saturation)
+                        //     .on("get", (callback) => {
+                        //         callback(null, that.attributeStateTransform('saturation', attributes.saturation));
+                        //     })
+                        //     .on("set", (value, callback) => {
+                        //         that.client.sendDeviceCommand(callback, devData.deviceid, "setSaturation", {
+                        //             value1: value
+                        //         });
+                        //     });
+                        // that.storeCharacteristicItem("saturation", devData.deviceid, thisChar);
                     }
                 }
             }
 
             if (hasCapability('Garage Door Control')) {
                 deviceGroups.push("garage_door");
-                thisChar = accessory
-                    .getOrAddService(Service.GarageDoorOpener)
-                    .getCharacteristic(Characteristic.TargetDoorState)
-                    .on("get", (callback) => {
-                        callback(null, this.attributeStateTransform('door', attributes.door, 'Target Door State'));
-                    })
-                    .on("set", (value, callback) => {
-                        if (value === Characteristic.TargetDoorState.OPEN || value === 0) {
-                            that.client.sendDeviceCommand(callback, devData.deviceid, "open");
-                            accessory.context.deviceData.attributes.door = "opening";
-                        } else if (value === Characteristic.TargetDoorState.CLOSED || value === 1) {
-                            that.client.sendDeviceCommand(callback, devData.deviceid, "close");
-                            accessory.context.deviceData.attributes.door = "closing";
-                        }
-                    });
-                that.storeCharacteristicItem("door", devData.deviceid, thisChar);
+                accessory = that.device_types.garage_door(accessory, devData);
+                // thisChar = accessory
+                //     .getOrAddService(Service.GarageDoorOpener)
+                //     .getCharacteristic(Characteristic.TargetDoorState)
+                //     .on("get", (callback) => {
+                //         callback(null, this.attributeStateTransform('door', attributes.door, 'Target Door State'));
+                //     })
+                //     .on("set", (value, callback) => {
+                //         if (value === Characteristic.TargetDoorState.OPEN || value === 0) {
+                //             that.client.sendDeviceCommand(callback, devData.deviceid, "open");
+                //             accessory.context.deviceData.attributes.door = "opening";
+                //         } else if (value === Characteristic.TargetDoorState.CLOSED || value === 1) {
+                //             that.client.sendDeviceCommand(callback, devData.deviceid, "close");
+                //             accessory.context.deviceData.attributes.door = "closing";
+                //         }
+                //     });
+                // that.storeCharacteristicItem("door", devData.deviceid, thisChar);
 
-                thisChar = accessory
-                    .getOrAddService(Service.GarageDoorOpener)
-                    .getCharacteristic(Characteristic.CurrentDoorState)
-                    .on("get", (callback) => {
-                        callback(null, this.attributeStateTransform('door', attributes.door, 'Current Door State'));
-                    });
-                that.storeCharacteristicItem("door", devData.deviceid, thisChar);
-                accessory
-                    .getOrAddService(Service.GarageDoorOpener)
-                    .setCharacteristic(Characteristic.ObstructionDetected, false);
+                // thisChar = accessory
+                //     .getOrAddService(Service.GarageDoorOpener)
+                //     .getCharacteristic(Characteristic.CurrentDoorState)
+                //     .on("get", (callback) => {
+                //         callback(null, this.attributeStateTransform('door', attributes.door, 'Current Door State'));
+                //     });
+                // that.storeCharacteristicItem("door", devData.deviceid, thisChar);
+                // accessory
+                //     .getOrAddService(Service.GarageDoorOpener)
+                //     .setCharacteristic(Characteristic.ObstructionDetected, false);
             }
 
 
-            if (hasCapability('Lock') && !hasCapability("Thermostat")) {
+            if (hasCapability('Lock')) {
                 deviceGroups.push("lock");
                 thisChar = accessory
                     .getOrAddService(Service.LockMechanism)
@@ -462,29 +468,31 @@ module.exports = class ST_Accessories {
                 //Handles Standalone Fan with no levels
                 if (isLight) {
                     deviceGroups.push("light");
-                    if (hasCapability("Fan Light")) that.log("FanLight: " + devData.name);
-                    thisChar = accessory
-                        .getOrAddService(Service.Lightbulb)
-                        .getCharacteristic(Characteristic.On)
-                        .on("get", (callback) => {
-                            callback(null, that.attributeStateTransform('switch', attributes.switch));
-                        })
-                        .on("set", (value, callback) => {
-                            that.client.sendDeviceCommand(callback, devData.deviceid, (value ? "on" : "off"));
-                        });
-                    that.storeCharacteristicItem("switch", devData.deviceid, thisChar);
+                    if (hasCapability("Fan Light")) that.log.debug(`Fan Light: ${devData.name}`);
+                    accessory = that.device_types.light_bulb(accessory, devData);
+                    // thisChar = accessory
+                    //     .getOrAddService(Service.Lightbulb)
+                    //     .getCharacteristic(Characteristic.On)
+                    //     .on("get", (callback) => {
+                    //         callback(null, that.attributeStateTransform('switch', attributes.switch));
+                    //     })
+                    //     .on("set", (value, callback) => {
+                    //         that.client.sendDeviceCommand(callback, devData.deviceid, (value ? "on" : "off"));
+                    //     });
+                    // that.storeCharacteristicItem("switch", devData.deviceid, thisChar);
                 } else {
                     deviceGroups.push("switch");
-                    thisChar = accessory
-                        .getOrAddService(Service.Switch)
-                        .getCharacteristic(Characteristic.On)
-                        .on("get", (callback) => {
-                            callback(null, that.attributeStateTransform('switch', attributes.switch));
-                        })
-                        .on("set", (value, callback) => {
-                            that.client.sendDeviceCommand(callback, devData.deviceid, (value ? "on" : "off"));
-                        });
-                    that.storeCharacteristicItem("switch", devData.deviceid, thisChar);
+                    accessory = that.device_types.switch(accessory, devData);
+                    // thisChar = accessory
+                    //     .getOrAddService(Service.Switch)
+                    //     .getCharacteristic(Characteristic.On)
+                    //     .on("get", (callback) => {
+                    //         callback(null, that.attributeStateTransform('switch', attributes.switch));
+                    //     })
+                    //     .on("set", (value, callback) => {
+                    //         that.client.sendDeviceCommand(callback, devData.deviceid, (value ? "on" : "off"));
+                    //     });
+                    // that.storeCharacteristicItem("switch", devData.deviceid, thisChar);
 
                     // if (capabilities['Energy Meter'] || capabilities['EnergyMeter']) {
                     //     thisChar = accessory.getOrAddService(Service.Switch).addCharacteristic(this.CommunityTypes.Watts)
@@ -735,6 +743,7 @@ module.exports = class ST_Accessories {
                 that.storeCharacteristicItem("power", devData.deviceid, thisChar);
             }
 
+            // Thermostat
             if (isThermostat) {
                 deviceGroups.push("thermostat");
                 thisChar = accessory

@@ -227,6 +227,7 @@ module.exports = class ST_Platform {
                 webApp.post("/initial", (req, res) => {
                     let body = JSON.parse(JSON.stringify(req.body));
                     if (body && that.isValidRequestor(body.access_token, body.app_id, 'initial')) {
+
                         that.log(`${platformName} Hub Communication Established`);
                         res.send({
                             status: "OK"
