@@ -453,11 +453,11 @@ private processCmd(devId, cmd, value1, value2, local=false) {
         setSecurityMode(command)
         CommandReply("Success", "Security Alarm, Command $command")
     }  else if (settings?.modeList && command == "mode" && devId) {
-        log.debug "Virtual Mode Received: ${value1}"
+        log.debug("Virtual Mode Received: ${devId}")
         changeMode(devId)
         CommandReply("Success", "Mode Device, Command $command")
     } else if (settings?.routineList && command == "routine" && devId) {
-        log.debug "Virtual Routine Received: ${value1}"
+        log.debug("Virtual Routine Received: ${devId}")
         runRoutine(devId)
         CommandReply("Success", "Routine Device, Command $command")
     } else {
@@ -493,18 +493,18 @@ def changeMode(modeId) {
         def mode = findVirtModeDevice(modeId)
         if(mode) {
             log.info"Setting the Location Mode to (${mode})..."
-            // setLocationMode(mode)
+            setLocationMode(mode)
             state?.lastMode = mode
         } else { log.error("Unable to find a matching mode for the id: ${modeId}") }
     }
 }
 
-def runRoutine(rtId, rtName) {
+def runRoutine(rtId) {
     if(rtId) {
         def rt = findVirtRoutineDevice(rtId)
-        if(rt?.name) {
-            log.info "Executing the (${rt?.name}) Routine..."
-            // location?.helloHome?.execute(rt?.name)
+        if(rt?.label) {
+            log.info "Executing the (${rt?.label}) Routine..."
+            location?.helloHome?.execute(rt?.label)
         } else { log.error("Unable to find a matching routine for the id: ${rtId}") }
     }
 }
