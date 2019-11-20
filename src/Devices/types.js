@@ -57,7 +57,7 @@ module.exports = class MyUtils {
             .getOrAddService(Service.GarageDoorOpener)
             .getCharacteristic(Characteristic.TargetDoorState)
             .on("get", (callback) => {
-                callback(null, this.attributeStateTransform('door', data.attributes.door, 'Target Door State'));
+                callback(null, this.accessories.attributeStateTransform('door', data.attributes.door, 'Target Door State'));
             })
             .on("set", (value, callback) => {
                 if (value === Characteristic.TargetDoorState.OPEN || value === 0) {
@@ -74,7 +74,7 @@ module.exports = class MyUtils {
             .getOrAddService(Service.GarageDoorOpener)
             .getCharacteristic(Characteristic.CurrentDoorState)
             .on("get", (callback) => {
-                callback(null, this.attributeStateTransform('door', data.attributes.door, 'Current Door State'));
+                callback(null, this.accessories.attributeStateTransform('door', data.attributes.door, 'Current Door State'));
             });
         this.accessories.storeCharacteristicItem("door", data.deviceid, char);
         accessory
@@ -148,7 +148,7 @@ module.exports = class MyUtils {
             .getOrAddService(Service.LockMechanism)
             .getCharacteristic(Characteristic.LockCurrentState)
             .on("get", (callback) => {
-                callback(null, this.attributeStateTransform('lock', data.attributes.lock));
+                callback(null, this.accessories.attributeStateTransform('lock', data.attributes.lock));
             });
         this.accessories.storeCharacteristicItem("lock", data.deviceid, thisChar);
 
@@ -156,7 +156,7 @@ module.exports = class MyUtils {
             .getOrAddService(Service.LockMechanism)
             .getCharacteristic(Characteristic.LockTargetState)
             .on("get", (callback) => {
-                callback(null, this.attributeStateTransform('lock', data.attributes.lock));
+                callback(null, this.accessories.attributeStateTransform('lock', data.attributes.lock));
             })
             .on("set", (value, callback) => {
                 this.client.sendDeviceCommand(callback, data.deviceid, (value === 1 || value === true) ? "lock" : "unlock");
@@ -185,7 +185,7 @@ module.exports = class MyUtils {
             .getOrAddService(Service.Valve)
             .getCharacteristic(Characteristic.InUse)
             .on("get", (callback) => {
-                callback(null, this.attributeStateTransform('valve', data.attributes.valve));
+                callback(null, this.accessories.attributeStateTransform('valve', data.attributes.valve));
             });
         this.accessories.storeCharacteristicItem("valve", data.deviceid, thisChar);
 
@@ -203,7 +203,7 @@ module.exports = class MyUtils {
             .getOrAddService(Service.Valve)
             .getCharacteristic(Characteristic.Active)
             .on("get", (callback) => {
-                callback(null, this.attributeStateTransform('valve', data.attributes.valve));
+                callback(null, this.accessories.attributeStateTransform('valve', data.attributes.valve));
             })
             .on("set", (value, callback) => {
                 this.client.sendDeviceCommand(callback, data.deviceid, (value ? "on" : "off"));
