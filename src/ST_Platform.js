@@ -129,7 +129,7 @@ module.exports = class ST_Platform {
                         }
                         that.log.alert(`Total Initialization Time: (${Math.round((new Date() - starttime) / 1000)} seconds)`);
                         that.log.notice(`Unknown Capabilities: ${JSON.stringify(that.unknownCapabilities)}`);
-                        that.log.info(`${platformDesc} DeviceCache Size: (${Object.keys(this.SmartThingsAccessories.getAll()).length})`);
+                        that.log.info(`${platformDesc} DeviceCache Size: (${Object.keys(this.SmartThingsAccessories.getAllAccessoriesFromCache()).length})`);
                         resolve(true);
                     })
                     .catch(err => {
@@ -156,29 +156,21 @@ module.exports = class ST_Platform {
         this.log.debug(`Initializing New Device (${device.name} | ${device.deviceid})`);
         accessory = this.getNewAccessory(device, new_uuid);
         this.homebridge.registerPlatformAccessories(pluginName, platformName, [accessory]);
-        this.SmartThingsAccessories.add(accessory);
+        this.SmartThingsAccessories.addAccessoryToCache(accessory);
         this.log(`Added Device: (${accessory.name} | ${accessory.deviceid})`);
     }
 
     updateDevice(device) {
-        let cacheDevice = this.SmartThingsAccessories.get(device);
+        let cacheDevice = this.SmartThingsAccessories.getAccessoryFromCache(device);
         let accessory;
         device.excludedCapabilities = this.excludedCapabilities[device.deviceid] || ["None"];
         this.log(`Loading Existing Device (${device.name}) | (${device.deviceid})`);
         accessory = this.SmartThingsAccessories.loadAccessoryData(cacheDevice, device);
-        this.SmartThingsAccessories.add(accessory);
-    }
-
-    ignoreDevice(data) {
-        const [device, reason] = data;
-        if (!this.SmartThingsAccessories.ignore(device)) {
-            return;
-        }
-        this.log(`${reason}: ${device.name} (${device.deviceid})`);
+        this.SmartThingsAccessories.addAccessoryToCache(accessory);
     }
 
     removeAccessory(accessory) {
-        if (this.SmartThingsAccessories.remove(accessory)) {
+        if (this.SmartThingsAccessories.removeAccessoryFromCache(accessory)) {
             this.homebridge.unregisterPlatformAccessories(pluginName, platformName, [accessory]);
             this.log(`Removed: ${accessory.context.name} (${accessory.context.deviceid})`);
         }
@@ -186,8 +178,8 @@ module.exports = class ST_Platform {
 
     configureAccessory(accessory) {
         this.log(`Configure Cached Accessory: ${accessory.displayName}, UUID: ${accessory.UUID}`);
-        let cachedAccessory = this.SmartThingsAccessories.CreateFromCachedAccessory(accessory, this);
-        this.SmartThingsAccessories.add(cachedAccessory);
+        let cachedAccessory = this.SmartThingsAccessories.CreateAccessoryFromHomebridgeCache(accessory, this);
+        this.SmartThingsAccessories.addAccessoryToCache(cachedAccessory);
     }
 
     processIncrementalUpdate(data, that) {
@@ -196,20 +188,6 @@ module.exports = class ST_Platform {
             for (let i = 0; i < data.attributes.length; i++) {
                 that.processDeviceAttributeUpdate(data.attributes[i], that);
             }
-        }
-    }
-
-    processDeviceAttributeUpdate(change) {
-        let attrObj = this.SmartThingsAccessories.getAttributeStoreItem(change.attribute, change.deviceid);
-        let accessory = this.SmartThingsAccessories.get(change);
-        if (!attrObj || !accessory) return;
-        if (attrObj instanceof Array) {
-            attrObj.forEach(characteristic => {
-                let newVal = this.SmartThingsAccessories.attributeStateTransform(change.attribute, change.value, characteristic.displayName);
-                accessory.context.deviceData.attributes[change.attribute] = change.value;
-                characteristic.updateValue(newVal);
-                // characteristic.getValue();
-            });
         }
     }
 
@@ -334,7 +312,7 @@ module.exports = class ST_Platform {
                                 date: body.change_date
                             };
                             that.log.good(`Change Event: (${body.change_name}) [${(body.change_attribute ? body.change_attribute.toUpperCase() : "unknown")}] is ${body.change_value}`);
-                            that.processDeviceAttributeUpdate(newChange);
+                            that.SmartThingsAccessories.processDeviceAttributeUpdate(newChange);
                         }
                         res.send({
                             status: "OK"

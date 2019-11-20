@@ -14,6 +14,7 @@ module.exports = class MyUtils {
         this.platform = platform;
         this.log = platform.log;
         this.homebridge = platform.homebridge;
+        this.temperature_unit = platform.temperature_unit;
     }
 
     cleanSpaces(str) {
@@ -39,11 +40,19 @@ module.exports = class MyUtils {
         };
     }
 
-    tempConversion(tUnit, tempVal) {
-        if (tUnit === "C") {
+    tempConversionFrom_F(tempVal) {
+        if (this.temperature_unit === "C") {
             return parseFloat(tempVal * 10) / 10;
         } else {
             return parseFloat(((tempVal - 32) / 1.8) * 10) / 10;
+        }
+    }
+
+    tempConversionFrom_C(tempVal) {
+        if (this.temperature_unit === "C") {
+            return tempVal;
+        } else {
+            return tempVal * 1.8 + 32;
         }
     }
 
