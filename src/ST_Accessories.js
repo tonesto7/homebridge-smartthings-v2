@@ -110,21 +110,28 @@ module.exports = class ST_Accessories {
             return (deviceGroups.length > 0);
         };
 
+        this.log(accessory.name);
+        this.log(devData.capabilities);
         let isMode = hasCapability("Mode");
         let isRoutine = hasCapability("Routine");
         let isFan = (hasCapability(['Fan', 'Fan Light', 'Fan Speed']) || hasCommand('lowSpeed'));
         let isWindowShade = (hasCapability('Window Shade') && (hasCommand('levelOpenClose') || hasCommand('presetPosition')));
-        let isLight = (hasCapability(['Light Bulb', 'Fan Light', 'Bulb']) || devData.name.includes('light'));
+        let isLight = (hasCapability(['LightBulb', 'Fan Light', 'Bulb']) || devData.name.includes('light'));
         let isSpeaker = hasCapability('Speaker');
         let isSonos = (devData.manufacturerName === "Sonos");
         let isThermostat = (hasCapability('Thermostat') || (hasCapability('Thermostat Operating State') && hasCapability('Thermostat Mode')));
+
+        that.log('isFan:', isFan);
+        that.log('isLight:', isLight);
+        that.log('isMode:', isMode);
+        that.log('isRoutine:', isRoutine);
         if (devData && accessory.context.deviceData.capabilities) {
             if (hasCapability('Switch Level') && !isSpeaker && !isFan && !isMode && !isRoutine) {
                 if (isWindowShade) {
                     // This is a Window Shade
                     deviceGroups.push("window_shade");
                     accessory = that.device_types.window_shade(accessory, devData);
-                } else if (isLight || hasCommand('setLevel')) {
+                } else if (isLight || devData.commands.setLevel) {
                     deviceGroups.push("light");
                     accessory = that.device_types.light_bulb(accessory, devData);
                     accessory = that.device_types.light_level(accessory, devData);
@@ -146,33 +153,30 @@ module.exports = class ST_Accessories {
             }
 
             if (hasCapability('Valve')) {
-
-                that.log("valve: " + devData.attributes.valve);
                 deviceGroups.push("valve");
                 accessory = that.device_types.valve(accessory, devData);
             }
 
-            //Defines Speaker Device
+            // GENERIC SPEAKER DEVICE
             if (isSpeaker) {
-                deviceGroups.push("speakers");
+                deviceGroups.push("speaker");
                 accessory = that.device_types.generic_speaker(accessory, devData);
             }
 
             //Handles Standalone Fan with no levels
+            if (isFan) that.log('isFan: true | ', !hasDeviceGroups());
             if (isFan && (hasCapability('Fan Light') || !hasDeviceGroups())) {
-                deviceGroups.push("fans");
+                deviceGroups.push("fan");
                 accessory = that.device_types.fan(accessory, devData);
             }
 
             if (isMode) {
                 deviceGroups.push("mode");
-                // that.log('Mode: (' + accessory.name + ')');
                 accessory = that.device_types.virtual_mode(accessory, devData);
             }
 
             if (isRoutine) {
                 deviceGroups.push("routine");
-                // that.log('Routine: (' + accessory.name + ')');
                 accessory = that.device_types.virtual_routine(accessory, devData);
             }
 
@@ -276,9 +280,9 @@ module.exports = class ST_Accessories {
                 accessory = that.device_types.sonos_speaker(accessory, devData);
             }
             accessory.context.deviceGroups = deviceGroups;
-            this.log.debug(deviceGroups);
-        }
 
+            this.log(deviceGroups);
+        }
         return that.loadAccessoryData(accessory, devData) || accessory;
     }
 
@@ -289,8 +293,9 @@ module.exports = class ST_Accessories {
         if (attrObj instanceof Array) {
             attrObj.forEach(characteristic => {
                 let newVal = this.attributeStateTransform(change.attribute, change.value, characteristic.displayName);
-                accessory.context.deviceData.attributes[change.attribute] = change.value;
+                accessory.context.deviceData.attributes[change.attribute] = newVal;
                 characteristic.updateValue(newVal);
+                // characteristic.getValue();
             });
         }
     }

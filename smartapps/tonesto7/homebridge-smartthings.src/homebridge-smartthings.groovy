@@ -5,7 +5,7 @@
  */
 
 String appVersion()         { return "2.0.0" }
-String appModified()        { return "11-19-2019" }
+String appModified()         { return "11-20-2019" }
 String branch()             { return "refactor" }
 String platform()           { return "SmartThings" }
 String pluginName()         { return "${platform()}-v2" }
@@ -310,28 +310,28 @@ def getSecurityDevice() {
         serialNumber: "SHM",
         firmwareVersion: "1.0.0",
         lastTime: null,
-        capabilities: ["Alarm System Status":1, "Alarm":1],
+        capabilities: ["Alarm System Status": 1, "Alarm": 1],
         commands: [],
         attributes: ["alarmSystemStatus": getSecurityStatus()]
     ]
 }
 
-def findDevice(paramid) {
-	def device = deviceList?.find { it?.id == paramid }
+def findDevice(dev_id) {
+	def device = deviceList?.find { it?.id == dev_id }
   	if (device) return device
-	device = sensorList?.find { it?.id == paramid }
+	device = sensorList?.find { it?.id == dev_id }
 	if (device) return device
-  	device = switchList?.find { it?.id == paramid }
+  	device = switchList?.find { it?.id == dev_id }
     if (device) return device
-    device = lightList?.find { it?.id == paramid }
+    device = lightList?.find { it?.id == dev_id }
     if (device) return device
-    device = buttonList?.find { it?.id == paramid }
+    device = buttonList?.find { it?.id == dev_id }
     if (device) return device
-    device = fanList?.find { it?.id == paramid }
+    device = fanList?.find { it?.id == dev_id }
     if (device) return device
-    device = speakerList?.find { it?.id == paramid }
+    device = speakerList?.find { it?.id == dev_id }
     if (device) return device
-    device = shadesList?.find { it?.id == paramid }
+    device = shadesList?.find { it?.id == dev_id }
 	return device
 }
 
@@ -340,7 +340,6 @@ def authError() {
 }
 
 def getSecurityStatus(retInt=false) {
-
     def cur = location.currentState("alarmSystemStatus")?.value
     def inc = getShmIncidents()
     if(inc != null && inc?.size()) { cur = 'alarm_active' }

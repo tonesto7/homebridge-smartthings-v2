@@ -95,6 +95,7 @@ module.exports = class MyUtils {
         }
         return accessory;
     }
+
     humidity_sensor(accessory, devData) {
         let thisChar = accessory
             .getOrAddService(Service.HumiditySensor)
@@ -169,6 +170,7 @@ module.exports = class MyUtils {
         }
         return accessory;
     }
+
     fan(accessory, devData) {
         let thisChar = accessory
             .getOrAddService(Service.Fanv2)
@@ -588,7 +590,6 @@ module.exports = class MyUtils {
         accessory
             .getOrAddService(Service.WindowCovering)
             .setCharacteristic(Characteristic.PositionState, Characteristic.PositionState.STOPPED);
-
         return accessory;
     }
 

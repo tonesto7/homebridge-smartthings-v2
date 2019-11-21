@@ -15,23 +15,25 @@ const {
 
 var PlatformAccessory;
 
-// TODO: Handle
+// TODO: Handle Duplicated Devices in ST Inputs
+// TODO: Add/Cleanup new/unused services on cachedAccessory Loading
+// TODO: Resolve fluctuating device states
 
 module.exports = class ST_Platform {
     constructor(log, config, api) {
         this.config = config;
         this.homebridge = api;
-        this.log = logger.withPrefix(`${this.config["name"]} (${pluginVersion})`);
-        this.log(`Homebridge Version: ${api.version}`);
-        this.log(`${platformName} Plugin Version: ${pluginVersion}`);
         this.Service = api.hap.Service;
         this.Characteristic = api.hap.Characteristic;
         PlatformAccessory = api.platformAccessory;
         this.uuid = api.hap.uuid;
         if (config === undefined || config === null || config.app_url === undefined || config.app_url === null || config.app_id === undefined || config.app_id === null) {
-            this.log.warn(`${platformName} Plugin is not Configured | Skipping...`);
+            log(`${platformName} Plugin is not Configured | Skipping...`);
             return;
         }
+        this.log = logger.withPrefix(`${this.config["name"]}`);
+        this.log(`Homebridge Version: ${api.version}`);
+        this.log(`${platformName} Plugin Version: ${pluginVersion}`);
         this.polling_seconds = config["polling_seconds"] || 3600;
         this.excludedAttributes = this.config["excluded_attributes"] || [];
         this.excludedCapabilities = this.config["excluded_capabilities"] || [];
@@ -105,7 +107,6 @@ module.exports = class ST_Platform {
                 this.client
                     .getDevices()
                     .then(resp => {
-                        // console.log(resp);
                         if (resp && resp.deviceList && resp.deviceList instanceof Array) {
                             // that.log.debug("Received All Device Data");
                             const toCreate = this.SmartThingsAccessories.diffAdd(resp.deviceList);
