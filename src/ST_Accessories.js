@@ -87,13 +87,7 @@ module.exports = class ST_Accessories {
 
         let hasCapability = (obj) => {
             let keys = Object.keys(devData.capabilities);
-            if (obj instanceof Array) {
-                obj.forEach(i => {
-                    if (keys.includes(i) || keys.includes(i.toString().replace(/\s/g, ""))) return true;
-                });
-            } else {
-                if (keys.includes(obj) || keys.includes(obj.toString().replace(/\s/g, ""))) return true;
-            }
+            if (keys.includes(obj) || keys.includes(obj.toString().replace(/\s/g, ""))) return true;
             return false;
         };
         let hasAttribute = (attr) => {
@@ -103,28 +97,14 @@ module.exports = class ST_Accessories {
             return Object.keys(devData.commands).includes(cmd);
         };
 
-        // let hasDeviceGroup = (grp) => {
-        //     return (deviceGroups.indexOf(grp) > -1);
-        // };
-        let hasDeviceGroups = () => {
-            return (deviceGroups.length > 0);
-        };
-
-        this.log(accessory.name);
-        this.log(devData.capabilities);
         let isMode = hasCapability("Mode");
         let isRoutine = hasCapability("Routine");
-        let isFan = (hasCapability(['Fan', 'Fan Light', 'Fan Speed']) || hasCommand('lowSpeed'));
+        let isFan = (hasCapability('Fan') || hasCapability('Fan Light') || hasCapability('Fan Speed') || hasCommand('lowSpeed'));
         let isWindowShade = (hasCapability('Window Shade') && (hasCommand('levelOpenClose') || hasCommand('presetPosition')));
-        let isLight = (hasCapability(['LightBulb', 'Fan Light', 'Bulb']) || devData.name.includes('light'));
+        let isLight = (hasCapability('LightBulb') || hasCapability('Fan Light') || hasCapability('Bulb') || devData.name.includes('light'));
         let isSpeaker = hasCapability('Speaker');
         let isSonos = (devData.manufacturerName === "Sonos");
         let isThermostat = (hasCapability('Thermostat') || (hasCapability('Thermostat Operating State') && hasCapability('Thermostat Mode')));
-
-        that.log('isFan:', isFan);
-        that.log('isLight:', isLight);
-        that.log('isMode:', isMode);
-        that.log('isRoutine:', isRoutine);
         if (devData && accessory.context.deviceData.capabilities) {
             if (hasCapability('Switch Level') && !isSpeaker && !isFan && !isMode && !isRoutine) {
                 if (isWindowShade) {
@@ -164,8 +144,7 @@ module.exports = class ST_Accessories {
             }
 
             //Handles Standalone Fan with no levels
-            if (isFan) that.log('isFan: true | ', !hasDeviceGroups());
-            if (isFan && (hasCapability('Fan Light') || !hasDeviceGroups())) {
+            if (isFan && (hasCapability('Fan Light') || deviceGroups.length < 1)) {
                 deviceGroups.push("fan");
                 accessory = that.device_types.fan(accessory, devData);
             }
@@ -186,15 +165,15 @@ module.exports = class ST_Accessories {
             }
 
             // This should catch the remaining switch devices that are specially defined
-            if (hasCapability("Switch") && (hasCapability('Fan Light') || !hasDeviceGroups())) {
+            if (hasCapability("Switch") && isLight && deviceGroups.length < 1) {
                 //Handles Standalone Fan with no levels
-                if (isLight) {
-                    deviceGroups.push("light");
-                    accessory = that.device_types.light_bulb(accessory, devData);
-                } else {
-                    deviceGroups.push("switch");
-                    accessory = that.device_types.switch(accessory, devData);
-                }
+                deviceGroups.push("light");
+                accessory = that.device_types.light_bulb(accessory, devData);
+            }
+
+            if (hasCapability('Switch') && !isLight && deviceGroups.length < 1) {
+                deviceGroups.push("switch");
+                accessory = that.device_types.switch(accessory, devData);
             }
 
             // Smoke Detectors
@@ -252,12 +231,12 @@ module.exports = class ST_Accessories {
                 accessory = that.device_types.battery(accessory, devData);
             }
 
-            if (hasCapability('Energy Meter') && !hasCapability('Switch') && !hasDeviceGroups()) {
+            if (hasCapability('Energy Meter') && !hasCapability('Switch') && deviceGroups.length < 1) {
                 deviceGroups.push("energy_meter");
                 accessory = that.device_types.energy_meter(accessory, devData);
             }
 
-            if (hasCapability('Power Meter') && !hasCapability('Switch') && !hasDeviceGroups()) {
+            if (hasCapability('Power Meter') && !hasCapability('Switch') && deviceGroups.length < 1) {
                 deviceGroups.push("power_meter");
                 accessory = that.device_types.power_meter(accessory, devData);
             }
@@ -275,13 +254,13 @@ module.exports = class ST_Accessories {
             }
 
             // Sonos Speakers
-            if (isSonos && !hasDeviceGroups()) {
+            if (isSonos && deviceGroups.length < 1) {
                 deviceGroups.push("speakers");
                 accessory = that.device_types.sonos_speaker(accessory, devData);
             }
             accessory.context.deviceGroups = deviceGroups;
 
-            this.log(deviceGroups);
+            this.log.debug(deviceGroups);
         }
         return that.loadAccessoryData(accessory, devData) || accessory;
     }

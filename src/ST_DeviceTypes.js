@@ -438,6 +438,7 @@ module.exports = class MyUtils {
             .getOrAddService(Service.Switch)
             .getCharacteristic(Characteristic.On)
             .on("get", (callback) => {
+                this.log('switch (get):', this.value);
                 callback(null, this.accessories.attributeStateTransform('switch', devData.attributes.switch));
             })
             .on("set", (value, callback) => {
