@@ -96,7 +96,7 @@ module.exports = class ST_Accessories {
         let hasCommand = (cmd) => {
             return Object.keys(devData.commands).includes(cmd);
         };
-
+        let newAccessory = accessory;
         let isMode = hasCapability("Mode");
         let isRoutine = hasCapability("Routine");
         let isFan = (hasCapability('Fan') || hasCapability('Fan Light') || hasCapability('Fan Speed') || hasCommand('lowSpeed'));
@@ -105,164 +105,165 @@ module.exports = class ST_Accessories {
         let isSpeaker = hasCapability('Speaker');
         let isSonos = (devData.manufacturerName === "Sonos");
         let isThermostat = (hasCapability('Thermostat') || (hasCapability('Thermostat Operating State') && hasCapability('Thermostat Mode')));
-        if (devData && accessory.context.deviceData.capabilities) {
+        if (devData && newAccessory.context.deviceData.capabilities) {
             if (hasCapability('Switch Level') && !isSpeaker && !isFan && !isMode && !isRoutine) {
                 if (isWindowShade) {
                     // This is a Window Shade
                     deviceGroups.push("window_shade");
-                    accessory = that.device_types.window_shade(accessory, devData);
+                    newAccessory = that.device_types.window_shade(newAccessory, devData);
                 } else if (isLight || devData.commands.setLevel) {
                     deviceGroups.push("light");
-                    accessory = that.device_types.light_bulb(accessory, devData);
-                    accessory = that.device_types.light_level(accessory, devData);
+                    newAccessory = that.device_types.light_bulb(newAccessory, devData);
+                    newAccessory = that.device_types.light_level(newAccessory, devData);
                     if (hasCapability("Color Control")) {
-                        accessory = that.device_types.light_color(accessory, devData);
+                        newAccessory = that.device_types.light_color(newAccessory, devData);
                     }
                 }
             }
 
             if (hasCapability('Garage Door Control')) {
                 deviceGroups.push("garage_door");
-                accessory = that.device_types.garage_door(accessory, devData);
+                newAccessory = that.device_types.garage_door(newAccessory, devData);
             }
 
 
             if (hasCapability('Lock')) {
                 deviceGroups.push("lock");
-                accessory = that.device_types.lock(accessory, devData);
+                newAccessory = that.device_types.lock(newAccessory, devData);
             }
 
             if (hasCapability('Valve')) {
                 deviceGroups.push("valve");
-                accessory = that.device_types.valve(accessory, devData);
+                newAccessory = that.device_types.valve(newAccessory, devData);
             }
 
             // GENERIC SPEAKER DEVICE
             if (isSpeaker) {
                 deviceGroups.push("speaker");
-                accessory = that.device_types.generic_speaker(accessory, devData);
+                newAccessory = that.device_types.generic_speaker(newAccessory, devData);
             }
 
             //Handles Standalone Fan with no levels
             if (isFan && (hasCapability('Fan Light') || deviceGroups.length < 1)) {
                 deviceGroups.push("fan");
-                accessory = that.device_types.fan(accessory, devData);
+                newAccessory = that.device_types.fan(newAccessory, devData);
             }
 
             if (isMode) {
                 deviceGroups.push("mode");
-                accessory = that.device_types.virtual_mode(accessory, devData);
+                newAccessory = that.device_types.virtual_mode(newAccessory, devData);
             }
 
             if (isRoutine) {
                 deviceGroups.push("routine");
-                accessory = that.device_types.virtual_routine(accessory, devData);
+                newAccessory = that.device_types.virtual_routine(newAccessory, devData);
             }
 
             if (hasCapability("Button")) {
                 deviceGroups.push("button");
-                accessory = that.device_types.button(accessory, devData);
+                newAccessory = that.device_types.button(newAccessory, devData);
             }
 
             // This should catch the remaining switch devices that are specially defined
             if (hasCapability("Switch") && isLight && deviceGroups.length < 1) {
                 //Handles Standalone Fan with no levels
                 deviceGroups.push("light");
-                accessory = that.device_types.light_bulb(accessory, devData);
+                newAccessory = that.device_types.light_bulb(newAccessory, devData);
             }
 
             if (hasCapability('Switch') && !isLight && deviceGroups.length < 1) {
                 deviceGroups.push("switch");
-                accessory = that.device_types.switch(accessory, devData);
+                newAccessory = that.device_types.switch(newAccessory, devData);
             }
 
             // Smoke Detectors
             if (hasCapability('Smoke Detector') && hasAttribute('smoke')) {
                 deviceGroups.push("smoke_detector");
-                accessory = that.device_types.smoke_detector(accessory, devData);
+                newAccessory = that.device_types.smoke_detector(newAccessory, devData);
             }
 
             if (hasCapability("Carbon Monoxide Detector") && hasAttribute('carbonMonoxide')) {
                 deviceGroups.push("carbon_monoxide_detector");
-                accessory = that.device_types.carbon_monoxide(accessory, devData);
+                newAccessory = that.device_types.carbon_monoxide(newAccessory, devData);
             }
 
             if (hasCapability("Carbon Dioxide Measurement") && hasAttribute('carbonDioxideMeasurement')) {
                 deviceGroups.push("carbon_dioxide_measure");
-                accessory = that.device_types.carbon_dioxide(accessory, devData);
+                newAccessory = that.device_types.carbon_dioxide(newAccessory, devData);
             }
 
             if (hasCapability('Motion Sensor')) {
                 deviceGroups.push("motion_sensor");
-                accessory = that.device_types.motion_sensor(accessory, devData);
+                newAccessory = that.device_types.motion_sensor(newAccessory, devData);
             }
 
             if (hasCapability("Water Sensor")) {
                 deviceGroups.push("water_sensor");
-                accessory = that.device_types.water_sensor(accessory, devData);
+                newAccessory = that.device_types.water_sensor(newAccessory, devData);
             }
             if (hasCapability("Presence Sensor")) {
                 deviceGroups.push("presence_sensor");
-                accessory = that.device_types.presence_sensor(accessory, devData);
+                newAccessory = that.device_types.presence_sensor(newAccessory, devData);
             }
 
             if (hasCapability("Relative Humidity Measurement")) {
                 deviceGroups.push("humidity_sensor");
-                accessory = that.device_types.humidity_sensor(accessory, devData);
+                newAccessory = that.device_types.humidity_sensor(newAccessory, devData);
             }
 
             if (hasCapability("Temperature Measurement")) {
                 deviceGroups.push("temp_sensor");
-                accessory = that.device_types.temperature_sensor(accessory, devData);
+                newAccessory = that.device_types.temperature_sensor(newAccessory, devData);
             }
 
             if (hasCapability("Illuminance Measurement")) {
                 deviceGroups.push("illuminance_sensor");
-                accessory = that.device_types.illuminance_sensor(accessory, devData);
+                newAccessory = that.device_types.illuminance_sensor(newAccessory, devData);
             }
 
             if (hasCapability('Contact Sensor') && !hasCapability('Garage Door Control')) {
                 deviceGroups.push("contact_sensor");
-                accessory = that.device_types.contact_sensor(accessory, devData);
+                newAccessory = that.device_types.contact_sensor(newAccessory, devData);
             }
 
             if (hasCapability("Battery")) {
                 deviceGroups.push("battery_level");
-                accessory = that.device_types.battery(accessory, devData);
+                newAccessory = that.device_types.battery(newAccessory, devData);
             }
 
             if (hasCapability('Energy Meter') && !hasCapability('Switch') && deviceGroups.length < 1) {
                 deviceGroups.push("energy_meter");
-                accessory = that.device_types.energy_meter(accessory, devData);
+                newAccessory = that.device_types.energy_meter(newAccessory, devData);
             }
 
             if (hasCapability('Power Meter') && !hasCapability('Switch') && deviceGroups.length < 1) {
                 deviceGroups.push("power_meter");
-                accessory = that.device_types.power_meter(accessory, devData);
+                newAccessory = that.device_types.power_meter(newAccessory, devData);
             }
 
             // Thermostat
             if (isThermostat) {
                 deviceGroups.push("thermostat");
-                accessory = that.device_types.thermostat(accessory, devData);
+                newAccessory = that.device_types.thermostat(newAccessory, devData);
             }
 
             // Alarm System Control/Status
             if (hasAttribute("alarmSystemStatus")) {
                 deviceGroups.push("alarm");
-                accessory = that.device_types.alarm_system(accessory, devData);
+                newAccessory = that.device_types.alarm_system(newAccessory, devData);
             }
 
             // Sonos Speakers
             if (isSonos && deviceGroups.length < 1) {
                 deviceGroups.push("speakers");
-                accessory = that.device_types.sonos_speaker(accessory, devData);
+                newAccessory = that.device_types.sonos_speaker(newAccessory, devData);
             }
-            accessory.context.deviceGroups = deviceGroups;
+            newAccessory.context.deviceGroups = deviceGroups;
 
             this.log.debug(deviceGroups);
         }
-        return that.loadAccessoryData(accessory, devData) || accessory;
+        newAccessory = this.removeDeprecatedServices(accessory, newAccessory);
+        return that.loadAccessoryData(newAccessory, devData) || newAccessory;
     }
 
     processDeviceAttributeUpdate(change) {
@@ -459,6 +460,15 @@ module.exports = class ST_Accessories {
 
     getServices() {
         return this.services;
+    }
+
+    removeDeprecatedServices(accessory, newAccessory) {
+        const configuredServices = newAccessory.services.map(s => s.UUID);
+        // accessory.services.filter(s => !configuredServices.includes(s.UUID)).forEach(s => accessory.removeService(s));
+        let remove = accessory.services.filter(s => !configuredServices.includes(s.UUID));
+        this.log('removeServices:', remove);
+        remove.forEach(s => accessory.removeService(s));
+        return accessory;
     }
 
     storeCharacteristicItem(attr, devid, char) {
