@@ -220,22 +220,24 @@ def onAppTouch(event) {
 }
 
 def renderDevices() {
-    def deviceData = []
-    def items = ["deviceList", "sensorList", "switchList", "lightList", "buttonList", "fanList", "speakerList", "shadesList", "modeList", "routineList"]
+    Map devMap = [:]
+    List devList = []
+    List items = ["deviceList", "sensorList", "switchList", "lightList", "buttonList", "fanList", "speakerList", "shadesList", "modeList", "routineList"]
     items?.each { item ->
         if(settings[item]?.size()) {
             settings[item]?.each { dev->
                 try {
-                    def dData = getDeviceData(item, dev)
-                    if(dData && dData?.size()) { deviceData?.push(dData) }
+                    Map devObj = getDeviceData(item, dev) ?: [:]
+                    if(devObj?.size()) { devMap[dev] = devObj }
                 } catch (e) {
-                    log.error("Error Occurred Parsing Device ${dev?.displayName}, Error " + e.message)
+                    log.error("Device (${dev?.displayName}) Render Exception: ${ex.message}")
                 }
             }
         }
     }
-    if(settings?.addSecurityDevice == true) { deviceData?.push(getSecurityDevice()) }
-    return deviceData
+    if(settings?.addSecurityDevice == true) { devList?.push(getSecurityDevice()) }
+    if(devMap?.size()) { devMap?.sort{ it?.value?.name }?.each { k,v-> devList?.push(v) } }
+    return devList
 }
 
 def getDeviceData(type, sItem) {
@@ -271,9 +273,7 @@ def getDeviceData(type, sItem) {
             obj = sItem
             // Define firmware variable and initialize it out of device handler attribute`
             try {
-            	if (sItem?.hasAttribute("firmware")) {
-	                firmware = sItem?.currentValue("firmware")?.toString()
-            	}
+            	if (sItem?.hasAttribute("firmware")) { firmware = sItem?.currentValue("firmware")?.toString() }
             } catch (ex) { }
             break
     }
@@ -608,7 +608,8 @@ def deviceCapabilityList(device) {
 }
 
 def deviceCommandList(device) {
-    return device.supportedCommands.collectEntries { command-> [ (command?.name): (command?.arguments) ] }
+    List skip = ["indicatorWhenOn", "indicatorWhenOff", "ping"]
+    return device?.supportedCommands?.findAll { !(it?.name in skip) }?.collectEntries { command-> [ (command?.name): (command?.arguments) ] }
 }
 
 def deviceAttributeList(device) {
