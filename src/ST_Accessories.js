@@ -273,10 +273,11 @@ module.exports = class ST_Accessories {
         if (attrObj instanceof Array) {
             attrObj.forEach(characteristic => {
                 let newVal = this.attributeStateTransform(change.attribute, change.value, characteristic.displayName);
-                accessory.context.deviceData.attributes[change.attribute] = newVal;
+                accessory.context.deviceData.attributes[change.attribute] = change.value;
                 characteristic.updateValue(newVal);
                 // characteristic.getValue();
             });
+            this.addAccessoryToCache(accessory);
         }
     }
 
