@@ -67,23 +67,27 @@ module.exports = class ST_Accessories {
 
     initializeDeviceCharacteristics(accessory) {
         //TODO: Cleanup Unused Services from Cached Devices
+        let prevAccessory = accessory;
         for (let index in accessory.context.deviceData.capabilities) {
-            if (knownCapabilities.indexOf(index) === -1 && this.platform.unknownCapabilities.indexOf(index) === -1) {
-                this.platform.unknownCapabilities.push(index);
-            }
+            if (knownCapabilities.indexOf(index) === -1 && this.platform.unknownCapabilities.indexOf(index) === -1) this.platform.unknownCapabilities.push(index);
         }
 
         let that = this;
         let deviceGroups = [];
         let devData = accessory.context.deviceData;
         accessory.reachable = true;
+        accessory.context.lastUpdate = new Date();
         accessory
             .getOrAddService(Service.AccessoryInformation)
             .setCharacteristic(Characteristic.FirmwareRevision, devData.firmwareVersion)
             .setCharacteristic(Characteristic.Manufacturer, devData.manufacturerName)
             .setCharacteristic(Characteristic.Model, `${that.myUtils.toTitleCase(devData.modelName)}`)
             .setCharacteristic(Characteristic.Name, devData.name)
-            .setCharacteristic(Characteristic.SerialNumber, devData.serialNumber);
+            .setCharacteristic(Characteristic.SerialNumber, devData.serialNumber)
+            .on('identify', function(paired, callback) {
+                this.log("%s - identify", accessory.displayName);
+                callback();
+            });
 
         let hasCapability = (obj) => {
             let keys = Object.keys(devData.capabilities);
@@ -96,186 +100,187 @@ module.exports = class ST_Accessories {
         let hasCommand = (cmd) => {
             return Object.keys(devData.commands).includes(cmd);
         };
-        let newAccessory = accessory;
+        // let hasAttributeAndCommand = (attr, cmd) => {
+        //     return (Object.keys(devData.attributes).includes(attr) && Object.keys(devData.commands).includes(cmd));
+        // };
+
         let isMode = hasCapability("Mode");
         let isRoutine = hasCapability("Routine");
-        let isFan = (hasCapability('Fan') || hasCapability('Fan Light') || hasCapability('Fan Speed') || hasCommand('lowSpeed'));
+        let isFan = (hasCapability('Fan') || hasCapability('Fan Light') || hasCapability('Fan Speed') || hasCapability('Fan Control') || hasCommand('setFanSpeed') || hasCommand('lowSpeed') || hasAttribute('fanSpeed'));
         let isWindowShade = (hasCapability('Window Shade') && (hasCommand('levelOpenClose') || hasCommand('presetPosition')));
         let isLight = (hasCapability('LightBulb') || hasCapability('Fan Light') || hasCapability('Bulb') || devData.name.includes('light'));
         let isSpeaker = hasCapability('Speaker');
         let isSonos = (devData.manufacturerName === "Sonos");
-        let isThermostat = (hasCapability('Thermostat') || (hasCapability('Thermostat Operating State') && hasCapability('Thermostat Mode')));
-        if (devData && newAccessory.context.deviceData.capabilities) {
+        let isThermostat = (hasCapability('Thermostat') || hasCapability('Thermostat Operating State'));
+        if (devData && accessory.context.deviceData.capabilities) {
+            this.log('commands:', devData.commands);
             if (hasCapability('Switch Level') && !isSpeaker && !isFan && !isMode && !isRoutine) {
                 if (isWindowShade) {
-                    // This is a Window Shade
                     deviceGroups.push("window_shade");
-                    newAccessory = that.device_types.window_shade(newAccessory, devData);
+                    accessory = that.device_types.window_shade(accessory, devData);
                 } else if (isLight || devData.commands.setLevel) {
                     deviceGroups.push("light");
-                    newAccessory = that.device_types.light_bulb(newAccessory, devData);
-                    newAccessory = that.device_types.light_level(newAccessory, devData);
+                    accessory = that.device_types.light_bulb(accessory, devData);
+                    accessory = that.device_types.light_level(accessory, devData);
                     if (hasCapability("Color Control")) {
-                        newAccessory = that.device_types.light_color(newAccessory, devData);
+                        accessory = that.device_types.light_color(accessory, devData);
                     }
                 }
             }
 
             if (hasCapability('Garage Door Control')) {
                 deviceGroups.push("garage_door");
-                newAccessory = that.device_types.garage_door(newAccessory, devData);
+                accessory = that.device_types.garage_door(accessory, devData);
             }
-
 
             if (hasCapability('Lock')) {
                 deviceGroups.push("lock");
-                newAccessory = that.device_types.lock(newAccessory, devData);
+                accessory = that.device_types.lock(accessory, devData);
             }
 
             if (hasCapability('Valve')) {
                 deviceGroups.push("valve");
-                newAccessory = that.device_types.valve(newAccessory, devData);
+                accessory = that.device_types.valve(accessory, devData);
             }
 
             // GENERIC SPEAKER DEVICE
             if (isSpeaker) {
                 deviceGroups.push("speaker");
-                newAccessory = that.device_types.generic_speaker(newAccessory, devData);
+                accessory = that.device_types.generic_speaker(accessory, devData);
             }
 
             //Handles Standalone Fan with no levels
-            if (isFan && (hasCapability('Fan Light') || deviceGroups.length < 1)) {
+            if (isFan && (deviceGroups.length < 1 || hasCapability('Fan Light'))) {
                 deviceGroups.push("fan");
-                newAccessory = that.device_types.fan(newAccessory, devData);
+                accessory = that.device_types.fan(accessory, devData);
             }
 
             if (isMode) {
                 deviceGroups.push("mode");
-                newAccessory = that.device_types.virtual_mode(newAccessory, devData);
+                accessory = that.device_types.virtual_mode(accessory, devData);
             }
 
             if (isRoutine) {
                 deviceGroups.push("routine");
-                newAccessory = that.device_types.virtual_routine(newAccessory, devData);
+                accessory = that.device_types.virtual_routine(accessory, devData);
             }
 
             if (hasCapability("Button")) {
                 deviceGroups.push("button");
-                newAccessory = that.device_types.button(newAccessory, devData);
+                accessory = that.device_types.button(accessory, devData);
             }
 
             // This should catch the remaining switch devices that are specially defined
             if (hasCapability("Switch") && isLight && deviceGroups.length < 1) {
-                //Handles Standalone Fan with no levels
                 deviceGroups.push("light");
-                newAccessory = that.device_types.light_bulb(newAccessory, devData);
+                accessory = that.device_types.light_bulb(accessory, devData);
             }
 
             if (hasCapability('Switch') && !isLight && deviceGroups.length < 1) {
                 deviceGroups.push("switch");
-                newAccessory = that.device_types.switch(newAccessory, devData);
+                accessory = that.device_types.switch(accessory, devData);
             }
 
             // Smoke Detectors
             if (hasCapability('Smoke Detector') && hasAttribute('smoke')) {
                 deviceGroups.push("smoke_detector");
-                newAccessory = that.device_types.smoke_detector(newAccessory, devData);
+                accessory = that.device_types.smoke_detector(accessory, devData);
             }
 
             if (hasCapability("Carbon Monoxide Detector") && hasAttribute('carbonMonoxide')) {
                 deviceGroups.push("carbon_monoxide_detector");
-                newAccessory = that.device_types.carbon_monoxide(newAccessory, devData);
+                accessory = that.device_types.carbon_monoxide(accessory, devData);
             }
 
             if (hasCapability("Carbon Dioxide Measurement") && hasAttribute('carbonDioxideMeasurement')) {
                 deviceGroups.push("carbon_dioxide_measure");
-                newAccessory = that.device_types.carbon_dioxide(newAccessory, devData);
+                accessory = that.device_types.carbon_dioxide(accessory, devData);
             }
 
             if (hasCapability('Motion Sensor')) {
                 deviceGroups.push("motion_sensor");
-                newAccessory = that.device_types.motion_sensor(newAccessory, devData);
+                accessory = that.device_types.motion_sensor(accessory, devData);
             }
 
             if (hasCapability("Water Sensor")) {
                 deviceGroups.push("water_sensor");
-                newAccessory = that.device_types.water_sensor(newAccessory, devData);
+                accessory = that.device_types.water_sensor(accessory, devData);
             }
             if (hasCapability("Presence Sensor")) {
                 deviceGroups.push("presence_sensor");
-                newAccessory = that.device_types.presence_sensor(newAccessory, devData);
+                accessory = that.device_types.presence_sensor(accessory, devData);
             }
 
-            if (hasCapability("Relative Humidity Measurement")) {
+            if (hasCapability("Relative Humidity Measurement") && !isThermostat) {
                 deviceGroups.push("humidity_sensor");
-                newAccessory = that.device_types.humidity_sensor(newAccessory, devData);
+                accessory = that.device_types.humidity_sensor(accessory, devData);
             }
 
-            if (hasCapability("Temperature Measurement")) {
+            if (hasCapability("Temperature Measurement") && !isThermostat) {
                 deviceGroups.push("temp_sensor");
-                newAccessory = that.device_types.temperature_sensor(newAccessory, devData);
+                accessory = that.device_types.temperature_sensor(accessory, devData);
             }
 
             if (hasCapability("Illuminance Measurement")) {
                 deviceGroups.push("illuminance_sensor");
-                newAccessory = that.device_types.illuminance_sensor(newAccessory, devData);
+                accessory = that.device_types.illuminance_sensor(accessory, devData);
             }
 
             if (hasCapability('Contact Sensor') && !hasCapability('Garage Door Control')) {
                 deviceGroups.push("contact_sensor");
-                newAccessory = that.device_types.contact_sensor(newAccessory, devData);
+                accessory = that.device_types.contact_sensor(accessory, devData);
             }
 
             if (hasCapability("Battery")) {
                 deviceGroups.push("battery_level");
-                newAccessory = that.device_types.battery(newAccessory, devData);
+                accessory = that.device_types.battery(accessory, devData);
             }
 
             if (hasCapability('Energy Meter') && !hasCapability('Switch') && deviceGroups.length < 1) {
                 deviceGroups.push("energy_meter");
-                newAccessory = that.device_types.energy_meter(newAccessory, devData);
+                accessory = that.device_types.energy_meter(accessory, devData);
             }
 
             if (hasCapability('Power Meter') && !hasCapability('Switch') && deviceGroups.length < 1) {
                 deviceGroups.push("power_meter");
-                newAccessory = that.device_types.power_meter(newAccessory, devData);
+                accessory = that.device_types.power_meter(accessory, devData);
             }
 
             // Thermostat
             if (isThermostat) {
                 deviceGroups.push("thermostat");
-                newAccessory = that.device_types.thermostat(newAccessory, devData);
+                accessory = that.device_types.thermostat(accessory, devData);
             }
 
             // Alarm System Control/Status
             if (hasAttribute("alarmSystemStatus")) {
                 deviceGroups.push("alarm");
-                newAccessory = that.device_types.alarm_system(newAccessory, devData);
+                accessory = that.device_types.alarm_system(accessory, devData);
             }
 
             // Sonos Speakers
             if (isSonos && deviceGroups.length < 1) {
-                deviceGroups.push("speakers");
-                newAccessory = that.device_types.sonos_speaker(newAccessory, devData);
+                deviceGroups.push("sonos_speaker");
+                accessory = that.device_types.sonos_speaker(accessory, devData);
             }
-            newAccessory.context.deviceGroups = deviceGroups;
+            accessory.context.deviceGroups = deviceGroups;
 
             this.log.debug(deviceGroups);
         }
-        newAccessory = this.removeDeprecatedServices(accessory, newAccessory);
-        return that.loadAccessoryData(newAccessory, devData) || newAccessory;
+        accessory = this.removeUnusedServices(prevAccessory, accessory);
+        return that.loadAccessoryData(accessory, devData) || accessory;
     }
 
     processDeviceAttributeUpdate(change) {
-        let attrObj = this.getAttributeStoreItem(change.attribute, change.deviceid);
+        let characteristics = this.getAttributeStoreItem(change.attribute, change.deviceid);
         let accessory = this.getAccessoryFromCache(change);
-        if (!attrObj || !accessory) return;
-        if (attrObj instanceof Array) {
-            attrObj.forEach(characteristic => {
-                let newVal = this.attributeStateTransform(change.attribute, change.value, characteristic.displayName);
+        if (!characteristics || !accessory) return;
+        if (characteristics instanceof Array) {
+            characteristics.forEach(char => {
                 accessory.context.deviceData.attributes[change.attribute] = change.value;
-                characteristic.updateValue(newVal);
-                // characteristic.getValue();
+                accessory.context.lastUpdate = new Date();
+                char.updateValue(this.attributeStateTransform(change.attribute, change.value, char.displayName));
+                // char.getValue();
             });
             this.addAccessoryToCache(accessory);
         }
@@ -359,8 +364,9 @@ module.exports = class ST_Accessories {
             case "heatingSetpoint":
             case "coolingSetpoint":
                 return this.myUtils.tempConversionFrom_F(val);
-            case "level":
             case "fanSpeed":
+                return this.myUtils.fanSpeedIntToLevel(val);
+            case "level":
             case "saturation":
             case "volume":
                 return parseInt(val) || 0;
@@ -463,11 +469,13 @@ module.exports = class ST_Accessories {
         return this.services;
     }
 
-    removeDeprecatedServices(accessory, newAccessory) {
+    removeUnusedServices(accessory, newAccessory) {
         const configuredServices = newAccessory.services.map(s => s.UUID);
         // accessory.services.filter(s => !configuredServices.includes(s.UUID)).forEach(s => accessory.removeService(s));
         let remove = accessory.services.filter(s => !configuredServices.includes(s.UUID));
-        this.log('removeServices:', remove);
+        if (Object.keys(remove).length) {
+            this.log('removeServices:', remove);
+        }
         remove.forEach(s => accessory.removeService(s));
         return accessory;
     }
@@ -483,9 +491,18 @@ module.exports = class ST_Accessories {
     }
 
     getAttributeStoreItem(attr, devid) {
-        if (!this._attributeLookup[attr] || !this._attributeLookup[attr][devid])
+        if (!this._attributeLookup[attr] || !this._attributeLookup[attr][devid]) {
             return undefined;
+        }
         return this._attributeLookup[attr][devid] || undefined;
+    }
+
+
+    getAttributeValueFromCache(device, attr) {
+        const key = this.getAccessoryId(device);
+        let result = this._accessories[key].context.deviceData.attributes[attr] || undefined;
+        this.log('result: ', result);
+        return result;
     }
 
     getAccessoryId(accessory) {

@@ -5,7 +5,7 @@
  */
 
 String appVersion()         { return "2.0.0" }
-String appModified()         { return "11-20-2019" }
+String appModified()         { return "11-23-2019" }
 String branch()             { return "refactor" }
 String platform()           { return "SmartThings" }
 String pluginName()         { return "${platform()}-v2" }
@@ -34,6 +34,14 @@ preferences {
     page(name: "developmentPage")
     page(name: "settingsPage")
     page(name: "confirmPage")
+}
+
+private Map ignoreLists() {
+    return [
+        commands: ["indicatorWhenOn", "indicatorWhenOff", "ping", "refresh", "indicatorNever", "configure", "poll", "reset"],
+        attributes: ['DeviceWatch-Enroll', 'DeviceWatch-Status'],
+        capabilities: ["Health Check", "Ultraviolet Index", "Indicator"]
+    ]
 }
 
 def appInfoSect()	{
@@ -568,8 +576,8 @@ def deviceQuery() {
 }
 
 def deviceCapabilityList(device) {
-    def items = device?.capabilities?.collectEntries { capability-> [ (capability?.name):1 ] }
-    ["Health Check", "Ultraviolet Index", "Indicator"]?.each { if(it in items) { items?.remove(it as String) } }
+    def items = device?.capabilities?.findAll{ !(it?.name in ignoreLists()?.capabilities) }?.collectEntries { capability-> [ (capability?.name):1 ] }
+    // ["Health Check", "Ultraviolet Index", "Indicator"]?.each { if(it in items) { items?.remove(it as String) } }
     if(settings?.lightList?.find { it?.id == device?.id }) {
         items["LightBulb"] = 1
     }
@@ -608,13 +616,11 @@ def deviceCapabilityList(device) {
 }
 
 def deviceCommandList(device) {
-    List skip = ["indicatorWhenOn", "indicatorWhenOff", "ping"]
-    return device?.supportedCommands?.findAll { !(it?.name in skip) }?.collectEntries { command-> [ (command?.name): (command?.arguments) ] }
+    return device?.supportedCommands?.findAll { !(it?.name in ignoreLists()?.commands) }?.collectEntries { command-> [ (command?.name): (command?.arguments) ] }
 }
 
 def deviceAttributeList(device) {
-    List skip = ['DeviceWatch-Enroll', 'DeviceWatch-Status']
-    return device?.supportedAttributes?.findAll { !(it?.name in skip) }?.collectEntries { attribute->
+    return device?.supportedAttributes?.findAll { !(it?.name in ignoreLists()?.attributes) }?.collectEntries { attribute->
         try {
             [(attribute?.name): device?.currentValue(attribute?.name)]
         } catch(e) {

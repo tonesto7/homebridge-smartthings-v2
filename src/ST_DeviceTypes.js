@@ -13,6 +13,29 @@ module.exports = class MyUtils {
         this.homebridge = accessories.homebridge;
     }
 
+    alarm_system(accessory, devData) {
+        let thisChar = accessory
+            .getOrAddService(Service.SecuritySystem)
+            .getCharacteristic(Characteristic.SecuritySystemCurrentState)
+            .on("get", (callback) => {
+                callback(null, this.accessories.attributeStateTransform('alarmSystemStatus', devData.attributes.alarmSystemStatus));
+            });
+        this.accessories.storeCharacteristicItem("alarmSystemStatus", devData.deviceid, thisChar);
+
+        thisChar = accessory
+            .getOrAddService(Service.SecuritySystem)
+            .getCharacteristic(Characteristic.SecuritySystemTargetState)
+            .on("get", (callback) => {
+                callback(null, this.accessories.attributeStateTransform('alarmSystemStatus', devData.attributes.alarmSystemStatus.toLowerCase()));
+            })
+            .on("set", (value, callback) => {
+                this.client.sendDeviceCommand(callback, devData.deviceid, this.myUtils.convertAlarmState(value, false, Characteristic));
+                accessory.context.deviceData.attributes.alarmSystemStatus = this.myUtils.convertAlarmState(value, false, Characteristic);
+            });
+        this.accessories.storeCharacteristicItem("alarmSystemStatus", devData.deviceid, thisChar);
+        return accessory;
+    }
+
     battery(accessory, devData) {
         let thisChar = accessory
             .getOrAddService(Service.BatteryService)
@@ -76,37 +99,27 @@ module.exports = class MyUtils {
         this.accessories.storeCharacteristicItem("button", devData.deviceid, thisChar);
         return accessory;
     }
-    presence_sensor(accessory, devData) {
-        let thisChar = accessory
-            .getOrAddService(Service.OccupancySensor)
-            .getCharacteristic(Characteristic.OccupancyDetected)
-            .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('presence', devData.attributes.presence));
-            });
-        this.accessories.storeCharacteristicItem("presence", devData.deviceid, thisChar);
-        if (devData.capabilities['Tamper Alert']) {
-            thisChar = accessory
-                .getOrAddService(Service.OccupancySensor)
-                .getCharacteristic(Characteristic.StatusTampered)
-                .on("get", (callback) => {
-                    callback(null, this.accessories.attributeStateTransform('tamper', devData.attributes.tamper));
-                });
-            this.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
-        }
-        return accessory;
-    }
 
-    humidity_sensor(accessory, devData) {
+    carbon_dioxide(accessory, devData) {
         let thisChar = accessory
-            .getOrAddService(Service.HumiditySensor)
-            .getCharacteristic(Characteristic.CurrentRelativeHumidity)
+            .getOrAddService(Service.CarbonDioxideSensor)
+            .getCharacteristic(Characteristic.CarbonDioxideDetected)
             .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('humidity', devData.attributes.humidity));
+                callback(null, this.accessories.attributeStateTransform('carbonDioxideMeasurement', devData.attributes.carbonDioxideMeasurement, 'Carbon Dioxide Detected'));
             });
-        this.accessories.storeCharacteristicItem("humidity", devData.deviceid, thisChar);
+        this.accessories.storeCharacteristicItem("carbonDioxideMeasurement", devData.deviceid, thisChar);
+        thisChar = accessory
+            .getOrAddService(Service.CarbonDioxideSensor)
+            .getCharacteristic(Characteristic.CarbonDioxideLevel)
+            .on("get", (callback) => {
+                if (devData.attributes.carbonDioxideMeasurement >= 0) {
+                    callback(null, devData.attributes.carbonDioxideMeasurement);
+                }
+            });
+        this.accessories.storeCharacteristicItem("carbonDioxideMeasurement", devData.deviceid, thisChar);
         if (devData.capabilities['Tamper Alert']) {
             thisChar = accessory
-                .getOrAddService(Service.HumiditySensor)
+                .getOrAddService(Service.CarbonDioxideSensor)
                 .getCharacteristic(Characteristic.StatusTampered)
                 .on("get", (callback) => {
                     callback(null, this.accessories.attributeStateTransform('tamper', devData.attributes.tamper));
@@ -116,38 +129,23 @@ module.exports = class MyUtils {
         return accessory;
     }
 
-    temperature_sensor(accessory, devData) {
+    carbon_monoxide(accessory, devData) {
         let thisChar = accessory
-            .getOrAddService(Service.TemperatureSensor)
-            .getCharacteristic(Characteristic.CurrentTemperature)
-            .setProps({
-                minValue: parseFloat(-50),
-                maxValue: parseFloat(100)
-            })
+            .getOrAddService(Service.CarbonMonoxideSensor)
+            .getCharacteristic(Characteristic.CarbonMonoxideDetected)
             .on("get", (callback) => {
-                callback(null, this.myUtils.tempConversionFrom_F(devData.attributes.temperature));
+                callback(null, this.accessories.attributeStateTransform('carbonMonoxide', devData.attributes.carbonMonoxide));
             });
-        this.accessories.storeCharacteristicItem("temperature", devData.deviceid, thisChar);
+        this.accessories.storeCharacteristicItem("carbonMonoxide", devData.deviceid, thisChar);
         if (devData.capabilities["Tamper Alert"]) {
             thisChar = accessory
-                .getOrAddService(Service.TemperatureSensor)
+                .getOrAddService(Service.CarbonMonoxideSensor)
                 .getCharacteristic(Characteristic.StatusTampered)
                 .on("get", (callback) => {
                     callback(null, this.accessories.attributeStateTransform('tamper', devData.attributes.tamper));
                 });
             this.accessories.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
         }
-        return accessory;
-    }
-
-    illuminance_sensor(accessory, devData) {
-        let thisChar = accessory
-            .getOrAddService(Service.LightSensor)
-            .getCharacteristic(Characteristic.CurrentAmbientLightLevel)
-            .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('illuminance', devData.attributes.illuminance));
-            });
-        this.accessories.storeCharacteristicItem("illuminance", devData.deviceid, thisChar);
         return accessory;
     }
 
@@ -171,6 +169,17 @@ module.exports = class MyUtils {
         return accessory;
     }
 
+    energy_meter(accessory, devData) {
+        let thisChar = accessory
+            .getOrAddService(Service.Outlet)
+            .addCharacteristic(this.CommunityTypes.KilowattHours)
+            .on("get", (callback) => {
+                callback(null, this.accessories.attributeStateTransform('energy', devData.attributes.energy));
+            });
+        this.accessories.storeCharacteristicItem("energy", devData.deviceid, thisChar);
+        return accessory;
+    }
+
     fan(accessory, devData) {
         let thisChar = accessory
             .getOrAddService(Service.Fanv2)
@@ -183,12 +192,22 @@ module.exports = class MyUtils {
             });
         this.accessories.storeCharacteristicItem("switch", devData.deviceid, thisChar);
 
+        thisChar = accessory
+            .getOrAddService(Service.Fanv2)
+            .getCharacteristic(Characteristic.CurrentFanState)
+            .on("get", (callback) => {
+                let curState = (devData.attributes.switch === "off") ? Characteristic.CurrentFanState.IDLE : Characteristic.CurrentFanState.BLOWING_AIR;
+                callback(null, curState);
+            });
+        this.accessories.storeCharacteristicItem("switch", devData.deviceid, thisChar);
+
         if (devData.attributes.level || devData.attributes.fanSpeed) {
+            let spdAttr = devData.attributes.fanSpeed ? 'fanSpeed' : 'level';
             thisChar = accessory
                 .getOrAddService(Service.Fanv2)
                 .getCharacteristic(Characteristic.RotationSpeed)
                 .on("get", (callback) => {
-                    callback(null, this.accessories.attributeStateTransform('switch', devData.attributes.level));
+                    callback(null, this.accessories.attributeStateTransform(spdAttr, devData.attributes[spdAttr]));
                 })
                 .on("set", (value, callback) => {
                     if (value >= 0 && value <= 100) {
@@ -198,7 +217,7 @@ module.exports = class MyUtils {
                         });
                     }
                 });
-            this.accessories.storeCharacteristicItem("level", devData.deviceid, thisChar);
+            this.accessories.storeCharacteristicItem(spdAttr, devData.deviceid, thisChar);
         }
         return accessory;
     }
@@ -232,6 +251,66 @@ module.exports = class MyUtils {
             .getOrAddService(Service.GarageDoorOpener)
             .setCharacteristic(Characteristic.ObstructionDetected, false);
 
+        return accessory;
+    }
+
+    generic_speaker(accessory, devData) {
+        let thisChar = accessory
+            .getOrAddService(Service.Speaker)
+            .getCharacteristic(Characteristic.Volume)
+            .on("get", (callback) => {
+                callback(null, parseInt(devData.attributes.level || 0));
+            })
+            .on("set", (value, callback) => {
+                if (value > 0) {
+                    this.client.sendDeviceCommand(callback, devData.deviceid, "setLevel", {
+                        value1: value
+                    });
+                }
+            });
+        this.accessories.storeCharacteristicItem("volume", devData.deviceid, thisChar);
+
+        thisChar = accessory
+            .getOrAddService(Service.Speaker)
+            .getCharacteristic(Characteristic.Mute)
+            .on("get", (callback) => {
+                callback(null, this.accessories.attributeStateTransform('mute', devData.attributes.mute));
+            })
+            .on("set", (value, callback) => {
+                this.client.sendDeviceCommand(callback, devData.deviceid, (value === "muted") ? "mute" : "unmute");
+            });
+        this.accessories.storeCharacteristicItem("mute", devData.deviceid, thisChar);
+        return accessory;
+    }
+
+    humidity_sensor(accessory, devData) {
+        let thisChar = accessory
+            .getOrAddService(Service.HumiditySensor)
+            .getCharacteristic(Characteristic.CurrentRelativeHumidity)
+            .on("get", (callback) => {
+                callback(null, this.accessories.attributeStateTransform('humidity', devData.attributes.humidity));
+            });
+        this.accessories.storeCharacteristicItem("humidity", devData.deviceid, thisChar);
+        if (devData.capabilities['Tamper Alert']) {
+            thisChar = accessory
+                .getOrAddService(Service.HumiditySensor)
+                .getCharacteristic(Characteristic.StatusTampered)
+                .on("get", (callback) => {
+                    callback(null, this.accessories.attributeStateTransform('tamper', devData.attributes.tamper));
+                });
+            this.accessories.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
+        }
+        return accessory;
+    }
+
+    illuminance_sensor(accessory, devData) {
+        let thisChar = accessory
+            .getOrAddService(Service.LightSensor)
+            .getCharacteristic(Characteristic.CurrentAmbientLightLevel)
+            .on("get", (callback) => {
+                callback(null, this.accessories.attributeStateTransform('illuminance', devData.attributes.illuminance));
+            });
+        this.accessories.storeCharacteristicItem("illuminance", devData.deviceid, thisChar);
         return accessory;
     }
 
@@ -317,32 +396,54 @@ module.exports = class MyUtils {
         return accessory;
     }
 
-    generic_speaker(accessory, devData) {
+    motion_sensor(accessory, devData) {
         let thisChar = accessory
-            .getOrAddService(Service.Speaker)
-            .getCharacteristic(Characteristic.Volume)
+            .getOrAddService(Service.MotionSensor)
+            .getCharacteristic(Characteristic.MotionDetected)
             .on("get", (callback) => {
-                callback(null, parseInt(devData.attributes.level || 0));
-            })
-            .on("set", (value, callback) => {
-                if (value > 0) {
-                    this.client.sendDeviceCommand(callback, devData.deviceid, "setLevel", {
-                        value1: value
-                    });
-                }
+                callback(null, this.accessories.attributeStateTransform('motion', devData.attributes.motion));
             });
-        this.accessories.storeCharacteristicItem("volume", devData.deviceid, thisChar);
+        this.accessories.storeCharacteristicItem("motion", devData.deviceid, thisChar);
+        if (devData.capabilities['Tamper Alert']) {
+            thisChar = accessory
+                .getOrAddService(Service.MotionSensor)
+                .getCharacteristic(Characteristic.StatusTampered)
+                .on("get", (callback) => {
+                    callback(null, this.accessories.attributeStateTransform('tamper', devData.attributes.tamper));
+                });
+            this.accessories.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
+        }
+        return accessory;
+    }
 
-        thisChar = accessory
-            .getOrAddService(Service.Speaker)
-            .getCharacteristic(Characteristic.Mute)
+    power_meter(accessory, devData) {
+        let thisChar = accessory
+            .getOrAddService(Service.Outlet)
+            .addCharacteristic(this.CommunityTypes.Watts)
             .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('mute', devData.attributes.mute));
-            })
-            .on("set", (value, callback) => {
-                this.client.sendDeviceCommand(callback, devData.deviceid, (value === "muted") ? "mute" : "unmute");
+                callback(null, this.accessories.attributeStateTransform('power', devData.attributes.power));
             });
-        this.accessories.storeCharacteristicItem("mute", devData.deviceid, thisChar);
+        this.accessories.storeCharacteristicItem("power", devData.deviceid, thisChar);
+        return accessory;
+    }
+
+    presence_sensor(accessory, devData) {
+        let thisChar = accessory
+            .getOrAddService(Service.OccupancySensor)
+            .getCharacteristic(Characteristic.OccupancyDetected)
+            .on("get", (callback) => {
+                callback(null, this.accessories.attributeStateTransform('presence', devData.attributes.presence));
+            });
+        this.accessories.storeCharacteristicItem("presence", devData.deviceid, thisChar);
+        if (devData.capabilities['Tamper Alert']) {
+            thisChar = accessory
+                .getOrAddService(Service.OccupancySensor)
+                .getCharacteristic(Characteristic.StatusTampered)
+                .on("get", (callback) => {
+                    callback(null, this.accessories.attributeStateTransform('tamper', devData.attributes.tamper));
+                });
+            this.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
+        }
         return accessory;
     }
 
@@ -365,80 +466,60 @@ module.exports = class MyUtils {
         }
         return accessory;
     }
-    carbon_dioxide(accessory, devData) {
-        let thisChar = accessory
-            .getOrAddService(Service.CarbonDioxideSensor)
-            .getCharacteristic(Characteristic.CarbonDioxideDetected)
-            .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('carbonDioxideMeasurement', devData.attributes.carbonDioxideMeasurement, 'Carbon Dioxide Detected'));
-            });
-        this.accessories.storeCharacteristicItem("carbonDioxideMeasurement", devData.deviceid, thisChar);
-        thisChar = accessory
-            .getOrAddService(Service.CarbonDioxideSensor)
-            .getCharacteristic(Characteristic.CarbonDioxideLevel)
-            .on("get", (callback) => {
-                if (devData.attributes.carbonDioxideMeasurement >= 0) {
-                    callback(null, devData.attributes.carbonDioxideMeasurement);
-                }
-            });
-        this.accessories.storeCharacteristicItem("carbonDioxideMeasurement", devData.deviceid, thisChar);
-        if (devData.capabilities['Tamper Alert']) {
+
+    sonos_speaker(accessory, devData) {
+        let thisChar;
+        if (devData.capabilities["Audio Volume"]) {
+            let sonosVolumeTimeout = null;
+            let lastVolumeWriteValue = null;
+
             thisChar = accessory
-                .getOrAddService(Service.CarbonDioxideSensor)
-                .getCharacteristic(Characteristic.StatusTampered)
+                .getOrAddService(Service.Speaker)
+                .getCharacteristic(Characteristic.Volume)
                 .on("get", (callback) => {
-                    callback(null, this.accessories.attributeStateTransform('tamper', devData.attributes.tamper));
+                    this.log.debug("Reading sonos volume " + devData.attributes.volume);
+                    callback(null, this.accessories.attributeStateTransform('volume', devData.attributes.volume));
+                })
+                .on("set", (value, callback) => {
+                    if (value > 0 && value !== lastVolumeWriteValue) {
+                        lastVolumeWriteValue = value;
+                        this.log.debug(`Existing volume: ${devData.attributes.volume}, set to ${value}`);
+
+                        // Smooth continuous updates to make more responsive
+                        sonosVolumeTimeout = this.accessories.clearAndSetTimeout(sonosVolumeTimeout, () => {
+                            this.log.debug(`Existing volume: ${devData.attributes.volume}, set to ${lastVolumeWriteValue}`);
+                            this.client.sendDeviceCommand(callback, devData.deviceid, "setVolume", {
+                                value1: lastVolumeWriteValue
+                            });
+                        }, 1000);
+                    }
                 });
-            this.accessories.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
+
+            this.accessories.storeCharacteristicItem("volume", devData.deviceid, thisChar);
+        }
+
+        if (devData.capabilities["Audio Mute"]) {
+            thisChar = accessory
+                .getOrAddService(Service.Speaker)
+                .getCharacteristic(Characteristic.Mute)
+                .on("get", (callback) => {
+                    callback(null, this.accessories.attributeStateTransform('mute', devData.attributes.mute));
+                })
+                .on("set", (value, callback) => {
+                    this.client.sendDeviceCommand(callback, devData.deviceid, (value === "muted") ? "mute" : "unmute");
+                });
+            this.accessories.storeCharacteristicItem("mute", devData.deviceid, thisChar);
         }
         return accessory;
     }
 
-    carbon_monoxide(accessory, devData) {
-        let thisChar = accessory
-            .getOrAddService(Service.CarbonMonoxideSensor)
-            .getCharacteristic(Characteristic.CarbonMonoxideDetected)
-            .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('carbonMonoxide', devData.attributes.carbonMonoxide));
-            });
-        this.accessories.storeCharacteristicItem("carbonMonoxide", devData.deviceid, thisChar);
-        if (devData.capabilities["Tamper Alert"]) {
-            thisChar = accessory
-                .getOrAddService(Service.CarbonMonoxideSensor)
-                .getCharacteristic(Characteristic.StatusTampered)
-                .on("get", (callback) => {
-                    callback(null, this.accessories.attributeStateTransform('tamper', devData.attributes.tamper));
-                });
-            this.accessories.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
-        }
-        return accessory;
-    }
-
-    motion_sensor(accessory, devData) {
-        let thisChar = accessory
-            .getOrAddService(Service.MotionSensor)
-            .getCharacteristic(Characteristic.MotionDetected)
-            .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('motion', devData.attributes.motion));
-            });
-        this.accessories.storeCharacteristicItem("motion", devData.deviceid, thisChar);
-        if (devData.capabilities['Tamper Alert']) {
-            thisChar = accessory
-                .getOrAddService(Service.MotionSensor)
-                .getCharacteristic(Characteristic.StatusTampered)
-                .on("get", (callback) => {
-                    callback(null, this.accessories.attributeStateTransform('tamper', devData.attributes.tamper));
-                });
-            this.accessories.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
-        }
-        return accessory;
-    }
     switch (accessory, devData) {
         let char = accessory
             .getOrAddService(Service.Switch)
             .getCharacteristic(Characteristic.On)
             .on("get", (callback) => {
-                this.log('switch (get):', this.value);
+                this.log(`[GET] Switch (${accessory.displayName}) | LastUpdate: (${accessory.context.lastUpdate}) | isOn: (${this.accessories.attributeStateTransform('switch', devData.attributes.switch)})`);
+                this.log(`[GET] Switch (Current Value: ${devData.attributes.switch}) | Cache Value: (${this.accessories.getAttributeValueFromCache(accessory, 'switch')})`);
                 callback(null, this.accessories.attributeStateTransform('switch', devData.attributes.switch));
             })
             .on("set", (value, callback) => {
@@ -448,149 +529,27 @@ module.exports = class MyUtils {
         return accessory;
     }
 
-    valve(accessory, devData) {
+    temperature_sensor(accessory, devData) {
         let thisChar = accessory
-            .getOrAddService(Service.Valve)
-            .getCharacteristic(Characteristic.InUse)
-            .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('valve', devData.attributes.valve));
-            });
-        this.accessories.storeCharacteristicItem("valve", devData.deviceid, thisChar);
-
-        //Defines the valve type (irrigation or generic)
-        thisChar = accessory
-            .getOrAddService(Service.Valve)
-            .getCharacteristic(Characteristic.ValveType)
-            .on("get", (callback) => {
-                callback(null, 0);
-            });
-        this.accessories.storeCharacteristicItem("valve", devData.deviceid, thisChar);
-
-        //Defines Valve State (opened/closed)
-        thisChar = accessory
-            .getOrAddService(Service.Valve)
-            .getCharacteristic(Characteristic.Active)
-            .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('valve', devData.attributes.valve));
+            .getOrAddService(Service.TemperatureSensor)
+            .getCharacteristic(Characteristic.CurrentTemperature)
+            .setProps({
+                minValue: -100,
+                maxValue: 200
             })
-            .on("set", (value, callback) => {
-                this.client.sendDeviceCommand(callback, devData.deviceid, (value ? "on" : "off"));
-            });
-        this.accessories.storeCharacteristicItem("valve", devData.deviceid, thisChar);
-        return accessory;
-    }
-
-    virtual_mode(accessory, devData) {
-        let thisChar = accessory
-            .getOrAddService(Service.Switch)
-            .getCharacteristic(Characteristic.On)
             .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('switch', devData.attributes.switch));
-            })
-            .on("set", (value, callback) => {
-                if (value && (devData.attributes.switch === "off")) {
-                    this.client.sendDeviceCommand(callback, devData.deviceid, "mode");
-                }
+                callback(null, this.myUtils.tempConversionFrom_F(devData.attributes.temperature));
             });
-        this.accessories.storeCharacteristicItem("switch", devData.deviceid, thisChar);
-        return accessory;
-    }
-
-    virtual_routine(accessory, devData) {
-        let thisChar = accessory
-            .getOrAddService(Service.Switch)
-            .getCharacteristic(Characteristic.On)
-            .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('switch', devData.attributes.switch));
-            })
-            .on("set", (value, callback) => {
-                if (value) {
-                    this.client.sendDeviceCommand(callback, devData.deviceid, "routine");
-                    setTimeout(() => {
-                        console.log("routineOff...");
-                        accessory.context.deviceData.attributes.switch = "off";
-                        accessory
-                            .getOrAddService(Service.Switch)
-                            .getCharacteristic(Characteristic.On)
-                            .updateValue(false);
-                    }, 2000);
-                }
-            });
-        this.accessories.storeCharacteristicItem("switch", devData.deviceid, thisChar);
-        return accessory;
-    }
-
-    water_sensor(accessory, devData) {
-        let thisChar = accessory
-            .getOrAddService(Service.LeakSensor)
-            .getCharacteristic(Characteristic.LeakDetected)
-            .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('water', devData.attributes.water));
-            });
-        this.accessories.storeCharacteristicItem("water", devData.deviceid, thisChar);
-        if (devData.capabilities['Tamper Alert']) {
+        this.accessories.storeCharacteristicItem("temperature", devData.deviceid, thisChar);
+        if (devData.capabilities["Tamper Alert"]) {
             thisChar = accessory
-                .getOrAddService(Service.LeakSensor)
+                .getOrAddService(Service.TemperatureSensor)
                 .getCharacteristic(Characteristic.StatusTampered)
                 .on("get", (callback) => {
                     callback(null, this.accessories.attributeStateTransform('tamper', devData.attributes.tamper));
                 });
             this.accessories.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
         }
-        return accessory;
-    }
-
-    power_meter(accessory, devData) {
-        let thisChar = accessory
-            .getOrAddService(Service.Outlet)
-            .addCharacteristic(this.CommunityTypes.Watts)
-            .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('power', devData.attributes.power));
-            });
-        this.accessories.storeCharacteristicItem("power", devData.deviceid, thisChar);
-        return accessory;
-    }
-
-    energy_meter(accessory, devData) {
-        let thisChar = accessory
-            .getOrAddService(Service.Outlet)
-            .addCharacteristic(this.CommunityTypes.KilowattHours)
-            .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('energy', devData.attributes.energy));
-            });
-        this.accessories.storeCharacteristicItem("energy", devData.deviceid, thisChar);
-        return accessory;
-    }
-
-    window_shade(accessory, devData) {
-        let thisChar = accessory
-            .getOrAddService(Service.WindowCovering)
-            .getCharacteristic(Characteristic.TargetPosition)
-            .on("get", (callback) => {
-                callback(null, parseInt(devData.attributes.level));
-            })
-            .on("set", (value, callback) => {
-                if (devData.commands.close && value === 0) {
-                    // setLevel: 0, not responding on spring fashion blinds
-                    this.client.sendDeviceCommand(callback, devData.deviceid, "close");
-                } else {
-                    this.client.sendDeviceCommand(callback, devData.deviceid, "setLevel", {
-                        value1: value
-                    });
-                }
-            });
-        this.accessories.storeCharacteristicItem("level", devData.deviceid, thisChar);
-
-        thisChar = accessory
-            .getOrAddService(Service.WindowCovering)
-            .getCharacteristic(Characteristic.CurrentPosition)
-            .on("get", (callback) => {
-                callback(null, parseInt(devData.attributes.level));
-            });
-        this.accessories.storeCharacteristicItem("level", devData.deviceid, thisChar);
-        accessory
-            .getOrAddService(Service.WindowCovering)
-            .setCharacteristic(Characteristic.PositionState, Characteristic.PositionState.STOPPED);
         return accessory;
     }
 
@@ -788,73 +747,127 @@ module.exports = class MyUtils {
         return accessory;
     }
 
-    alarm_system(accessory, devData) {
+    valve(accessory, devData) {
         let thisChar = accessory
-            .getOrAddService(Service.SecuritySystem)
-            .getCharacteristic(Characteristic.SecuritySystemCurrentState)
+            .getOrAddService(Service.Valve)
+            .getCharacteristic(Characteristic.InUse)
             .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('alarmSystemStatus', devData.attributes.alarmSystemStatus));
+                callback(null, this.accessories.attributeStateTransform('valve', devData.attributes.valve));
             });
-        this.accessories.storeCharacteristicItem("alarmSystemStatus", devData.deviceid, thisChar);
+        this.accessories.storeCharacteristicItem("valve", devData.deviceid, thisChar);
 
+        //Defines the valve type (irrigation or generic)
         thisChar = accessory
-            .getOrAddService(Service.SecuritySystem)
-            .getCharacteristic(Characteristic.SecuritySystemTargetState)
+            .getOrAddService(Service.Valve)
+            .getCharacteristic(Characteristic.ValveType)
             .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('alarmSystemStatus', devData.attributes.alarmSystemStatus.toLowerCase()));
+                callback(null, 0);
+            });
+        this.accessories.storeCharacteristicItem("valve", devData.deviceid, thisChar);
+
+        //Defines Valve State (opened/closed)
+        thisChar = accessory
+            .getOrAddService(Service.Valve)
+            .getCharacteristic(Characteristic.Active)
+            .on("get", (callback) => {
+                callback(null, this.accessories.attributeStateTransform('valve', devData.attributes.valve));
             })
             .on("set", (value, callback) => {
-                this.client.sendDeviceCommand(callback, devData.deviceid, this.myUtils.convertAlarmState(value, false, Characteristic));
-                accessory.context.deviceData.attributes.alarmSystemStatus = this.myUtils.convertAlarmState(value, false, Characteristic);
+                this.client.sendDeviceCommand(callback, devData.deviceid, (value ? "on" : "off"));
             });
-        this.accessories.storeCharacteristicItem("alarmSystemStatus", devData.deviceid, thisChar);
+        this.accessories.storeCharacteristicItem("valve", devData.deviceid, thisChar);
         return accessory;
     }
 
-    sonos_speaker(accessory, devData) {
-        let thisChar;
-        if (devData.capabilities["Audio Volume"]) {
-            let sonosVolumeTimeout = null;
-            let lastVolumeWriteValue = null;
+    virtual_mode(accessory, devData) {
+        let thisChar = accessory
+            .getOrAddService(Service.Switch)
+            .getCharacteristic(Characteristic.On)
+            .on("get", (callback) => {
+                callback(null, this.accessories.attributeStateTransform('switch', devData.attributes.switch));
+            })
+            .on("set", (value, callback) => {
+                if (value && (devData.attributes.switch === "off")) {
+                    this.client.sendDeviceCommand(callback, devData.deviceid, "mode");
+                }
+            });
+        this.accessories.storeCharacteristicItem("switch", devData.deviceid, thisChar);
+        return accessory;
+    }
 
+    virtual_routine(accessory, devData) {
+        let thisChar = accessory
+            .getOrAddService(Service.Switch)
+            .getCharacteristic(Characteristic.On)
+            .on("get", (callback) => {
+                callback(null, this.accessories.attributeStateTransform('switch', devData.attributes.switch));
+            })
+            .on("set", (value, callback) => {
+                if (value) {
+                    this.client.sendDeviceCommand(callback, devData.deviceid, "routine");
+                    setTimeout(() => {
+                        console.log("routineOff...");
+                        accessory.context.deviceData.attributes.switch = "off";
+                        accessory
+                            .getOrAddService(Service.Switch)
+                            .getCharacteristic(Characteristic.On)
+                            .updateValue(false);
+                    }, 2000);
+                }
+            });
+        this.accessories.storeCharacteristicItem("switch", devData.deviceid, thisChar);
+        return accessory;
+    }
+
+    water_sensor(accessory, devData) {
+        let thisChar = accessory
+            .getOrAddService(Service.LeakSensor)
+            .getCharacteristic(Characteristic.LeakDetected)
+            .on("get", (callback) => {
+                callback(null, this.accessories.attributeStateTransform('water', devData.attributes.water));
+            });
+        this.accessories.storeCharacteristicItem("water", devData.deviceid, thisChar);
+        if (devData.capabilities['Tamper Alert']) {
             thisChar = accessory
-                .getOrAddService(Service.Speaker)
-                .getCharacteristic(Characteristic.Volume)
+                .getOrAddService(Service.LeakSensor)
+                .getCharacteristic(Characteristic.StatusTampered)
                 .on("get", (callback) => {
-                    this.log.debug("Reading sonos volume " + devData.attributes.volume);
-                    callback(null, this.accessories.attributeStateTransform('volume', devData.attributes.volume));
-                })
-                .on("set", (value, callback) => {
-                    if (value > 0 && value !== lastVolumeWriteValue) {
-                        lastVolumeWriteValue = value;
-                        this.log.debug(`Existing volume: ${devData.attributes.volume}, set to ${value}`);
-
-                        // Smooth continuous updates to make more responsive
-                        sonosVolumeTimeout = this.accessories.clearAndSetTimeout(sonosVolumeTimeout, () => {
-                            this.log.debug(`Existing volume: ${devData.attributes.volume}, set to ${lastVolumeWriteValue}`);
-                            this.client.sendDeviceCommand(callback, devData.deviceid, "setVolume", {
-                                value1: lastVolumeWriteValue
-                            });
-                        }, 1000);
-                    }
+                    callback(null, this.accessories.attributeStateTransform('tamper', devData.attributes.tamper));
                 });
-
-            this.accessories.storeCharacteristicItem("volume", devData.deviceid, thisChar);
-        }
-
-        if (devData.capabilities["Audio Mute"]) {
-            thisChar = accessory
-                .getOrAddService(Service.Speaker)
-                .getCharacteristic(Characteristic.Mute)
-                .on("get", (callback) => {
-                    callback(null, this.accessories.attributeStateTransform('mute', devData.attributes.mute));
-                })
-                .on("set", (value, callback) => {
-                    this.client.sendDeviceCommand(callback, devData.deviceid, (value === "muted") ? "mute" : "unmute");
-                });
-            this.accessories.storeCharacteristicItem("mute", devData.deviceid, thisChar);
+            this.accessories.storeCharacteristicItem("tamper", devData.deviceid, thisChar);
         }
         return accessory;
     }
 
+    window_shade(accessory, devData) {
+        let thisChar = accessory
+            .getOrAddService(Service.WindowCovering)
+            .getCharacteristic(Characteristic.TargetPosition)
+            .on("get", (callback) => {
+                callback(null, parseInt(devData.attributes.level));
+            })
+            .on("set", (value, callback) => {
+                if (devData.commands.close && value === 0) {
+                    // setLevel: 0, not responding on spring fashion blinds
+                    this.client.sendDeviceCommand(callback, devData.deviceid, "close");
+                } else {
+                    this.client.sendDeviceCommand(callback, devData.deviceid, "setLevel", {
+                        value1: value
+                    });
+                }
+            });
+        this.accessories.storeCharacteristicItem("level", devData.deviceid, thisChar);
+
+        thisChar = accessory
+            .getOrAddService(Service.WindowCovering)
+            .getCharacteristic(Characteristic.CurrentPosition)
+            .on("get", (callback) => {
+                callback(null, parseInt(devData.attributes.level));
+            });
+        this.accessories.storeCharacteristicItem("level", devData.deviceid, thisChar);
+        accessory
+            .getOrAddService(Service.WindowCovering)
+            .setCharacteristic(Characteristic.PositionState, Characteristic.PositionState.STOPPED);
+        return accessory;
+    }
 };

@@ -42,9 +42,9 @@ module.exports = class MyUtils {
 
     tempConversionFrom_F(tempVal) {
         if (this.temperature_unit === "C") {
-            return parseFloat(tempVal * 10) / 10;
+            return Math.round(parseFloat(tempVal * 10) / 10, 0);
         } else {
-            return parseFloat(((tempVal - 32) / 1.8) * 10) / 10;
+            return Math.round(parseFloat(((tempVal - 32) / 1.8) * 10) / 10, 2);
         }
     }
 
@@ -90,6 +90,19 @@ module.exports = class MyUtils {
             return "medium";
         } else if (speedVal === 3) {
             return "high";
+        }
+    }
+
+    fanSpeedIntToLevel(speedVal) {
+        switch (speedVal) {
+            case 1:
+                return 32;
+            case 2:
+                return 66;
+            case 3:
+                return 100;
+            default:
+                return 0;
         }
     }
 
