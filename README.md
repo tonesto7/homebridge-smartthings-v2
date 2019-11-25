@@ -33,9 +33,15 @@ This is based off of homebridge-smartthings-tonesto7 which was loosely based off
 
 When properly setup, you should see something like this in your Homebridge startup immediately after the PIN:
 ```
-[1/29/2017, 8:28:45 AM] Homebridge is running on port 51826.
-[1/29/2017, 8:28:45 AM] [SmartThings-v2] Direct Connect Is Listening On 10.0.0.70:8000
-[1/29/2017, 8:28:45 AM] [SmartThings-v2] SmartThings Hub Communication Established
+[11/25/2019, 4:44:46 PM] [SmartThings-v2] Devices to Remove: (0) []
+[11/25/2019, 4:44:46 PM] [SmartThings-v2] Devices to Update: (40)
+[11/25/2019, 4:44:46 PM] [SmartThings-v2] Devices to Create: (0) []
+[11/25/2019, 4:44:46 PM] [SmartThings-v2] Total Initialization Time: (2 seconds)
+[11/25/2019, 4:44:46 PM] [SmartThings-v2] Unknown Capabilities: ["Power Source"]
+[11/25/2019, 4:44:46 PM] [SmartThings-v2] SmartThings DeviceCache Size: (40)
+[11/25/2019, 4:44:46 PM] [SmartThings-v2] WebServer Initiated...
+[11/25/2019, 4:44:46 PM] [SmartThings-v2] Sending StartDirect Request to SmartThings | SendToLocalHub: (false)
+[11/25/2019, 4:44:46 PM] [SmartThings-v2] Direct Connect is Listening On 10.0.0.163:8000
 ```
 
 # Installation
@@ -48,7 +54,7 @@ Installation comes in two parts:
 
 _Note New SmartThings users: You must first enable github integration. (If you use github for work you will probably want to set up a new account as it will request access to your private repos). Only after enabling integration will you see the settings button. Non-US users [can set it up here](https://graph-eu01-euwest1.api.smartthings.com/githubAuth/step1)_.
 
-_Note to users updating from homebridge-smartthings-tonesto7: You can continue to use the original Homebridge-SmartThings app if you choose, but to keep it aligned with any changes made to the `homebridge-smartthings-v2` plugin you should consider migrating the app to point to this repository instead of `homebridge-smartthings-tonesto7`._
+_Note to users updating from homebridge-smartthings-tonesto7: You can continue to use the original Homebridge-SmartThings app if you choose, but to keep it aligned with any changes made to the `homebridge-smartthings-v2` plugin you should consider migrating the app to point to `homebridge-smartthings-v2` repository instead of `homebridge-smartthings-tonesto7`._
 
 * Click on <u><b>```My SmartApps```</b></u>
 * Click on Settings and Add the New repository:

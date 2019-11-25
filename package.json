@@ -6,14 +6,22 @@
         "express": "4.17.1",
         "request-promise-native": "^1.0.8",
         "compare-versions": "^3.5.1",
-        "require-all": "^3.0.0"
+        "require-all": "^3.0.0",
+        "@babel/polyfill": "^7.7.0"
     },
     "devDependencies": {
-        "eslint": "^6.6.0",
+        "eslint": "^6.7.1",
         "eslint-config-prettier": "^6.7.0",
         "eslint-plugin-prettier": "^3.1.1",
         "lint-staged": "^9.4.3",
+        "@babel/core": "^7.7.4",
+        "@babel/plugin-proposal-class-properties": "^7.7.4",
+        "@babel/preset-env": "^7.7.4",
+        "@babel/preset-typescript": "^7.7.4",
         "prettier": "^1.19.1",
+        "rollup": "^1.27.5",
+        "rollup-plugin-babel": "^4.3.3",
+        "rollup-plugin-node-resolve": "^5.2.0",
         "husky": "^3.1.0"
     },
     "description": "SmartThings plugin for HomeBridge",
@@ -37,14 +45,21 @@
     "scripts": {
         "test": "eslint .",
         "prettier": "prettier --write src/**/*.js",
-        "start": "homebridge -D -P . -U ."
+        "start": "homebridge -D -P . -U .",
+        "dev": "rollup -c -w",
+        "build": "rollup -c",
+        "prepublishOnly": "npm run build"
     },
     "license": "ISC",
     "name": "homebridge-smartthings-v2",
     "preferGlobal": true,
+    "main": "dist/index.js",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/tonesto7/homebridge-smartthings-v2.git"
+    },
+    "bugs": {
+        "url": "http://github.com/tonesto7/homebridge-smartthings-v2/issues"
     },
     "version": "2.0.0"
 }
