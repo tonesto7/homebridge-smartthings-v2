@@ -254,35 +254,6 @@ module.exports = class MyUtils {
         return accessory;
     }
 
-    generic_speaker(accessory, devData) {
-        let thisChar = accessory
-            .getOrAddService(Service.Speaker)
-            .getCharacteristic(Characteristic.Volume)
-            .on("get", (callback) => {
-                callback(null, parseInt(devData.attributes.level || 0));
-            })
-            .on("set", (value, callback) => {
-                if (value > 0) {
-                    this.client.sendDeviceCommand(callback, devData.deviceid, "setLevel", {
-                        value1: value
-                    });
-                }
-            });
-        this.accessories.storeCharacteristicItem("volume", devData.deviceid, thisChar);
-
-        thisChar = accessory
-            .getOrAddService(Service.Speaker)
-            .getCharacteristic(Characteristic.Mute)
-            .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('mute', devData.attributes.mute));
-            })
-            .on("set", (value, callback) => {
-                this.client.sendDeviceCommand(callback, devData.deviceid, (value === "muted") ? "mute" : "unmute");
-            });
-        this.accessories.storeCharacteristicItem("mute", devData.deviceid, thisChar);
-        return accessory;
-    }
-
     humidity_sensor(accessory, devData) {
         let thisChar = accessory
             .getOrAddService(Service.HumiditySensor)
@@ -513,7 +484,36 @@ module.exports = class MyUtils {
         return accessory;
     }
 
-    switch (accessory, devData) {
+    speaker_device(accessory, devData) {
+        let thisChar = accessory
+            .getOrAddService(Service.Speaker)
+            .getCharacteristic(Characteristic.Volume)
+            .on("get", (callback) => {
+                callback(null, parseInt(devData.attributes.level || 0));
+            })
+            .on("set", (value, callback) => {
+                if (value > 0) {
+                    this.client.sendDeviceCommand(callback, devData.deviceid, "setLevel", {
+                        value1: value
+                    });
+                }
+            });
+        this.accessories.storeCharacteristicItem("volume", devData.deviceid, thisChar);
+
+        thisChar = accessory
+            .getOrAddService(Service.Speaker)
+            .getCharacteristic(Characteristic.Mute)
+            .on("get", (callback) => {
+                callback(null, this.accessories.attributeStateTransform('mute', devData.attributes.mute));
+            })
+            .on("set", (value, callback) => {
+                this.client.sendDeviceCommand(callback, devData.deviceid, (value === "muted") ? "mute" : "unmute");
+            });
+        this.accessories.storeCharacteristicItem("mute", devData.deviceid, thisChar);
+        return accessory;
+    }
+
+    switch_device(accessory, devData) {
         let char = accessory
             .getOrAddService(Service.Switch)
             .getCharacteristic(Characteristic.On)

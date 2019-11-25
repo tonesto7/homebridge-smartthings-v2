@@ -113,7 +113,6 @@ module.exports = class ST_Accessories {
         let isSonos = (devData.manufacturerName === "Sonos");
         let isThermostat = (hasCapability('Thermostat') || hasCapability('Thermostat Operating State'));
         if (devData && accessory.context.deviceData.capabilities) {
-            this.log('commands:', devData.commands);
             if (hasCapability('Switch Level') && !isSpeaker && !isFan && !isMode && !isRoutine) {
                 if (isWindowShade) {
                     deviceGroups.push("window_shade");
@@ -146,7 +145,7 @@ module.exports = class ST_Accessories {
             // GENERIC SPEAKER DEVICE
             if (isSpeaker) {
                 deviceGroups.push("speaker");
-                accessory = that.device_types.generic_speaker(accessory, devData);
+                accessory = that.device_types.speaker_device(accessory, devData);
             }
 
             //Handles Standalone Fan with no levels
@@ -178,7 +177,7 @@ module.exports = class ST_Accessories {
 
             if (hasCapability('Switch') && !isLight && deviceGroups.length < 1) {
                 deviceGroups.push("switch");
-                accessory = that.device_types.switch(accessory, devData);
+                accessory = that.device_types.switch_device(accessory, devData);
             }
 
             // Smoke Detectors
@@ -371,7 +370,7 @@ module.exports = class ST_Accessories {
             case "volume":
                 return parseInt(val) || 0;
             case "illuminance":
-                return Math.ceil(val);
+                return Math.round(Math.ceil(parseFloat(val)), 0);
 
             case "energy":
             case "humidity":
@@ -497,11 +496,10 @@ module.exports = class ST_Accessories {
         return this._attributeLookup[attr][devid] || undefined;
     }
 
-
     getAttributeValueFromCache(device, attr) {
         const key = this.getAccessoryId(device);
-        let result = this._accessories[key].context.deviceData.attributes[attr] || undefined;
-        this.log('result: ', result);
+        let result = this._accessories[key] ? this._accessories[key].context.deviceData.attributes[attr] : undefined;
+        this.log(`Attribute (${attr}) Value From Cache: [${result}]`);
         return result;
     }
 
