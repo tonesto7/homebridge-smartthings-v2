@@ -2,7 +2,7 @@ const inherits = require('util').inherits;
 
 module.exports = function(Service, Characteristic) {
     var CommunityTypes = {};
-    CommunityTypes.KilowattHours = function() {
+    CommunityTypes.KilowattHours = () => {
         Characteristic.call(this, 'Total Consumption', 'E863F10C-079E-48FF-8F27-9C2605A29F52');
         this.setProps({
             format: Characteristic.Formats.UINT32,
@@ -16,7 +16,7 @@ module.exports = function(Service, Characteristic) {
     };
     inherits(CommunityTypes.KilowattHours, Characteristic);
 
-    CommunityTypes.Watts = function() {
+    CommunityTypes.Watts = () => {
         Characteristic.call(this, 'Consumption', 'E863F10D-079E-48FF-8F27-9C2605A29F52');
         this.setProps({
             format: Characteristic.Formats.UINT16,
@@ -32,7 +32,7 @@ module.exports = function(Service, Characteristic) {
 
 
     // Characteristics
-    CommunityTypes.Timestamp = function() {
+    CommunityTypes.Timestamp = () => {
         Characteristic.call(this, "Timestamp", 'FF000001-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.STRING,
@@ -42,7 +42,7 @@ module.exports = function(Service, Characteristic) {
     };
     inherits(CommunityTypes.Timestamp, Characteristic);
 
-    CommunityTypes.AudioDataURL = function() {
+    CommunityTypes.AudioDataURL = () => {
         Characteristic.call(this, "Audio URL", 'FF000002-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.STRING,
@@ -51,7 +51,7 @@ module.exports = function(Service, Characteristic) {
     };
     inherits(CommunityTypes.AudioDataURL, Characteristic);
 
-    CommunityTypes.VideoDataURL = function() {
+    CommunityTypes.VideoDataURL = () => {
         Characteristic.call(this, "Video URL", 'FF000003-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.STRING,
@@ -60,7 +60,7 @@ module.exports = function(Service, Characteristic) {
     };
     inherits(CommunityTypes.VideoDataURL, Characteristic);
 
-    CommunityTypes.AudioVolume = function() {
+    CommunityTypes.AudioVolume = () => {
         Characteristic.call(this, 'Audio Volume', '00001001-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.UINT8,
@@ -74,7 +74,7 @@ module.exports = function(Service, Characteristic) {
     };
     inherits(CommunityTypes.AudioVolume, Characteristic);
 
-    CommunityTypes.Muting = function() {
+    CommunityTypes.Muting = () => {
         Characteristic.call(this, 'Muting', '00001002-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.UINT8,
@@ -84,7 +84,7 @@ module.exports = function(Service, Characteristic) {
     };
     inherits(CommunityTypes.Muting, Characteristic);
 
-    CommunityTypes.PlaybackState = function() {
+    CommunityTypes.PlaybackState = () => {
         Characteristic.call(this, 'Playback State', '00002001-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.UINT8,
@@ -97,7 +97,7 @@ module.exports = function(Service, Characteristic) {
     CommunityTypes.PlaybackState.PAUSED = 1;
     CommunityTypes.PlaybackState.STOPPED = 2;
 
-    CommunityTypes.SkipForward = function() {
+    CommunityTypes.SkipForward = () => {
         Characteristic.call(this, 'Skip Forward', '00002002-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.BOOL,
@@ -107,7 +107,7 @@ module.exports = function(Service, Characteristic) {
     };
     inherits(CommunityTypes.SkipForward, Characteristic);
 
-    CommunityTypes.SkipBackward = function() {
+    CommunityTypes.SkipBackward = () => {
         Characteristic.call(this, 'Skip Backward', '00002003-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.BOOL,
@@ -117,7 +117,7 @@ module.exports = function(Service, Characteristic) {
     };
     inherits(CommunityTypes.SkipBackward, Characteristic);
 
-    CommunityTypes.ShuffleMode = function() {
+    CommunityTypes.ShuffleMode = () => {
         Characteristic.call(this, 'Shuffle Mode', '00002004-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.UINT8,
@@ -137,7 +137,7 @@ module.exports = function(Service, Characteristic) {
     CommunityTypes.ShuffleMode.ALBUM = 3; // e.g. album or season
     CommunityTypes.ShuffleMode.SET = 4; // e.g. T.V. Series or album box set
 
-    CommunityTypes.RepeatMode = function() {
+    CommunityTypes.RepeatMode = () => {
         Characteristic.call(this, 'Repeat Mode', '00002005-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.UINT8,
@@ -150,7 +150,7 @@ module.exports = function(Service, Characteristic) {
     CommunityTypes.RepeatMode.ONE = 1;
     CommunityTypes.RepeatMode.ALL = 2;
 
-    CommunityTypes.PlaybackSpeed = function() {
+    CommunityTypes.PlaybackSpeed = () => {
         Characteristic.call(this, 'Playback Speed', '00002006-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.FLOAT,
@@ -160,7 +160,7 @@ module.exports = function(Service, Characteristic) {
     };
     inherits(CommunityTypes.PlaybackSpeed, Characteristic);
 
-    CommunityTypes.MediaCurrentPosition = function() {
+    CommunityTypes.MediaCurrentPosition = () => {
         Characteristic.call(this, 'Media Current Position', '00002007-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.FLOAT, // In seconds
@@ -170,7 +170,7 @@ module.exports = function(Service, Characteristic) {
     };
     inherits(CommunityTypes.MediaCurrentPosition, Characteristic);
 
-    CommunityTypes.MediaItemName = function() {
+    CommunityTypes.MediaItemName = () => {
         Characteristic.call(this, 'Media Name', '00003001-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.STRING,
@@ -180,7 +180,7 @@ module.exports = function(Service, Characteristic) {
     };
     inherits(CommunityTypes.MediaItemName, Characteristic);
 
-    CommunityTypes.MediaItemAlbumName = function() {
+    CommunityTypes.MediaItemAlbumName = () => {
         Characteristic.call(this, 'Media Album Name', '00003002-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.STRING,
@@ -190,7 +190,7 @@ module.exports = function(Service, Characteristic) {
     };
     inherits(CommunityTypes.MediaItemAlbumName, Characteristic);
 
-    CommunityTypes.MediaItemArtist = function() {
+    CommunityTypes.MediaItemArtist = () => {
         Characteristic.call(this, 'Media Artist', '00003003-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.STRING,
@@ -200,7 +200,7 @@ module.exports = function(Service, Characteristic) {
     };
     inherits(CommunityTypes.MediaItemArtist, Characteristic);
 
-    CommunityTypes.MediaItemDuration = function() {
+    CommunityTypes.MediaItemDuration = () => {
         Characteristic.call(this, 'Media Duration', '00003005-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.FLOAT, // In seconds
@@ -210,7 +210,7 @@ module.exports = function(Service, Characteristic) {
     };
     inherits(CommunityTypes.MediaItemDuration, Characteristic);
 
-    CommunityTypes.StillImage = function() {
+    CommunityTypes.StillImage = () => {
         Characteristic.call(this, 'Still Image', '00004001-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.DATA,
@@ -221,7 +221,7 @@ module.exports = function(Service, Characteristic) {
     inherits(CommunityTypes.StillImage, Characteristic);
 
     // Also known as MIME type...
-    CommunityTypes.MediaTypeIdentifier = function() {
+    CommunityTypes.MediaTypeIdentifier = () => {
         Characteristic.call(this, 'Media Type Identifier', '00004002-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.STRING,
@@ -231,7 +231,7 @@ module.exports = function(Service, Characteristic) {
     };
     inherits(CommunityTypes.MediaTypeIdentifier, Characteristic);
 
-    CommunityTypes.MediaWidth = function() {
+    CommunityTypes.MediaWidth = () => {
         Characteristic.call(this, 'Media Width', '00004003-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.UINT32,
@@ -241,7 +241,7 @@ module.exports = function(Service, Characteristic) {
     };
     inherits(CommunityTypes.MediaWidth, Characteristic);
 
-    CommunityTypes.MediaHeight = function() {
+    CommunityTypes.MediaHeight = () => {
         Characteristic.call(this, 'Media Width', '00004004-0000-1000-8000-135D67EC4377');
         this.setProps({
             format: Characteristic.Formats.UINT32,
@@ -252,7 +252,7 @@ module.exports = function(Service, Characteristic) {
     inherits(CommunityTypes.MediaHeight, Characteristic);
 
     // Custom SmartThings Device Characteristic
-    CommunityTypes.DeviceId = function() {
+    CommunityTypes.DeviceId = () => {
         Characteristic.call(this, 'Device Id', '2ecc2a94-30d3-4457-bba7-0a93468de8a4');
         this.setProps({
             format: Characteristic.Formats.STRING,

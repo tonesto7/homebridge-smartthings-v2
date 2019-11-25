@@ -524,6 +524,9 @@ module.exports = class MyUtils {
             })
             .on("set", (value, callback) => {
                 this.client.sendDeviceCommand(callback, devData.deviceid, (value ? "on" : "off"));
+            })
+            .on("change", (callback) => {
+                this.log(`[CHANGE] Switch (${accessory.displayName}) | LastUpdate: (${accessory.context.lastUpdate}) | isOn: (${this.value})`);
             });
         this.accessories.storeCharacteristicItem("switch", devData.deviceid, char);
         return accessory;
