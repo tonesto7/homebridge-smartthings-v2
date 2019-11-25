@@ -14,10 +14,7 @@ const {
     webApp = express();
 
 var PlatformAccessory;
-
-// TODO: Handle Duplicated Devices in ST Inputs
-// TODO: Add/Cleanup new/unused services on cachedAccessory Loading
-// TODO: Resolve fluctuating device states
+// TODO: Resolve device state sync issues after a period of time on devices that only update when they are turned on/off
 
 module.exports = class ST_Platform {
     constructor(log, config, api) {

@@ -66,7 +66,6 @@ module.exports = class ST_Accessories {
     }
 
     initializeDeviceCharacteristics(accessory) {
-        //TODO: Cleanup Unused Services from Cached Devices
         let prevAccessory = accessory;
         for (let index in accessory.context.deviceData.capabilities) {
             if (knownCapabilities.indexOf(index) === -1 && this.platform.unknownCapabilities.indexOf(index) === -1) this.platform.unknownCapabilities.push(index);
@@ -100,9 +99,6 @@ module.exports = class ST_Accessories {
         let hasCommand = (cmd) => {
             return Object.keys(devData.commands).includes(cmd);
         };
-        // let hasAttributeAndCommand = (attr, cmd) => {
-        //     return (Object.keys(devData.attributes).includes(attr) && Object.keys(devData.commands).includes(cmd));
-        // };
 
         let isMode = hasCapability("Mode");
         let isRoutine = hasCapability("Routine");
