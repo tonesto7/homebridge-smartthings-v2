@@ -267,18 +267,21 @@ module.exports = class ST_Accessories {
     }
 
     processDeviceAttributeUpdate(change) {
-        let characteristics = this.getAttributeStoreItem(change.attribute, change.deviceid);
-        let accessory = this.getAccessoryFromCache(change);
-        if (!characteristics || !accessory) return;
-        if (characteristics instanceof Array) {
-            characteristics.forEach(char => {
-                accessory.context.deviceData.attributes[change.attribute] = change.value;
-                accessory.context.lastUpdate = new Date();
-                char.updateValue(this.attributeStateTransform(change.attribute, change.value, char.displayName));
-                // char.getValue();
-            });
-            this.addAccessoryToCache(accessory);
-        }
+        return new Promise((resolve) => {
+            let characteristics = this.getAttributeStoreItem(change.attribute, change.deviceid);
+            let accessory = this.getAccessoryFromCache(change);
+            if (!characteristics || !accessory) return;
+            if (characteristics instanceof Array) {
+                characteristics.forEach(char => {
+                    accessory.context.deviceData.attributes[change.attribute] = change.value;
+                    accessory.context.lastUpdate = new Date().toISOString();
+                    char.updateValue(this.attributeStateTransform(change.attribute, change.value, char.displayName));
+                    // char.getValue();
+                });
+                resolve(this.addAccessoryToCache(accessory));
+            }
+            resolve(false);
+        });
     }
 
     attributeStateTransform(attr, val, charName) {
@@ -515,7 +518,8 @@ module.exports = class ST_Accessories {
 
     addAccessoryToCache(accessory) {
         const key = this.getAccessoryId(accessory);
-        return (this._accessories[key] = accessory);
+        this._accessories[key] = accessory;
+        return true;
     }
 
     removeAccessoryFromCache(accessory) {

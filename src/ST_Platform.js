@@ -40,6 +40,8 @@ module.exports = class ST_Platform {
         this.local_hub_ip = undefined;
         this.myUtils = new myUtils(this);
         this.configItems = this.getConfigItems();
+        // logger.setDebugEnabled(this.configItems.logs.debug === true);
+        // logger.setTimestampEnabled(this.configItems.logs.timestamp !== false);
         this.myUtils.checkVersion();
         this.deviceCache = {};
         this.attributeLookup = {};
@@ -54,12 +56,13 @@ module.exports = class ST_Platform {
 
     getConfigItems() {
         return {
-            app_url: this.config["app_url"],
-            app_id: this.config["app_id"],
-            access_token: this.config["access_token"],
-            update_seconds: this.config["update_seconds"] || 30,
-            direct_port: this.config["direct_port"] || 8000,
-            direct_ip: this.config["direct_ip"] || this.myUtils.getIPAddress()
+            app_url: this.config.app_url,
+            app_id: this.config.app_id,
+            access_token: this.config.access_token,
+            update_seconds: this.config.update_seconds || 30,
+            direct_port: this.config.direct_port || 8000,
+            direct_ip: this.config.direct_ip || this.myUtils.getIPAddress(),
+            logs: this.config.logs || {}
         };
     }
 
@@ -310,12 +313,19 @@ module.exports = class ST_Platform {
                                 value: body.change_value,
                                 date: body.change_date
                             };
-                            that.log.good(`Change Event: (${body.change_name}) [${(body.change_attribute ? body.change_attribute.toUpperCase() : "unknown")}] is ${body.change_value}`);
-                            that.SmartThingsAccessories.processDeviceAttributeUpdate(newChange);
+                            that.SmartThingsAccessories.processDeviceAttributeUpdate(newChange)
+                                .then((resp) => {
+                                    that.log.good(`Change Event: (${body.change_name}) [${(body.change_attribute ? body.change_attribute.toUpperCase() : "unknown")}] is ${body.change_value}`);
+                                    res.send({
+                                        status: resp ? "OK" : "Failed"
+                                    });
+                                });
+                        } else {
+                            res.send({
+                                status: "Failed"
+                            });
                         }
-                        res.send({
-                            status: "OK"
-                        });
+
                     } else {
                         res.send({
                             status: "Failed: Missing access_token or app_id"
