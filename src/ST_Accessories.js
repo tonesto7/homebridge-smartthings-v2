@@ -107,8 +107,9 @@ module.exports = class ST_Accessories {
         let isLight = (hasCapability('LightBulb') || hasCapability('Fan Light') || hasCapability('Bulb') || devData.name.includes('light'));
         let isSpeaker = hasCapability('Speaker');
         let isSonos = (devData.manufacturerName === "Sonos");
-        let isThermostat = (hasCapability('Thermostat') || hasCapability('Thermostat Operating State'));
+        let isThermostat = (hasCapability('Thermostat') || hasCapability('Thermostat Operating State') || hasAttribute('thermostatOperatingState'));
         if (devData && accessory.context.deviceData.capabilities) {
+
             if (hasCapability('Switch Level') && !isSpeaker && !isFan && !isMode && !isRoutine) {
                 if (isWindowShade) {
                     deviceGroups.push("window_shade");
@@ -449,18 +450,11 @@ module.exports = class ST_Accessories {
     }
 
     getOrAddService(svc) {
-        let s = this.getService(svc);
-        if (!s) {
-            s = this.addService(svc);
-        }
-        return s;
+        return (this.getService(svc) || this.addService(svc));
     }
 
     getOrAddCharacteristic(service, characteristic) {
-        return (
-            service.getCharacteristic(characteristic) ||
-            service.addCharacteristic(characteristic)
-        );
+        return (service.getCharacteristic(characteristic) || service.addCharacteristic(characteristic));
     }
 
     getServices() {
@@ -495,7 +489,7 @@ module.exports = class ST_Accessories {
         return this._attributeLookup[attr][devid] || undefined;
     }
 
-    getAttributeValueFromCache(device, attr) {
+    getDeviceAttributeValueFromCache(device, attr) {
         const key = this.getAccessoryId(device);
         let result = this._accessories[key] ? this._accessories[key].context.deviceData.attributes[attr] : undefined;
         this.log(`Attribute (${attr}) Value From Cache: [${result}]`);

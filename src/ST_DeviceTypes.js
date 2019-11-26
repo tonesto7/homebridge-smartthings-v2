@@ -684,10 +684,9 @@ module.exports = class MyUtils {
             if (devData.attributes.supportedThermostatModes.includes("auto")) {
                 validValuesArray.push(3);
             }
-            let validValues = {
+            thisChar.setProps({
                 validValues: validValuesArray
-            };
-            thisChar.setProps(validValues);
+            });
         }
         this.accessories.storeCharacteristicItem("thermostatMode", devData.deviceid, thisChar);
 
@@ -714,27 +713,26 @@ module.exports = class MyUtils {
             .on("get", (callback) => {
                 let temp;
                 switch (devData.attributes.thermostatMode) {
-                    case "cool":
-                        {
-                            temp = devData.attributes.coolingSetpoint;
-                            break;
-                        }
-                    case "emergency heat":
-                    case "heat":
-                        {
-                            temp = devData.attributes.heatingSetpoint;
-                            break;
-                        }
+                    case 'cool':
+                    case 'cooling':
+                        temp = accessory.context.deviceData.coolingSetpoint;
+                        break;
+                    case 'emergency heat':
+                    case 'heat':
+                    case 'heating':
+                        temp = accessory.context.deviceData.attributes.heatingSetpoint;
+                        break;
                     default:
-                        {
-                            // This should only refer to auto
-                            // Choose closest target as single target
-                            let high = devData.attributes.coolingSetpoint;
-                            let low = devData.attributes.heatingSetpoint;
-                            let cur = devData.attributes.temperature;
-                            temp = Math.abs(high - cur) < Math.abs(cur - low) ? high : low;
-                            break;
+                        switch (accessory.context.deviceData.thermostatOperatingState) {
+                            case 'cooling':
+                            case 'cool':
+                                temp = accessory.context.deviceData.attributes.coolingSetpoint;
+                                break;
+                            default:
+                                temp = accessory.context.deviceData.attributes.heatingSetpoint;
+                                break;
                         }
+                        break;
                 }
                 if (!temp) {
                     callback("Unknown");
@@ -748,54 +746,39 @@ module.exports = class MyUtils {
                 // Set the appropriate temperature unit based on the mode
                 switch (devData.attributes.thermostatMode) {
                     case "cool":
-                        {
-                            this.client.sendDeviceCommand(callback, devData.deviceid, "setCoolingSetpoint", {
-                                value1: temp
-                            });
-                            accessory.context.deviceData.attributes.coolingSetpoint = temp;
-                            break;
-                        }
+                        this.client.sendDeviceCommand(callback, devData.deviceid, "setCoolingSetpoint", {
+                            value1: temp
+                        });
+                        accessory.context.deviceData.attributes.coolingSetpoint = temp;
+                        accessory.context.deviceData.attributes.thermostatSetpoint = temp;
+                        break;
                     case "emergency heat":
                     case "heat":
-                        {
-                            this.client.sendDeviceCommand(callback, devData.deviceid, "setHeatingSetpoint", {
-                                value1: temp
-                            });
-                            accessory.context.deviceData.attributes.heatingSetpoint = temp;
-                            break;
-                        }
+                        this.client.sendDeviceCommand(callback, devData.deviceid, "setHeatingSetpoint", {
+                            value1: temp
+                        });
+                        accessory.context.deviceData.attributes.heatingSetpoint = temp;
+                        accessory.context.deviceData.attributes.thermostatSetpoint = temp;
+                        break;
                     default:
-                        {
-                            // This should only refer to auto
-                            // Choose closest target as single target
-                            let high = devData.attributes.coolingSetpoint;
-                            let low = devData.attributes.heatingSetpoint;
-                            let cur = devData.attributes.temperature;
-                            let isHighTemp = Math.abs(high - cur) < Math.abs(cur - low);
-                            if (isHighTemp) {
-                                this.client.sendDeviceCommand(callback, devData.deviceid, "setCoolingSetpoint", {
-                                    value1: temp
-                                });
-                            } else {
-                                this.client.sendDeviceCommand(null, devData.deviceid, "setHeatingSetpoint", {
-                                    value1: temp
-                                });
-                            }
-                            break;
-                        }
+                        this.client.sendDeviceCommand(callback, devData.deviceid, "setThermostatSetpoint", {
+                            value1: temp
+                        });
+                        accessory.context.deviceData.attributes.thermostatSetpoint = temp;
                 }
             });
-        // that.storeCharacteristicItem("thermostatMode", devData.deviceid, thisChar);
-        // that.storeCharacteristicItem("coolingSetpoint", devData.deviceid, thisChar);
-        // that.storeCharacteristicItem("heatingSetpoint", devData.deviceid, thisChar);
-        // that.storeCharacteristicItem("temperature", devData.deviceid, thisChar);
+        this.accessories.storeCharacteristicItem("coolingSetpoint", devData.deviceid, thisChar);
+        this.accessories.storeCharacteristicItem("heatingSetpoint", devData.deviceid, thisChar);
+        this.accessories.storeCharacteristicItem("thermostatSetpoint", devData.deviceid, thisChar);
+
         thisChar = accessory
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.TemperatureDisplayUnits)
             .on("get", (callback) => {
                 callback(null, (this.accessories.temperature_unit === 'C') ? Characteristic.TemperatureDisplayUnits.CELSIUS : Characteristic.TemperatureDisplayUnits.FAHRENHEIT);
             });
-        this.accessories.storeCharacteristicItem("temperature_unit", "platform", thisChar);
+        // this.accessories.storeCharacteristicItem("temperature_unit", "platform", thisChar);
+
         thisChar = accessory
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.HeatingThresholdTemperature)
@@ -811,6 +794,7 @@ module.exports = class MyUtils {
                 accessory.context.deviceData.attributes.heatingSetpoint = temp;
             });
         this.accessories.storeCharacteristicItem("heatingSetpoint", devData.deviceid, thisChar);
+
         thisChar = accessory
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.CoolingThresholdTemperature)

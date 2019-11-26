@@ -69,10 +69,8 @@ Logger.prototype.error = function(_msg) {
 };
 
 Logger.prototype.log = function(level, msg) {
-    let func;
+    let func = console.log;
     msg = util.format.apply(util, Array.prototype.slice.call(arguments, 1));
-    func = console.log;
-
     switch (level) {
         case 'debug':
             msg = chalk.gray(msg);
