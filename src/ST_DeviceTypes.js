@@ -65,7 +65,6 @@ module.exports = class MyUtils {
     }
 
     button(accessory, devData) {
-        // that.log("Button: (" + accessory.name + ")");
         // New STATELESS BUTTON LOGIC (By @shnhrrsn)
         let thisChar = accessory
             .getOrAddService(Service.StatelessProgrammableSwitch)

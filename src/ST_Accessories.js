@@ -274,7 +274,7 @@ module.exports = class ST_Accessories {
             if (characteristics instanceof Array) {
                 characteristics.forEach(char => {
                     accessory.context.deviceData.attributes[change.attribute] = change.value;
-                    accessory.context.lastUpdate = new Date().toISOString();
+                    accessory.context.lastUpdate = new Date().toLocaleString();
                     char.updateValue(this.attributeStateTransform(change.attribute, change.value, char.displayName));
                     // char.getValue();
                 });

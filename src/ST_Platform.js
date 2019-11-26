@@ -40,8 +40,8 @@ module.exports = class ST_Platform {
         this.local_hub_ip = undefined;
         this.myUtils = new myUtils(this);
         this.configItems = this.getConfigItems();
-        // logger.setDebugEnabled(this.configItems.logs.debug === true);
-        // logger.setTimestampEnabled(this.configItems.logs.timestamp !== false);
+        // this.log.setDebugEnabled(this.configItems.debug === true);
+        // this.log.setTimestampEnabled(false);
         this.myUtils.checkVersion();
         this.deviceCache = {};
         this.attributeLookup = {};
