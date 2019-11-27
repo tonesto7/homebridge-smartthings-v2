@@ -10,7 +10,7 @@ const {
     SmartThingsAccessories = require("./ST_Accessories"),
     express = require("express"),
     bodyParser = require("body-parser"),
-    logger = require("./Logger.js").Logger,
+    logger = require("./Logger").Logger,
     webApp = express();
 
 var PlatformAccessory;
@@ -28,7 +28,14 @@ module.exports = class ST_Platform {
             log(`${platformName} Plugin is not Configured | Skipping...`);
             return;
         }
-        this.log = logger.withPrefix(`${this.config["name"]}`);
+        this.logOptions = (config.logOptions && config.logOptions.enabled === true) ? {
+            path: api.user.storagePath(),
+            file: config.logOptions.file || `${pluginName}.log`,
+            compress: (config.logOptions.compress !== false),
+            keep: config.logOptions.keep || 5,
+            size: config.logOptions.size || '10m'
+        } : null;
+        this.log = logger.withPrefix(`${this.config["name"]}`, (config.debug === true), this.logOptions);
         this.log(`Homebridge Version: ${api.version}`);
         this.log(`${platformName} Plugin Version: ${pluginVersion}`);
         this.polling_seconds = config["polling_seconds"] || 3600;
@@ -40,17 +47,13 @@ module.exports = class ST_Platform {
         this.local_hub_ip = undefined;
         this.myUtils = new myUtils(this);
         this.configItems = this.getConfigItems();
-        // this.log.setDebugEnabled(this.configItems.debug === true);
-        // this.log.setTimestampEnabled(false);
         this.myUtils.checkVersion();
         this.deviceCache = {};
         this.attributeLookup = {};
         this.knownCapabilities = knownCapabilities;
         this.unknownCapabilities = [];
         this.client = new SmartThingsClient(this);
-
         this.SmartThingsAccessories = new SmartThingsAccessories(this);
-
         this.homebridge.on("didFinishLaunching", this.didFinishLaunching.bind(this));
     }
 
@@ -62,7 +65,7 @@ module.exports = class ST_Platform {
             update_seconds: this.config.update_seconds || 30,
             direct_port: this.config.direct_port || 8000,
             direct_ip: this.config.direct_ip || this.myUtils.getIPAddress(),
-            logs: this.config.logs || {}
+            debug: (this.config.debug === true)
         };
     }
 
@@ -315,7 +318,8 @@ module.exports = class ST_Platform {
                             };
                             that.SmartThingsAccessories.processDeviceAttributeUpdate(newChange)
                                 .then((resp) => {
-                                    that.log.good(`Change Event: (${body.change_name}) [${(body.change_attribute ? body.change_attribute.toUpperCase() : "unknown")}] is ${body.change_value}`);
+                                    if (that.configItems.debug)
+                                        that.log.good(`[Device Change Event]: (${body.change_name}) [${(body.change_attribute ? body.change_attribute.toUpperCase() : "unknown")}] is ${body.change_value}`);
                                     res.send({
                                         status: resp ? "OK" : "Failed"
                                     });

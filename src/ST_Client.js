@@ -1,9 +1,9 @@
 const {
     platformName,
     platformDesc
-} = require("./Constants");
-const rp = require("request-promise-native");
-const url = require("url");
+} = require("./Constants"),
+    rp = require("request-promise-native"),
+    url = require("url");
 
 module.exports = class ST_Client {
     constructor(platform) {

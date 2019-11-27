@@ -1,8 +1,6 @@
-const {
-    knownCapabilities
-} = require("./Constants");
-const _ = require("lodash");
-const DeviceTypes = require('./ST_DeviceTypes');
+const knownCapabilities = require("./Constants").knownCapabilities,
+    _ = require("lodash"),
+    DeviceTypes = require('./ST_DeviceTypes');
 var Service, Characteristic;
 
 module.exports = class ST_Accessories {
@@ -268,18 +266,19 @@ module.exports = class ST_Accessories {
     }
 
     processDeviceAttributeUpdate(change) {
+        let that = this;
         return new Promise((resolve) => {
-            let characteristics = this.getAttributeStoreItem(change.attribute, change.deviceid);
-            let accessory = this.getAccessoryFromCache(change);
+            let characteristics = that.getAttributeStoreItem(change.attribute, change.deviceid);
+            let accessory = that.getAccessoryFromCache(change);
             if (!characteristics || !accessory) return;
             if (characteristics instanceof Array) {
                 characteristics.forEach(char => {
                     accessory.context.deviceData.attributes[change.attribute] = change.value;
                     accessory.context.lastUpdate = new Date().toLocaleString();
-                    char.updateValue(this.attributeStateTransform(change.attribute, change.value, char.displayName));
+                    char.updateValue(that.attributeStateTransform(change.attribute, change.value, char.displayName));
                     // char.getValue();
                 });
-                resolve(this.addAccessoryToCache(accessory));
+                resolve(that.addAccessoryToCache(accessory));
             }
             resolve(false);
         });
