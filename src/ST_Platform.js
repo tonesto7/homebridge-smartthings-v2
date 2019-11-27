@@ -38,6 +38,7 @@ module.exports = class ST_Platform {
         this.log = logger.withPrefix(`${this.config["name"]}`, (config.debug === true), this.logOptions);
         this.log(`Homebridge Version: ${api.version}`);
         this.log(`${platformName} Plugin Version: ${pluginVersion}`);
+        this.log.error('test:', platformName, platformDesc);
         this.polling_seconds = config["polling_seconds"] || 3600;
         this.excludedAttributes = this.config["excluded_attributes"] || [];
         this.excludedCapabilities = this.config["excluded_capabilities"] || [];

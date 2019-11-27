@@ -3,38 +3,18 @@ const chalk = require('chalk'),
     util = require('util'),
     winston = require('winston');
 
-'use strict';
-
-const myCustomLevels = {
-    levels: {
-        error: 0,
-        warn: 2,
-        info: 3,
-        good: 4,
-        debug: 5
-    },
-    colors: {
-        error: 'red',
-        warn: 'yellow',
-        good: 'green',
-        debug: 'grey'
-    }
-};
-
 require('winston-logrotate');
 
 module.exports = {
     Logger: Logger,
     setDebugEnabled: setDebugEnabled,
     setTimestampEnabled: setTimestampEnabled,
-    setWebsocketLog: setWebsocketLog,
     forceColor: forceColor,
     _system: new Logger() // system logger, for internal use only
 };
 
 var DEBUG_ENABLED = false;
 var TIMESTAMP_ENABLED = true;
-var websocketLogFunction = null;
 
 // Turns on debug level logging
 function setDebugEnabled(enabled) {
@@ -44,10 +24,6 @@ function setDebugEnabled(enabled) {
 // Turns off timestamps in log messages
 function setTimestampEnabled(timestamp) {
     TIMESTAMP_ENABLED = timestamp;
-}
-
-function setWebsocketLog(inWebsocketLogFunction) {
-    websocketLogFunction = inWebsocketLogFunction;
 }
 
 // Force color in log messages, even when output is redirected
@@ -71,7 +47,7 @@ function Logger(prefix, debug = false, config = null) {
         DEBUG_ENABLED = true;
     }
     this.prefix = prefix;
-
+    let that = this;
     this.logger = new(winston.Logger)({
         transports: [
             new winston.transports.Console({
@@ -80,11 +56,61 @@ function Logger(prefix, debug = false, config = null) {
                 json: false,
                 colorize: true,
                 formatter: function(params) {
-                    return params.message;
+                    let msg = params.message;
+
+                    switch (params.level) {
+                        case 'debug':
+                            if (DEBUG_ENABLED === false) return;
+                            msg = chalk.gray(msg);
+                            break;
+                        case 'warn':
+                            msg = chalk.keyword('orange').bold(msg);
+                            // func = console.error;
+                            break;
+                        case 'error':
+                            msg = chalk.bold.red(msg);
+                            // func = console.error;
+                            break;
+                        case 'good':
+                            msg = chalk.green(msg);
+                            break;
+                        case 'info':
+                            msg = chalk.white(msg);
+                            break;
+                        case 'alert':
+                            msg = chalk.yellow(msg);
+                            break;
+                        case 'notice':
+                            msg = chalk.blueBright(msg);
+                            break;
+                    }
+
+                    // prepend prefix if applicable
+                    if (that.prefix) msg = chalk.cyan("[" + that.prefix + "]") + " " + msg;
+
+                    // prepend timestamp
+                    if (TIMESTAMP_ENABLED) msg = chalk.white("[" + new Date().toLocaleString() + "]") + " " + msg;
+                    return msg;
                 }
             })
         ],
-        levels: myCustomLevels.levels,
+        colors: {
+            error: 'red',
+            warn: 'yellow',
+            good: 'green',
+            debug: 'grey',
+            notice: 'blue',
+            alert: 'yellow'
+        },
+        levels: {
+            error: 0,
+            warn: 2,
+            info: 3,
+            notice: 4,
+            alert: 5,
+            good: 6,
+            debug: 7
+        },
         exitOnError: false
     });
     winstonLogger = this.logger;
@@ -150,41 +176,7 @@ Logger.prototype.setDebug = function(enabled) {
 };
 
 Logger.prototype.log = function(level, msg) {
-    let func = console.log;
     msg = util.format.apply(util, Array.prototype.slice.call(arguments, 1));
-    switch (level) {
-        case 'debug':
-            if (DEBUG_ENABLED === false) return;
-            msg = chalk.gray(msg);
-            break;
-        case 'warn':
-            msg = chalk.keyword('orange').bold(msg);
-            func = console.error;
-            break;
-        case 'error':
-            msg = chalk.bold.red(msg);
-            func = console.error;
-            break;
-        case 'good':
-            msg = chalk.green(msg);
-            break;
-        case 'info':
-            msg = chalk.white(msg);
-            break;
-        case 'alert':
-            msg = chalk.yellow(msg);
-            break;
-        case 'notice':
-            msg = chalk.blueBright(msg);
-            break;
-    }
-
-    // prepend prefix if applicable
-    if (this.prefix) msg = chalk.cyan("[" + this.prefix + "]") + " " + msg;
-
-    // prepend timestamp
-    if (TIMESTAMP_ENABLED) msg = chalk.white("[" + new Date().toLocaleString() + "]") + " " + msg;
-
     if (this.logger) {
         loggerBuffer.forEach(line => {
             this.logger.log(line.level, line.message, { prefix: this.prefix });
@@ -194,15 +186,14 @@ Logger.prototype.log = function(level, msg) {
     } else {
         loggerBuffer.push({ level: level, message: msg });
     }
-    // func(msg);
 };
 
 Logger.withPrefix = function(prefix, debug = false, config = null) {
     if (!loggerCache[prefix]) {
         // create a class-like logger thing that acts as a function as well
         // as an instance of Logger.
-        var logger = new Logger(prefix, debug, config);
-        var log = logger.info.bind(logger);
+        let logger = new Logger(prefix, debug, config);
+        let log = logger.info.bind(logger);
         log.debug = logger.debug;
         log.info = logger.info;
         log.warn = logger.warn;

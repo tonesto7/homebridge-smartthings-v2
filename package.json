@@ -40,6 +40,7 @@
         "prettier": "prettier --write src/**/*.js",
         "start": "homebridge -D -P . -U ."
     },
+    "main": "/src/index.js",
     "license": "ISC",
     "name": "homebridge-smartthings-v2",
     "preferGlobal": true,
