@@ -1,7 +1,7 @@
 const {
     platformName,
     platformDesc
-} = require("./Constants"),
+} = require("./libs/Constants"),
     rp = require("request-promise-native"),
     url = require("url");
 

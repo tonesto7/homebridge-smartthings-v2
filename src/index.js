@@ -1,7 +1,7 @@
 const {
     pluginName,
     platformName
-} = require("./Constants");
+} = require("./libs/Constants");
 const StPlatform = require("./ST_Platform");
 
 module.exports = (homebridge) => {

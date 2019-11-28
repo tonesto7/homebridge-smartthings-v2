@@ -1,0 +1,15 @@
+{
+  "test": ["./**/*.ts", "./**/*.tsx"],
+  "presets": [
+    ["@babel/env", {
+      "targets": {
+        "node": "4.3.2"
+      },
+      "modules": false
+    }],
+    "@babel/typescript"
+  ],
+  "plugins": [
+    "@babel/proposal-class-properties"
+  ]
+}
