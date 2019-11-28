@@ -2,8 +2,8 @@ module.exports = {
     pluginName: "homebridge-smartthings-v2",
     platformDesc: "SmartThings",
     platformName: "SmartThings-v2",
-    pluginVersion: require("../package.json").version,
-    packageFile: require("../package.json"),
+    pluginVersion: require("../../package.json").version,
+    packageFile: require("../../package.json"),
     knownCapabilities: [
         "Switch",
         "Light",
