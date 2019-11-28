@@ -1,4 +1,4 @@
-const knownCapabilities = require("./Constants").knownCapabilities,
+const knownCapabilities = require("./libs/Constants").knownCapabilities,
     _ = require("lodash"),
     DeviceTypes = require('./ST_DeviceTypes');
 var Service, Characteristic;
@@ -14,7 +14,7 @@ module.exports = class ST_Accessories {
         this.uuid = platform.uuid;
         Service = platform.Service;
         Characteristic = platform.Characteristic;
-        this.CommunityTypes = require("./CommunityTypes")(Service, Characteristic);
+        this.CommunityTypes = require("./libs/CommunityTypes")(Service, Characteristic);
         this.client = platform.client;
         this.comparator = this.comparator.bind(this);
         this.device_types = new DeviceTypes(this, Service, Characteristic);

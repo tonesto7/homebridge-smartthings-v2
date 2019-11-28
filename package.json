@@ -17,6 +17,7 @@
         "hap-nodejs": "0.5.3",
         "prettier": "^1.19.1"
     },
+    "main": "src/index.js",
     "description": "SmartThings plugin for HomeBridge",
     "engines": {
         "homebridge": ">=0.4.46",
@@ -36,11 +37,13 @@
         "homebridge"
     ],
     "scripts": {
+        "dev": "rollup -c -w",
+        "build": "rollup -c",
+        "prepublishOnly": "npm run build",
         "test": "eslint .",
         "prettier": "prettier --write src/**/*.js",
         "start": "homebridge -D -P . -U ."
     },
-    "main": "/src/index.js",
     "license": "ISC",
     "name": "homebridge-smartthings-v2",
     "preferGlobal": true,

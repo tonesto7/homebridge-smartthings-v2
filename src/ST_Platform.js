@@ -4,13 +4,13 @@ const {
     platformName,
     platformDesc,
     pluginVersion
-} = require("./Constants"),
-    myUtils = require("./MyUtils"),
+} = require("./libs/Constants"),
+    myUtils = require("./libs/MyUtils"),
     SmartThingsClient = require("./ST_Client"),
     SmartThingsAccessories = require("./ST_Accessories"),
     express = require("express"),
     bodyParser = require("body-parser"),
-    logger = require("./Logger").Logger,
+    logger = require("./libs/Logger").Logger,
     webApp = express();
 
 var PlatformAccessory;
