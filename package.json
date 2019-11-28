@@ -48,6 +48,9 @@
         "homebridge"
     ],
     "scripts": {
+        "dev": "rollup -c -w",
+        "build": "rollup -c",
+        "prepublishOnly": "npm run build",
         "test": "eslint .",
         "prettier": "prettier --write src/**/*.js",
         "start": "homebridge -D -P . -U ."
