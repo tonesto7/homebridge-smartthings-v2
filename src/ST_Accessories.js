@@ -111,151 +111,151 @@ module.exports = class ST_Accessories {
             if (hasCapability('Switch Level') && !isSpeaker && !isFan && !isMode && !isRoutine) {
                 if (isWindowShade) {
                     deviceGroups.push("window_shade");
-                    accessory = that.device_types.window_shade(accessory, devData);
+                    accessory = that.device_types.window_shade(accessory);
                 } else if (isLight || devData.commands.setLevel) {
                     deviceGroups.push("light");
-                    accessory = that.device_types.light_bulb(accessory, devData);
-                    accessory = that.device_types.light_level(accessory, devData);
+                    accessory = that.device_types.light_bulb(accessory);
+                    accessory = that.device_types.light_level(accessory);
                     if (hasCapability("Color Control")) {
-                        accessory = that.device_types.light_color(accessory, devData);
+                        accessory = that.device_types.light_color(accessory);
                     }
                 }
             }
 
             if (hasCapability('Garage Door Control')) {
                 deviceGroups.push("garage_door");
-                accessory = that.device_types.garage_door(accessory, devData);
+                accessory = that.device_types.garage_door(accessory);
             }
 
             if (hasCapability('Lock')) {
                 deviceGroups.push("lock");
-                accessory = that.device_types.lock(accessory, devData);
+                accessory = that.device_types.lock(accessory);
             }
 
             if (hasCapability('Valve')) {
                 deviceGroups.push("valve");
-                accessory = that.device_types.valve(accessory, devData);
+                accessory = that.device_types.valve(accessory);
             }
 
             // GENERIC SPEAKER DEVICE
             if (isSpeaker) {
                 deviceGroups.push("speaker");
-                accessory = that.device_types.speaker_device(accessory, devData);
+                accessory = that.device_types.speaker_device(accessory);
             }
 
             //Handles Standalone Fan with no levels
             if (isFan && (deviceGroups.length < 1 || hasCapability('Fan Light'))) {
                 deviceGroups.push("fan");
-                accessory = that.device_types.fan(accessory, devData);
+                accessory = that.device_types.fan(accessory);
             }
 
             if (isMode) {
                 deviceGroups.push("mode");
-                accessory = that.device_types.virtual_mode(accessory, devData);
+                accessory = that.device_types.virtual_mode(accessory);
             }
 
             if (isRoutine) {
                 deviceGroups.push("routine");
-                accessory = that.device_types.virtual_routine(accessory, devData);
+                accessory = that.device_types.virtual_routine(accessory);
             }
 
             if (hasCapability("Button")) {
                 deviceGroups.push("button");
-                accessory = that.device_types.button(accessory, devData);
+                accessory = that.device_types.button(accessory);
             }
 
             // This should catch the remaining switch devices that are specially defined
             if (hasCapability("Switch") && isLight && deviceGroups.length < 1) {
                 deviceGroups.push("light");
-                accessory = that.device_types.light_bulb(accessory, devData);
+                accessory = that.device_types.light_bulb(accessory);
             }
 
             if (hasCapability('Switch') && !isLight && deviceGroups.length < 1) {
                 deviceGroups.push("switch");
-                accessory = that.device_types.switch_device(accessory, devData);
+                accessory = that.device_types.switch_device(accessory);
             }
 
             // Smoke Detectors
             if (hasCapability('Smoke Detector') && hasAttribute('smoke')) {
                 deviceGroups.push("smoke_detector");
-                accessory = that.device_types.smoke_detector(accessory, devData);
+                accessory = that.device_types.smoke_detector(accessory);
             }
 
             if (hasCapability("Carbon Monoxide Detector") && hasAttribute('carbonMonoxide')) {
                 deviceGroups.push("carbon_monoxide_detector");
-                accessory = that.device_types.carbon_monoxide(accessory, devData);
+                accessory = that.device_types.carbon_monoxide(accessory);
             }
 
             if (hasCapability("Carbon Dioxide Measurement") && hasAttribute('carbonDioxideMeasurement')) {
                 deviceGroups.push("carbon_dioxide_measure");
-                accessory = that.device_types.carbon_dioxide(accessory, devData);
+                accessory = that.device_types.carbon_dioxide(accessory);
             }
 
             if (hasCapability('Motion Sensor')) {
                 deviceGroups.push("motion_sensor");
-                accessory = that.device_types.motion_sensor(accessory, devData);
+                accessory = that.device_types.motion_sensor(accessory);
             }
 
             if (hasCapability("Water Sensor")) {
                 deviceGroups.push("water_sensor");
-                accessory = that.device_types.water_sensor(accessory, devData);
+                accessory = that.device_types.water_sensor(accessory);
             }
             if (hasCapability("Presence Sensor")) {
                 deviceGroups.push("presence_sensor");
-                accessory = that.device_types.presence_sensor(accessory, devData);
+                accessory = that.device_types.presence_sensor(accessory);
             }
 
             if (hasCapability("Relative Humidity Measurement") && !isThermostat) {
                 deviceGroups.push("humidity_sensor");
-                accessory = that.device_types.humidity_sensor(accessory, devData);
+                accessory = that.device_types.humidity_sensor(accessory);
             }
 
             if (hasCapability("Temperature Measurement") && !isThermostat) {
                 deviceGroups.push("temp_sensor");
-                accessory = that.device_types.temperature_sensor(accessory, devData);
+                accessory = that.device_types.temperature_sensor(accessory);
             }
 
             if (hasCapability("Illuminance Measurement")) {
                 deviceGroups.push("illuminance_sensor");
-                accessory = that.device_types.illuminance_sensor(accessory, devData);
+                accessory = that.device_types.illuminance_sensor(accessory);
             }
 
             if (hasCapability('Contact Sensor') && !hasCapability('Garage Door Control')) {
                 deviceGroups.push("contact_sensor");
-                accessory = that.device_types.contact_sensor(accessory, devData);
+                accessory = that.device_types.contact_sensor(accessory);
             }
 
             if (hasCapability("Battery")) {
                 deviceGroups.push("battery_level");
-                accessory = that.device_types.battery(accessory, devData);
+                accessory = that.device_types.battery(accessory);
             }
 
             if (hasCapability('Energy Meter') && !hasCapability('Switch') && deviceGroups.length < 1) {
                 deviceGroups.push("energy_meter");
-                accessory = that.device_types.energy_meter(accessory, devData);
+                accessory = that.device_types.energy_meter(accessory);
             }
 
             if (hasCapability('Power Meter') && !hasCapability('Switch') && deviceGroups.length < 1) {
                 deviceGroups.push("power_meter");
-                accessory = that.device_types.power_meter(accessory, devData);
+                accessory = that.device_types.power_meter(accessory);
             }
 
             // Thermostat
             if (isThermostat) {
                 deviceGroups.push("thermostat");
-                accessory = that.device_types.thermostat(accessory, devData);
+                accessory = that.device_types.thermostat(accessory);
             }
 
             // Alarm System Control/Status
             if (hasAttribute("alarmSystemStatus")) {
                 deviceGroups.push("alarm");
-                accessory = that.device_types.alarm_system(accessory, devData);
+                accessory = that.device_types.alarm_system(accessory);
             }
 
             // Sonos Speakers
             if (isSonos && deviceGroups.length < 1) {
                 deviceGroups.push("sonos_speaker");
-                accessory = that.device_types.sonos_speaker(accessory, devData);
+                accessory = that.device_types.sonos_speaker(accessory);
             }
             accessory.context.deviceGroups = deviceGroups;
 
