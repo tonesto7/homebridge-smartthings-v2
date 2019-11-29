@@ -135,10 +135,10 @@ module.exports = class ST_Client {
             delete config.qs;
         }
         return new Promise((resolve) => {
-            that.log(`Sending StartDirect Request to ${platformDesc} | SendToLocalHub: (${sendLocal})`);
+            that.log.info(`Sending StartDirect Request to ${platformDesc} | SendToLocalHub: (${sendLocal})`);
             rp(config)
                 .then((body) => {
-                    // that.log('sendStartDirect Resp:', body);
+                    // that.log.info('sendStartDirect Resp:', body);
                     resolve(body);
                 })
                 .catch((err) => {

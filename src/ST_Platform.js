@@ -10,11 +10,10 @@ const {
     SmartThingsAccessories = require("./ST_Accessories"),
     express = require("express"),
     bodyParser = require("body-parser"),
-    logger = require("./libs/Logger").Logger,
+    Logging = require("./libs/Logger"),
     webApp = express();
 
 var PlatformAccessory;
-// TODO: Resolve device state sync issues after a period of time on devices that only update when they are turned on/off
 
 module.exports = class ST_Platform {
     constructor(log, config, api) {
@@ -28,17 +27,19 @@ module.exports = class ST_Platform {
             log(`${platformName} Plugin is not Configured | Skipping...`);
             return;
         }
-        this.logOptions = (config.logOptions && config.logOptions.enabled === true) ? {
-            path: api.user.storagePath(),
-            file: config.logOptions.file || `${pluginName}.log`,
-            compress: (config.logOptions.compress !== false),
-            keep: config.logOptions.keep || 5,
-            size: config.logOptions.size || '10m'
-        } : null;
-        this.log = logger.withPrefix(`${this.config["name"]}`, (config.debug === true), this.logOptions);
-        this.log(`Homebridge Version: ${api.version}`);
-        this.log(`${platformName} Plugin Version: ${pluginVersion}`);
-        this.log.error('test:', platformName, platformDesc);
+        this.logConfig = this.getLogConfig();
+        this.logging = new Logging(this, this.config["name"], this.logConfig);
+        this.log = this.logging.getLogger();
+        this.log.info("Log Info Test");
+        this.log.debug("Log Debug Test");
+        this.log.error("Log ERROR Test");
+        this.log.warn("Log WARN Test");
+        this.log.notice('Log NOTICE Test');
+        this.log.alert('Log ALERT Test');
+        this.log.good('Log GOOD Test');
+
+        this.log.info(`Homebridge Version: ${api.version}`);
+        this.log.info(`${platformName} Plugin Version: ${pluginVersion}`);
         this.polling_seconds = config["polling_seconds"] || 3600;
         this.excludedAttributes = this.config["excluded_attributes"] || [];
         this.excludedCapabilities = this.config["excluded_capabilities"] || [];
@@ -56,6 +57,19 @@ module.exports = class ST_Platform {
         this.client = new SmartThingsClient(this);
         this.SmartThingsAccessories = new SmartThingsAccessories(this);
         this.homebridge.on("didFinishLaunching", this.didFinishLaunching.bind(this));
+    }
+
+    getLogConfig() {
+        let config = this.config;
+        return (config.logConfig) ? {
+            debug: (config.logConfig.debug === true),
+            showChanges: (config.logConfig.showChanges === true),
+            hideTimestamp: (config.logConfig.hideTimestamp === true),
+            hideNamePrefix: (config.logConfig.hideNamePrefix === true),
+            file: {
+                enabled: (config.logConfig.file.enabled === true)
+            }
+        } : { debug: false, showChanges: false, hideTimestamp: false, hideNamePrefix: false };
     }
 
     getConfigItems() {
@@ -86,7 +100,7 @@ module.exports = class ST_Platform {
     }
 
     didFinishLaunching() {
-        this.log(`Fetching ${platformName} Devices. NOTICE: This may take a moment if you have a large number of device data is being loaded!`);
+        this.log.info(`Fetching ${platformName} Devices. NOTICE: This may take a moment if you have a large number of device data is being loaded!`);
         setInterval(this.refreshDevices.bind(this), this.polling_seconds * 1000);
         let that = this;
         this.refreshDevices()
@@ -162,14 +176,14 @@ module.exports = class ST_Platform {
         accessory = this.getNewAccessory(device, new_uuid);
         this.homebridge.registerPlatformAccessories(pluginName, platformName, [accessory]);
         this.SmartThingsAccessories.addAccessoryToCache(accessory);
-        this.log(`Added Device: (${accessory.name} | ${accessory.deviceid})`);
+        this.log.info(`Added Device: (${accessory.name} | ${accessory.deviceid})`);
     }
 
     updateDevice(device) {
         let cacheDevice = this.SmartThingsAccessories.getAccessoryFromCache(device);
         let accessory;
         device.excludedCapabilities = this.excludedCapabilities[device.deviceid] || ["None"];
-        this.log(`Loading Existing Device (${device.name}) | (${device.deviceid})`);
+        this.log.info(`Loading Existing Device (${device.name}) | (${device.deviceid})`);
         accessory = this.SmartThingsAccessories.loadAccessoryData(cacheDevice, device);
         this.SmartThingsAccessories.addAccessoryToCache(accessory);
     }
@@ -177,12 +191,12 @@ module.exports = class ST_Platform {
     removeAccessory(accessory) {
         if (this.SmartThingsAccessories.removeAccessoryFromCache(accessory)) {
             this.homebridge.unregisterPlatformAccessories(pluginName, platformName, [accessory]);
-            this.log(`Removed: ${accessory.context.name} (${accessory.context.deviceid})`);
+            this.log.info(`Removed: ${accessory.context.name} (${accessory.context.deviceid})`);
         }
     }
 
     configureAccessory(accessory) {
-        this.log(`Configure Cached Accessory: ${accessory.displayName}, UUID: ${accessory.UUID}`);
+        this.log.info(`Configure Cached Accessory: ${accessory.displayName}, UUID: ${accessory.UUID}`);
         let cachedAccessory = this.SmartThingsAccessories.CreateAccessoryFromHomebridgeCache(accessory, this);
         this.SmartThingsAccessories.addAccessoryToCache(cachedAccessory);
     }
@@ -208,11 +222,11 @@ module.exports = class ST_Platform {
         return new Promise(resolve => {
             try {
                 let ip = that.configItems.direct_ip || that.myUtils.getIPAddress();
-                that.log("WebServer Initiated...");
+                that.log.info("WebServer Initiated...");
 
                 // Start the HTTP Server
                 webApp.listen(that.configItems.direct_port, () => {
-                    that.log(`Direct Connect is Listening On ${ip}:${that.configItems.direct_port}`);
+                    that.log.info(`Direct Connect is Listening On ${ip}:${that.configItems.direct_port}`);
                 });
 
                 webApp.use(bodyParser.urlencoded({
@@ -233,7 +247,7 @@ module.exports = class ST_Platform {
                     let body = JSON.parse(JSON.stringify(req.body));
                     if (body && that.isValidRequestor(body.access_token, body.app_id, 'initial')) {
 
-                        that.log(`${platformName} Hub Communication Established`);
+                        that.log.info(`${platformName} Hub Communication Established`);
                         res.send({
                             status: "OK"
                         });
@@ -248,7 +262,7 @@ module.exports = class ST_Platform {
                     let body = JSON.parse(JSON.stringify(req.body));
                     if (body && that.isValidRequestor(body.access_token, body.app_id, 'restartService')) {
                         let delay = 10 * 1000;
-                        that.log(`Received request from ${platformName} to restart homebridge service in (${(delay / 1000)} seconds) | NOTICE: If you using PM2 or Systemd the Homebridge Service should start back up`);
+                        that.log.info(`Received request from ${platformName} to restart homebridge service in (${(delay / 1000)} seconds) | NOTICE: If you using PM2 or Systemd the Homebridge Service should start back up`);
                         setTimeout(() => {
                             process.exit(1);
                         }, parseInt(delay));
@@ -265,7 +279,7 @@ module.exports = class ST_Platform {
                 webApp.post("/refreshDevices", (req, res) => {
                     let body = JSON.parse(JSON.stringify(req.body));
                     if (body && that.isValidRequestor(body.access_token, body.app_id, 'refreshDevices')) {
-                        that.log(`Received request from ${platformName} to refresh devices`);
+                        that.log.info(`Received request from ${platformName} to refresh devices`);
                         that.refreshDevices();
                         res.send({
                             status: "OK"
@@ -281,16 +295,16 @@ module.exports = class ST_Platform {
                 webApp.post("/updateprefs", (req, res) => {
                     let body = JSON.parse(JSON.stringify(req.body));
                     if (body && that.isValidRequestor(body.access_token, body.app_id, 'updateprefs')) {
-                        that.log(platformName + " Hub Sent Preference Updates");
+                        that.log.info(platformName + " Hub Sent Preference Updates");
                         let sendUpd = false;
                         if (body.local_commands && that.local_commands !== body.local_commands) {
                             sendUpd = true;
-                            that.log(`${platformName} Updated Local Commands Preference | Before: ${that.local_commands} | Now: ${body.local_commands}`);
+                            that.log.info(`${platformName} Updated Local Commands Preference | Before: ${that.local_commands} | Now: ${body.local_commands}`);
                             that.local_commands = body.local_commands;
                         }
                         if (body.local_hub_ip && that.local_hub_ip !== body.local_hub_ip) {
                             sendUpd = true;
-                            that.log(`${platformName} Updated Hub IP Preference | Before: ${that.local_hub_ip} | Now: ${body.local_hub_ip}`);
+                            that.log.info(`${platformName} Updated Hub IP Preference | Before: ${that.local_hub_ip} | Now: ${body.local_hub_ip}`);
                             that.local_hub_ip = body.local_hub_ip;
                         }
                         if (sendUpd) {
@@ -319,7 +333,7 @@ module.exports = class ST_Platform {
                             };
                             that.SmartThingsAccessories.processDeviceAttributeUpdate(newChange)
                                 .then((resp) => {
-                                    if (that.configItems.debug)
+                                    if (that.logConfig.showChanges)
                                         that.log.good(`[Device Change Event]: (${body.change_name}) [${(body.change_attribute ? body.change_attribute.toUpperCase() : "unknown")}] is ${body.change_value}`);
                                     res.send({
                                         status: resp ? "OK" : "Failed"

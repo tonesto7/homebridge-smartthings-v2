@@ -6,6 +6,7 @@ var Service, Characteristic;
 module.exports = class ST_Accessories {
     constructor(platform) {
         this.platform = platform;
+        this.logConfig = platform.logConfig;
         this.configItems = platform.getConfigItems();
         this.temperature_unit = platform.temperature_unit;
         this.myUtils = platform.myUtils;
@@ -82,7 +83,7 @@ module.exports = class ST_Accessories {
             .setCharacteristic(Characteristic.Name, devData.name)
             .setCharacteristic(Characteristic.SerialNumber, devData.serialNumber)
             .on('identify', function(paired, callback) {
-                this.log("%s - identify", accessory.displayName);
+                this.log.info("%s - identify", accessory.displayName);
                 callback();
             });
 
@@ -465,7 +466,7 @@ module.exports = class ST_Accessories {
         // accessory.services.filter(s => !configuredServices.includes(s.UUID)).forEach(s => accessory.removeService(s));
         let remove = accessory.services.filter(s => !configuredServices.includes(s.UUID));
         if (Object.keys(remove).length) {
-            this.log('removeServices:', remove);
+            this.log.info('removeServices:', remove);
         }
         remove.forEach(s => accessory.removeService(s));
         return accessory;
@@ -491,7 +492,7 @@ module.exports = class ST_Accessories {
     getDeviceAttributeValueFromCache(device, attr) {
         const key = this.getAccessoryId(device);
         let result = this._accessories[key] ? this._accessories[key].context.deviceData.attributes[attr] : undefined;
-        this.log(`Attribute (${attr}) Value From Cache: [${result}]`);
+        this.log.info(`Attribute (${attr}) Value From Cache: [${result}]`);
         return result;
     }
 

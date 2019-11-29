@@ -186,7 +186,7 @@ module.exports = class MyUtils {
     }
 
     checkVersion() {
-        this.log("Checking Package Version for Updates...");
+        this.log.info("Checking Package Version for Updates...");
         childProcess.exec(
             `npm view ${packageFile.name} version`,
             (error, stdout) => {
