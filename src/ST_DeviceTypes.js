@@ -394,23 +394,23 @@ module.exports = class MyUtils {
             });
         this.accessories.storeCharacteristicItem("saturation", accessory.context.deviceData.deviceid, thisChar);
 
-        if (accessory.context.deviceData.attributes.colorTemperature) {
-            thisChar = accessory
-                .getOrAddService(Service.Lightbulb)
-                .getCharacteristic(Characteristic.ColorTemperature)
-                .on("get", (callback) => {
-                    callback(null, this.accessories.attributeStateTransform('colorTemperature', accessory.context.deviceData.attributes.colorTemperature));
-                })
-                .on("set", (value, callback) => {
-                    this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setColorTemperature", {
-                        value1: value
-                    });
-                })
-                .on("change", (obj) => {
-                    this.change_log('colorTemperature', 'ColorTemperature', accessory, obj);
-                });
-            this.accessories.storeCharacteristicItem("colorTemperature", accessory.context.deviceData.deviceid, thisChar);
-        }
+        // if (accessory.context.deviceData.attributes.colorTemperature) {
+        //     thisChar = accessory
+        //         .getOrAddService(Service.Lightbulb)
+        //         .getCharacteristic(Characteristic.ColorTemperature)
+        //         .on("get", (callback) => {
+        //             callback(null, this.accessories.attributeStateTransform('colorTemperature', accessory.context.deviceData.attributes.colorTemperature));
+        //         })
+        //         .on("set", (value, callback) => {
+        //             this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setColorTemperature", {
+        //                 value1: value
+        //             });
+        //         })
+        //         .on("change", (obj) => {
+        //             this.change_log('colorTemperature', 'ColorTemperature', accessory, obj);
+        //         });
+        //     this.accessories.storeCharacteristicItem("colorTemperature", accessory.context.deviceData.deviceid, thisChar);
+        // }
         return accessory;
     }
 
