@@ -25,7 +25,7 @@ module.exports = class ST_Client {
     }
 
     updateGlobals(hubIp, useLocal = false) {
-        this.platform.log(`Updating Global Values | HubIP: ${hubIp} | UseLocal: ${useLocal}`);
+        this.log.notice(`Updating Global Values | HubIP: ${hubIp} | UseLocal: ${useLocal}`);
         this.hubIp = hubIp;
         this.useLocal = (useLocal === true);
     }
@@ -40,12 +40,12 @@ module.exports = class ST_Client {
                     },
                     json: true
                 })
+                .catch((err) => {
+                    that.log.error("getDevices Error: ", err.message);
+                    resolve(undefined);
+                })
                 .then((body) => {
                     resolve(body);
-                })
-                .catch((err) => {
-                    that.log.debug("reqPromise Error: ", err.message);
-                    resolve(undefined);
                 });
         });
     }
@@ -60,12 +60,12 @@ module.exports = class ST_Client {
                     },
                     json: true
                 })
+                .catch((err) => {
+                    that.log.error("getDevice Error: ", err.message);
+                    resolve(undefined);
+                })
                 .then((body) => {
                     resolve(body);
-                })
-                .catch((err) => {
-                    that.log.error("reqPromise Error: ", err.message);
-                    resolve(undefined);
                 });
         });
     }
@@ -81,7 +81,7 @@ module.exports = class ST_Client {
             },
             headers: {
                 evtSource: `Homebridge_${platformName}`,
-                evtType: "hkCommand"
+                evtType: 'hkCommand'
             },
             body: vals,
             json: true
@@ -98,15 +98,15 @@ module.exports = class ST_Client {
         return new Promise((resolve) => {
             that.log.notice(`Sending Device Command: ${cmd} | Value: ${JSON.stringify(vals) || "Nothing"} | DeviceID: (${devid}) | SendToLocalHub: (${sendLocal})`);
             rp(config)
+                .catch((err) => {
+                    that.log.error('sendDeviceCommand Error:', err.message);
+                    callback(undefined);
+                    resolve(undefined);
+                })
                 .then((body) => {
                     that.log.debug('sendDeviceCommand Resp:', body);
                     callback(undefined);
                     resolve(body);
-                })
-                .catch((err) => {
-                    that.log.error("sendDeviceCommand Error: ", err.message);
-                    callback(undefined);
-                    resolve(undefined);
                 });
         });
     }

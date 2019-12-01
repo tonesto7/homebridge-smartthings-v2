@@ -5,7 +5,7 @@
  */
 
 String appVersion()         { return "2.0.0" }
-String appModified()         { return "11-23-2019" }
+String appModified()         { return "11-29-2019" }
 String branch()             { return "refactor" }
 String platform()           { return "SmartThings" }
 String pluginName()         { return "${platform()}-v2" }
@@ -380,7 +380,16 @@ def renderConfig() {
                 name: pluginName(),
                 app_url: apiServerUrl("/api/smartapps/installations/"),
                 app_id: app?.getId(),
-                access_token: state?.accessToken
+                access_token: state?.accessToken,
+                logConfig: {
+                    debug: false,
+                    showChanges: true,
+                    hideTimestamp: false,
+                    hideNamePrefix: false,
+                    file: {
+                        enabled: true
+                    }
+                }
             ]
         ]
     ]

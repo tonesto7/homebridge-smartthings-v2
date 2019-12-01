@@ -112,7 +112,7 @@ module.exports = class ST_Platform {
                     });
             })
             .catch(err => {
-                that.log.error(err);
+                that.log.error(`didFinishLaunching | refreshDevices Exception:`, err);
             });
     }
 
@@ -152,11 +152,11 @@ module.exports = class ST_Platform {
                         resolve(true);
                     })
                     .catch(err => {
-                        that.log.error(err);
+                        that.log.error('getDevices Exception:', err);
                         resolve(false);
                     });
-            } catch (e) {
-                this.log.error("Failed to refresh devices.", e);
+            } catch (ex) {
+                this.log.error("refreshDevices Error: ", ex);
                 resolve(false);
             }
         });
@@ -334,7 +334,7 @@ module.exports = class ST_Platform {
                             that.SmartThingsAccessories.processDeviceAttributeUpdate(newChange)
                                 .then((resp) => {
                                     if (that.logConfig.showChanges)
-                                        that.log.good(`[Device Change Event]: (${body.change_name}) [${(body.change_attribute ? body.change_attribute.toUpperCase() : "unknown")}] is ${body.change_value}`);
+                                        that.log.info(chalk `[{keyword('orange') Device Change Event}]: ({blueBright ${body.change_name}}) [${(body.change_attribute ? body.change_attribute.toUpperCase() : "unknown")}] is ${body.change_value}`);
                                     res.send({
                                         status: resp ? "OK" : "Failed"
                                     });

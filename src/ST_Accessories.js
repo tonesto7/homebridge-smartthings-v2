@@ -43,7 +43,7 @@ module.exports = class ST_Accessories {
             accessory.getOrAddService = this.getOrAddService.bind(accessory);
             return this.initializeDeviceCharacteristics(accessory);
         } catch (ex) {
-            this.log.error(ex);
+            this.log.error('PopulateAccessory Error:', ex);
             return accessory;
         }
     }
@@ -59,7 +59,7 @@ module.exports = class ST_Accessories {
             accessory.getOrAddService = this.getOrAddService.bind(accessory);
             return this.initializeDeviceCharacteristics(accessory);
         } catch (ex) {
-            this.log.error(ex);
+            this.log.error('CreateAccessoryFromHomebridgeCache Error:', ex);
             return accessory;
         }
     }
@@ -439,10 +439,7 @@ module.exports = class ST_Accessories {
                     return accessory;
                 })
                 .catch(err => {
-                    that.log.error(
-                        "Failed to get Device Data for " + accessory.deviceid,
-                        err
-                    );
+                    that.log.error(`Failed to get Device Data for ${accessory.deviceid}: `, err);
                     return accessory;
                 });
         }
