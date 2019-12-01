@@ -67,9 +67,10 @@ module.exports = class ST_Platform {
             hideTimestamp: (config.logConfig.hideTimestamp === true),
             hideNamePrefix: (config.logConfig.hideNamePrefix === true),
             file: {
-                enabled: (config.logConfig.file.enabled === true)
+                enabled: (config.logConfig.file.enabled === true),
+                level: (config.logConfig.file.level || 'good')
             }
-        } : { debug: false, showChanges: false, hideTimestamp: false, hideNamePrefix: false };
+        } : { debug: false, showChanges: true, hideTimestamp: false, hideNamePrefix: false };
     }
 
     getConfigItems() {
