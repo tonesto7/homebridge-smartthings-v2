@@ -31,14 +31,13 @@ module.exports = class ST_Platform {
         this.logConfig = this.getLogConfig();
         this.logging = new Logging(this, this.config["name"], this.logConfig);
         this.log = this.logging.getLogger();
-        this.log.info("Log Info Test");
-        this.log.debug("Log Debug Test");
-        this.log.error("Log ERROR Test");
-        this.log.warn("Log WARN Test");
-        this.log.notice('Log NOTICE Test');
-        this.log.alert('Log ALERT Test');
-        this.log.good('Log GOOD Test');
-
+        // this.log.info("Log Info Test");
+        // this.log.debug("Log Debug Test");
+        // this.log.error("Log ERROR Test");
+        // this.log.warn("Log WARN Test");
+        // this.log.notice('Log NOTICE Test');
+        // this.log.alert('Log ALERT Test');
+        // this.log.good('Log GOOD Test');
         this.log.info(`Homebridge Version: ${api.version}`);
         this.log.info(`${platformName} Plugin Version: ${pluginVersion}`);
         this.polling_seconds = config["polling_seconds"] || 3600;
@@ -336,7 +335,7 @@ module.exports = class ST_Platform {
                             that.SmartThingsAccessories.processDeviceAttributeUpdate(newChange)
                                 .then((resp) => {
                                     if (that.logConfig.showChanges)
-                                        that.log.info(chalk `[{keyword('orange') Device Change Event}]: ({blueBright ${body.change_name}}) [${(body.change_attribute ? body.change_attribute.toUpperCase() : "unknown")}] is ${body.change_value}`);
+                                        that.log.info(chalk `[{keyword('orange') Device Change Event}]: ({blueBright ${body.change_name}}) [{yellow.bold ${(body.change_attribute ? body.change_attribute.toUpperCase() : "unknown")}}] is {keyword('pink') ${body.change_value}}`);
                                     res.send({
                                         status: resp ? "OK" : "Failed"
                                     });

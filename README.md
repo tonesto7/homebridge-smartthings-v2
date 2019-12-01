@@ -25,7 +25,7 @@ I used the following projects as inspiration for design and fixes:
 
 ### SmartThing App:
 
-***v2.0.0*** - Updated to support v2.0 of the plugin
+***v2.0.0*** - Updated to support v2.0 of the plugin, cleaner layout, tons, of optimizations, and many bugfixes;
 
 ### Homebridge Plugin:
 
