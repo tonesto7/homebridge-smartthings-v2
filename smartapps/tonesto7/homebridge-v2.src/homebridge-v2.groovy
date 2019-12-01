@@ -5,12 +5,12 @@
  */
 
 String appVersion()         { return "2.0.0" }
-String appModified()         { return "11-29-2019" }
-String branch()             { return "refactor" }
+String appModified()         { return "12-01-2019" }
+String branch()             { return "master" }
 String platform()           { return "SmartThings" }
 String pluginName()         { return "${platform()}-v2" }
-String appIconUrl()         { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/${branch()}/images/hb_tonesto7@2x.png" }
-String getAppImg(imgName)   { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/${branch()}/images/${imgName}" }
+String appIconUrl()         { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/${branch()}/images/hb_tonesto7@2x.png" }
+String getAppImg(imgName)   { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/${branch()}/images/${imgName}" }
 
 definition(
     name: "Homebridge v2",
@@ -18,9 +18,9 @@ definition(
     author: "Anthony Santilli",
     description: "Provides the API interface between Homebridge (HomeKit) and ${platform()}",
     category: "My Apps",
-    iconUrl:   "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/hb_tonesto7@1x.png",
-    iconX2Url: "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/hb_tonesto7@2x.png",
-    iconX3Url: "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-2.0/master/images/hb_tonesto7@3x.png",
+    iconUrl:   "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/master/images/hb_tonesto7@1x.png",
+    iconX2Url: "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/master/images/hb_tonesto7@2x.png",
+    iconX3Url: "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/master/images/hb_tonesto7@3x.png",
     oauth: true)
 
 {

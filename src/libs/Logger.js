@@ -22,24 +22,14 @@ module.exports = class Logging {
             pre = (this.logConfig.hideNamePrefix === true) ? '' : pre;
         }
         this.options = {
-            colors: {
-                error: 'red',
-                warn: 'yellow',
-                good: 'green',
-                debug: 'grey',
-                notice: 'blue',
-                alert: 'yellow',
-                info: 'white'
-            },
             levels: {
                 error: 0,
                 warn: 1,
                 info: 2,
                 notice: 3,
                 alert: 4,
-                custom: 5,
-                good: 6,
-                debug: 7
+                good: 5,
+                debug: 6
             }
         };
         this.prefix = pre;
@@ -66,7 +56,7 @@ module.exports = class Logging {
         if (this.logConfig && this.logConfig.file && this.logConfig.file.enabled) {
             logger.add(winston.transports.Rotate, {
                 file: `${this.homebridge.user.storagePath()}/${pluginName}.log`,
-                level: this.logLevel,
+                level: this.logConfig.file.level || this.logLevel,
                 colorize: false,
                 handleExceptions: true,
                 json: false,
@@ -94,6 +84,10 @@ module.exports = class Logging {
     removeAnsi(msg) {
         // eslint-disable-next-line no-control-regex
         return msg.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+    }
+
+    getLogLevel(lvl) {
+        return this.options.level[lvl] || 5;
     }
 
     levelColor(lvl) {
