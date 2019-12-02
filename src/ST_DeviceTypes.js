@@ -863,11 +863,11 @@ module.exports = class MyUtils {
         thisChar = accessory
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.HeatingThresholdTemperature)
-            // .setProps({
-            //     unit: tUnit,
-            //     maxValue: maxValue,
-            //     minValue: minValue
-            // })
+            .setProps({
+                unit: tUnit,
+                maxValue: maxValue,
+                minValue: minValue
+            })
             .on("get", (callback) => {
                 let temp = this.myUtils.tempConversion(accessory.context.deviceData.attributes.heatingSetpoint);
                 this.log.notice('get HeatingThresholdTemperature', temp);
@@ -889,11 +889,11 @@ module.exports = class MyUtils {
         thisChar = accessory
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.CoolingThresholdTemperature)
-            // .setProps({
-            //     unit: tUnit,
-            //     maxValue: maxValue,
-            //     minValue: minValue
-            // })
+            .setProps({
+                unit: tUnit,
+                maxValue: maxValue,
+                minValue: minValue
+            })
             .on("get", (callback) => {
                 let temp = this.myUtils.tempConversion(accessory.context.deviceData.attributes.coolingSetpoint);
                 this.log.notice('get CoolingThresholdTemperature', temp);
