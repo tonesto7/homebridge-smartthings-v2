@@ -40,27 +40,37 @@ module.exports = class MyUtils {
         };
     }
 
-    tempConversion(tempVal) {
-        if (this.temperature_unit === "C") {
-            return this.tempConversionFrom_C(tempVal);
-        } else {
-            return this.tempConversionFrom_F(tempVal);
+    tempConversion(temp, unitIn) {
+        if (unitIn === this.temperature_unit) {
+            return this.convertFtoC(temp);
+        } else if (unitIn === 'C' && this.temperature_unit === 'F') {
+            return this.convertCtoF(temp);
+        } else if (unitIn === 'F' && this.temperature_unit === 'C') {
+            return this.convertFtoC(temp);
         }
     }
 
-    tempConversionFrom_F(tempVal) {
-        if (this.temperature_unit === "C") {
-            return Math.round(parseFloat(tempVal * 10) / 10, 0);
-        } else {
-            return Math.round(parseFloat(((tempVal - 32) / 1.8) * 10) / 10, 2);
-        }
+    convertFtoC(temp) {
+        return parseFloat((temp - 32) / 1.8 * 10) / 10;
     }
 
-    tempConversionFrom_C(tempVal) {
-        if (this.temperature_unit === "C") {
-            return tempVal;
+    convertCtoF(temp) {
+        return (parseFloat(temp * 10) / 10);
+    }
+
+    fahrenheitToCelsius(temperature) {
+        return (temperature - 32) / 1.8;
+    }
+
+    celsiusToFahrenheit(temperature) {
+        return (temperature * 1.8) + 32;
+    }
+
+    tempConversionOld(temp) {
+        if (this.temperature_unit === 'C') {
+            return Math.ceil(parseFloat(temp * 10) / 10);
         } else {
-            return tempVal * 1.8 + 32;
+            return (parseFloat((temp - 32) / 1.8 * 10) / 10);
         }
     }
 

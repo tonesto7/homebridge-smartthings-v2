@@ -121,11 +121,14 @@ module.exports = class ST_Platform {
     refreshDevices() {
         let that = this;
         let starttime = new Date();
-        return new Promise(resolve => {
+        return new Promise((resolve, reject) => {
             try {
                 that.log.debug("Refreshing All Device Data");
-                this.client
-                    .getDevices()
+                this.client.getDevices()
+                    .catch(err => {
+                        that.log.error('getDevices Exception:', err);
+                        reject(err.message);
+                    })
                     .then(resp => {
                         if (resp && resp.deviceList && resp.deviceList instanceof Array) {
                             // that.log.debug("Received All Device Data");
@@ -152,11 +155,8 @@ module.exports = class ST_Platform {
                         that.log.notice(`Unknown Capabilities: ${JSON.stringify(that.unknownCapabilities)}`);
                         that.log.info(`${platformDesc} DeviceCache Size: (${Object.keys(this.SmartThingsAccessories.getAllAccessoriesFromCache()).length})`);
                         resolve(true);
-                    })
-                    .catch(err => {
-                        that.log.error('getDevices Exception:', err);
-                        resolve(false);
                     });
+
             } catch (ex) {
                 this.log.error("refreshDevices Error: ", ex);
                 resolve(false);
