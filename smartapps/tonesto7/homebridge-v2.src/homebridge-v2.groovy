@@ -5,7 +5,7 @@
  */
 
 String appVersion()         { return "2.0.0" }
-String appModified()         { return "12-01-2019" }
+String appModified()        { return "12-02-2019" }
 String branch()             { return "master" }
 String platform()           { return "SmartThings" }
 String pluginName()         { return "${platform()}-v2" }
@@ -29,6 +29,8 @@ definition(
 
 preferences {
     page(name: "mainPage")
+    page(name: "defineDevicesPage")
+    page(name: "deviceSelectPage")
     page(name: "capFilterPage")
     page(name: "virtDevicePage")
     page(name: "developmentPage")
@@ -59,26 +61,48 @@ def mainPage() {
         appInfoSect()
         section("Define Specific Categories:") {
             paragraph "Each category below will adjust the device attributes to make sure they are recognized as the desired device type under HomeKit", state: "complete"
-            input "lightList", "capability.switch", title: "Lights: (${lightList ? lightList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("light_on.png")
-            input "buttonList", "capability.button", title: "Buttons: (${buttonList ? buttonList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("button.png")
-            input "fanList", "capability.switch", title: "Fans: (${fanList ? fanList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on.png")
-            input "speakerList", "capability.switch", title: "Speakers: (${speakerList ? speakerList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("media_player.png")
-            input "shadesList", "capability.windowShade", title: "Window Shades: (${shadesList ? shadesList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("window_shade.png")
+            Boolean conf = (lightList || buttonList || fanList || speakerList || shadesList)
+            String desc = "Tap to configure"
+            if(conf) {
+                desc = ""
+                desc += lightList ? "(${lightList?.size()}) Light Devices\n" : ""
+                desc += buttonList ? "(${buttonList?.size()}) Button Devices\n" : ""
+                desc += fanList ? "(${fanList?.size()}) Fan Devices\n" : ""
+                desc += speakerList ? "(${speakerList?.size()}) Speaker Devices\n" : ""
+                desc += shadesList ? "(${shadesList?.size()}) Shade Devices\n" : ""
+                desc += "\nTap to modify..."
+            }
+            href "defineDevicesPage", title: "Define Device Types", required: false, image: getAppImg("devices2.png"), state: (conf ? "complete" : null), description: desc
         }
+
         section("All Other Devices:") {
-            input "sensorList", "capability.sensor", title: "Sensor Devices: (${sensorList ? sensorList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("sensors.png")
-            input "switchList", "capability.switch", title: "Switch Devices: (${switchList ? switchList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("switch.png")
-            input "deviceList", "capability.refresh", title: "Other Devices: (${deviceList ? deviceList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("devices2.png")
+            Boolean conf = (sensorList || switchList || deviceList)
+            String desc = "Tap to configure"
+            if(conf) {
+                desc = ""
+                desc += sensorList ? "(${sensorList?.size()}) Sensor Devices\n" : ""
+                desc += switchList ? "(${switchList?.size()}) Switch Devices\n" : ""
+                desc += deviceList ? "(${deviceList?.size()}) Other Devices\n" : ""
+                desc += "\nTap to modify..."
+            }
+            href "deviceSelectPage", title: "Select your Devices", required: false, image: getAppImg("devices.png"), state: (conf ? "complete" : null), description: desc
         }
 
         section("Capability Filtering:") {
-            Boolean conf = (removeBattery || removeButton || removeContact || removeLevel || removeLock || removeMotion || removePower || removePresence || removeSwitch || removeTamper || removeTemp)
+            Boolean conf = (removeBattery || removeButton || removeContact || removeEnergy || removeHumidity || removeIlluminance || removeLevel || removeLock || removeMotion || removePower || removePresence ||
+            removeSwitch || removeTamper || removeTemp || removeValve)
             href "capFilterPage", title: "Filter out capabilities from your devices", required: false, image: getAppImg("filter.png"), state: (conf ? "complete" : null), description: (conf ? "Tap to modify..." : "Tap to configure")
         }
 
         section("Virtual Devices:") {
             Boolean conf = (modeList || routineList)
-            def desc = "Create virtual mode or routines devices\n\n${conf ? "Tap to modify..." : "Tap to configure"}"
+            String desc = "Create virtual mode or routines devices\n\nTap to Configure..."
+            if(conf) {
+                desc = ""
+                desc += modeList ? "(${modeList?.size()}) Mode Devices\n" : ""
+                desc += routineList ? "(${routineList?.size()}) Routine Devices\n" : ""
+                desc += "\nTap to modify..."
+            }
             href "virtDevicePage", title: "Configure Virtual Devices", required: false, image: getAppImg("devices.png"), state: (conf ? "complete" : null), description: desc
         }
 
@@ -86,6 +110,7 @@ def mainPage() {
             input "addSecurityDevice", "bool", title: "Allow SHM Control in HomeKit?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("alarm_home.png")
         }
         section("Plugin Options:") {
+            paragraph "Turn off if you are having issues sending commands"
             input "allowLocalCmds", "bool", title: "Send HomeKit Commands Locally?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("command2.png")
         }
         section("Review Configuration:") {
@@ -112,6 +137,29 @@ def mainPage() {
     }
 }
 
+def defineDevicesPage() {
+    return dynamicPage(name: "defineDevicesPage", title: "", install: false, uninstall: false) {
+        section("Define Specific Categories:") {
+            paragraph "Each category below will adjust the device attributes to make sure they are recognized as the desired device type under HomeKit", state: "complete"
+            input "lightList", "capability.switch", title: "Lights: (${lightList ? lightList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("light_on.png")
+            input "buttonList", "capability.button", title: "Buttons: (${buttonList ? buttonList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("button.png")
+            input "fanList", "capability.switch", title: "Fans: (${fanList ? fanList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on.png")
+            input "speakerList", "capability.switch", title: "Speakers: (${speakerList ? speakerList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("media_player.png")
+            input "shadesList", "capability.windowShade", title: "Window Shades: (${shadesList ? shadesList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("window_shade.png")
+        }
+    }
+}
+
+def deviceSelectPage() {
+    return dynamicPage(name: "defineDevicesPage", title: "", install: false, uninstall: false) {
+        section("All Other Devices:") {
+            input "sensorList", "capability.sensor", title: "Sensor Devices: (${sensorList ? sensorList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("sensors.png")
+            input "switchList", "capability.switch", title: "Switch Devices: (${switchList ? switchList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("switch.png")
+            input "deviceList", "capability.refresh", title: "Other Devices: (${deviceList ? deviceList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("devices2.png")
+        }
+    }
+}
+
 def settingsPage() {
     return dynamicPage(name: "settingsPage", title: "", install: false, uninstall: false) {
         section("Logging:") {
@@ -134,6 +182,9 @@ def capFilterPage() {
             input "removeBattery", "capability.battery", title: "Remove Battery from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("battery.png")
             input "removeButton", "capability.button", title: "Remove Buttons from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("button.png")
             input "removeContact", "capability.contactSensor", title: "Remove Contact from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("contact.png")
+            input "removeEnergy", "capability.energyMeter", title: "Remove Energy Meter from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("power.png")
+            input "removeHumidity", "capability.relativeHumidityMeasurement", title: "Remove Humidity from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("humidity.png")
+            input "removeIlluminance", "capability.illuminanceMeasurement", title: "Remove Illuminance from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("illuminance.png")
             input "removeLevel", "capability.switchLevel", title: "Remove Level from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("speed_knob.png")
             input "removeLock", "capability.lock", title: "Remove Lock from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("lock.png")
             input "removeMotion", "capability.motionSensor", title: "Remove Motion from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("motion.png")
@@ -141,7 +192,8 @@ def capFilterPage() {
             input "removePresence", "capability.presenceSensor", title: "Remove Presence from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("presence.png")
             input "removeSwitch", "capability.switch", title: "Remove Switch from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("switch.png")
             input "removeTamper", "capability.tamperAlert", title: "Remove Tamper from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("tamper.png")
-            input "removeTemp", "capability.temperatureMeasurement", title: "Remove Temp from these Sensors", multiple: true, submitOnChange: true, required: false, image: getAppImg("temperature.png")
+            input "removeTemp", "capability.temperatureMeasurement", title: "Remove Temperature from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("temperature.png")
+            input "removeValve", "capability.valve", title: "Remove Valve from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("valve.png")
         }
     }
 }
@@ -164,7 +216,7 @@ def virtDevicePage() {
 def confirmPage() {
     return dynamicPage(name: "confirmPage", title: "Confirm Page", install: true, uninstall:true) {
         section("") {
-            paragraph "Restarting the service is no longer required to apply any device changes under homekit.\n\nPressing Done/Save to tell the service to refresh your device data.", state: "complete", image: getAppImg("info.png")
+            paragraph "Restarting the service is no longer required to apply any device changes under homekit.\n\nThe service will refresh your devices shortly after Pressing Done/Save.", state: "complete", image: getAppImg("info.png")
         }
     }
 }
@@ -613,6 +665,9 @@ def deviceCapabilityList(device) {
     if(settings?.removeBattery && items["Battery"] && isDeviceInInput('removeBattery', device?.id)) { items?.remove("Battery"); if(showDebugLogs) { log.debug "Filtering Battery"; } }
     if(settings?.removeButton && items["Button"] && isDeviceInInput('removeButton', device?.id)) { items?.remove("Button");  if(showDebugLogs) { log.debug "Filtering Button"; } }
     if(settings?.removeContact && items["Contact Sensor"] && isDeviceInInput('removeContact', device?.id)) { items?.remove("Contact Sensor");  if(showDebugLogs) { log.debug "Filtering Contact"; } }
+    if(settings?.removeEnergy && items["Energy Meter"] && isDeviceInInput('removeEnergy', device?.id)) { items?.remove("Energy Meter");  if(showDebugLogs) { log.debug "Filtering Energy"; } }
+    if(settings?.removeHumidity && items["Relative Humidity Measurement"] && isDeviceInInput('removeHumidity', device?.id)) { items?.remove("Relative Humidity Measurement");  if(showDebugLogs) { log.debug "Filtering Humidity"; } }
+    if(settings?.removeIlluminance && items["Illuminance Measurement"] && isDeviceInInput('removeIlluminance', device?.id)) { items?.remove("Illuminance Measurement");  if(showDebugLogs) { log.debug "Filtering Illuminance"; } }
     if(settings?.removeLevel && items["Switch Level"] && isDeviceInInput('removeLevel', device?.id)) { items?.remove("Switch Level");  if(showDebugLogs) { log.debug "Filtering Level"; } }
     if(settings?.removeLock && items["Lock"] && isDeviceInInput('removeLock', device?.id)) { items?.remove("Lock");  if(showDebugLogs) { log.debug "Filtering Lock"; } }
     if(settings?.removeMotion && items["Motion Sensor"] && isDeviceInInput('removeMotion', device?.id)) { items?.remove("Motion Sensor");  if(showDebugLogs) { log.debug "Filtering Motion"; } }
@@ -621,6 +676,7 @@ def deviceCapabilityList(device) {
     if(settings?.removeSwitch && items["Switch"] && isDeviceInInput('removeSwitch', device?.id)) { items?.remove("Switch");  if(showDebugLogs) { log.debug "Filtering Switch"; } }
     if(settings?.removeTamper && items["Tamper Alert"] && isDeviceInInput('removeTamper', device?.id)) { items?.remove("Tamper Alert");  if(showDebugLogs) { log.debug "Filtering Tamper"; } }
     if(settings?.removeTemp && items["Temperature Measurement"] && isDeviceInInput('removeTemp', device?.id)) { items?.remove("Temperature Measurement");  if(showDebugLogs) { log.debug "Filtering Temp"; } }
+    if(settings?.removeValve && items["Valve"] && isDeviceInInput('removeValve', device?.id)) { items?.remove("Valve");  if(showDebugLogs) { log.debug "Filtering Valve"; } }
     return items
 }
 
@@ -688,9 +744,11 @@ def ignoreTheseAttributes() {
     ]
 }
 
-def isDeviceInInput(setKey, devId){
-    List aItems = settings[setKey] ? settings[setKey]?.collect { it?.getId() as String } : []
-    if(aItems?.contains(devId as String)) { return true }
+def isDeviceInInput(setKey, devId) {
+    if(settings[setKey]) {
+        List aItems = settings[setKey] ? settings[setKey]?.collect { it?.getId() as String } : []
+        if(aItems?.contains(devId as String)) { return true }
+    }
     return false
 }
 
@@ -707,17 +765,21 @@ def registerChangeHandler(devices, showlog=false) {
                     }
                     if(skipAtt) { return }
                 }
-                if(att == "battery" && settings.removeBattery && isDeviceInInput('removeBattery', device?.id)) {return}
-                if(att == "button" && settings.removeButton && isDeviceInInput('removeButton', device?.id)) {return}
-                if(att == "switch" && settings.removeSwitch && isDeviceInInput('removeSwitch', device?.id)) {return}
-                if(att == "temperature" && settings.removeTemp && isDeviceInInput('removeTemp', device?.id)) {return}
-                if(att == "contact" && settings.removeContact && isDeviceInInput('removeContact', device?.id)) {return}
-                if(att == "level" && settings.removeLevel && isDeviceInInput('removeLevel', device?.id)) { return }
-                if(att == "lock" && settings?.removeLock && isDeviceInInput('removeLock', device?.id)) { return }
-                if(att == "motion" && settings.removeMotion && isDeviceInInput('removeMotion', device?.id)) { return }
-                if(att == "power" && settings.removePower && isDeviceInInput('removePower', device?.id)) { return }
-                if(att == "presence" && settings.removePresence && isDeviceInInput('removePresence', device?.id)) { return }
-                if(att == "tamper" && settings.removeTamper && isDeviceInInput('removeTamper', device?.id)) { return }
+                if(att == "battery" &&      isDeviceInInput('removeBattery', device?.id)) {return}
+                if(att == "button" &&       isDeviceInInput('removeButton', device?.id)) {return}
+                if(att == "switch" &&       isDeviceInInput('removeSwitch', device?.id)) {return}
+                if(att == "temperature" &&  isDeviceInInput('removeTemp', device?.id)) {return}
+                if(att == "contact" &&      isDeviceInInput('removeContact', device?.id)) {return}
+                if(att == "energy" &&       isDeviceInInput('removeEnergy', device?.id)) {return}
+                if(att == "humidity" &&     isDeviceInInput('removeHumidity', device?.id)) {return}
+                if(att == "illuminance" &&  isDeviceInInput('removeIlluminance', device?.id)) {return}
+                if(att == "level" &&        isDeviceInInput('removeLevel', device?.id)) { return }
+                if(att == "lock" &&         isDeviceInInput('removeLock', device?.id)) { return }
+                if(att == "motion" &&       isDeviceInInput('removeMotion', device?.id)) { return }
+                if(att == "power" &&        isDeviceInInput('removePower', device?.id)) { return }
+                if(att == "presence" &&     isDeviceInInput('removePresence', device?.id)) { return }
+                if(att == "tamper" &&       isDeviceInInput('removeTamper', device?.id)) { return }
+                if(att == "valve" &&        isDeviceInInput('removeValve', device?.id)) { return }
 
                 subscribe(device, att, "changeHandler")
                 if(showlog) { log.debug "Registering ${device?.displayName}.${att}" }
