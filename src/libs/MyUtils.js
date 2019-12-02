@@ -40,6 +40,14 @@ module.exports = class MyUtils {
         };
     }
 
+    tempConversion(tempVal) {
+        if (this.temperature_unit === "C") {
+            return Math.round(parseFloat(((tempVal - 32) / 1.8) * 10) / 10, 2);
+        } else {
+            return Math.round(parseFloat(tempVal), 2);
+        }
+    }
+
     tempConversionFrom_F(tempVal) {
         if (this.temperature_unit === "C") {
             return Math.round(parseFloat(tempVal * 10) / 10, 0);

@@ -227,7 +227,7 @@ module.exports = class ST_Platform {
 
                 // Start the HTTP Server
                 webApp.listen(that.configItems.direct_port, () => {
-                    that.log.info(`Direct Connect is Listening On ${ip}:${that.configItems.direct_port}`);
+                    that.log.info(`Direct Connect Active | Listening at ${ip}:${that.configItems.direct_port}`);
                 });
 
                 webApp.use(bodyParser.urlencoded({

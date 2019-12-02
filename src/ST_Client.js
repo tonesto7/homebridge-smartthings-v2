@@ -95,13 +95,16 @@ module.exports = class ST_Client {
                 values: vals
             };
         }
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             that.log.notice(`Sending Device Command: ${cmd} | Value: ${JSON.stringify(vals) || "Nothing"} | DeviceID: (${devid}) | SendToLocalHub: (${sendLocal})`);
             rp(config)
                 .catch((err) => {
                     that.log.error('sendDeviceCommand Error:', err.message);
-                    callback(undefined);
-                    resolve(undefined);
+                    if (callback) {
+                        callback();
+                        callback = undefined;
+                    };
+                    reject(undefined);
                 })
                 .then((body) => {
                     that.log.debug('sendDeviceCommand Resp:', body);

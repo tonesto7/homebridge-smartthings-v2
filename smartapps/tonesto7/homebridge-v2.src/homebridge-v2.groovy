@@ -1,7 +1,7 @@
 /**
- *  Homebridge SmartThing/Hubitat Interface
+ *  Homebridge SmartThing Interface
  *  Loosely Modelled off of Paul Lovelace's JSON API
- *  Copyright 2018, 2019 Anthony Santilli
+ *  Copyright 2018, 2019, 2020 Anthony Santilli
  */
 
 String appVersion()         { return "2.0.0" }
@@ -381,15 +381,15 @@ def renderConfig() {
                 app_url: apiServerUrl("/api/smartapps/installations/"),
                 app_id: app?.getId(),
                 access_token: state?.accessToken,
-                logConfig: {
+                logConfig: [
                     debug: false,
                     showChanges: true,
                     hideTimestamp: false,
                     hideNamePrefix: false,
-                    file: {
+                    file: [
                         enabled: true
-                    }
-                }
+                    ]
+                ]
             ]
         ]
     ]
