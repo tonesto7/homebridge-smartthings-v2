@@ -9,6 +9,7 @@ const {
     SmartThingsClient = require("./ST_Client"),
     SmartThingsAccessories = require("./ST_Accessories"),
     express = require("express"),
+    spawn = require('child_process').spawn,
     bodyParser = require("body-parser"),
     chalk = require('chalk'),
     Logging = require("./libs/Logger"),
@@ -223,6 +224,7 @@ module.exports = class ST_Platform {
         return new Promise(resolve => {
             try {
                 let ip = that.configItems.direct_ip || that.myUtils.getIPAddress();
+                let tail;
                 that.log.info("WebServer Initiated...");
 
                 // Start the HTTP Server
@@ -242,6 +244,28 @@ module.exports = class ST_Platform {
 
                 webApp.get("/", (req, res) => {
                     res.send("WebApp is running...");
+                });
+
+
+                webApp.get("/logs", (req, res) => {
+                    if (process.platform === "win32") {
+                        res.send('Sorry but logging doesn\'t work on windows');
+                    } else {
+                        res.header('Content-Type', 'text/html;charset=utf-8');
+                        tail = spawn('tail', ['-f', `./${pluginName}.log`]);
+                        tail.stdout.on('data', function(data) {
+                            console.log('stdout: ' + data);
+                            res.write(data, 'utf-8');
+                        });
+                        tail.stderr.on('data', function(data) {
+                            console.log('stderr: ' + data);
+                            res.write(data, 'utf-8');
+                        });
+                        tail.on('exit', function(code) {
+                            console.log('child process exited with code ' + code);
+                            res.end(code);
+                        });
+                    }
                 });
 
                 webApp.post("/initial", (req, res) => {

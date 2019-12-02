@@ -115,7 +115,7 @@ def mainPage() {
         }
         section("Review Configuration:") {
             Integer devCnt = getDeviceCnt()
-            href url: getAppEndpointUrl("config"), style: "embedded", required: false, title: "View the Configuration Data for Homebridge", description: "Tap, select, copy, then click \"Done\"", state: "complete", image: getAppImg("info.png")
+            href url: getAppEndpointUrl("config"), style: "embedded", required: false, title: "Render the config.json data for Homebridge", description: "Tap, select, copy, then click \"Done\"", state: "complete", image: getAppImg("info.png")
             if(devCnt > 148) {
                 paragraph "Notice:\nHomebridge Allows for 149 Devices per Bridge!!!", image: getAppImg("error.png"), state: null, required: true
             }
