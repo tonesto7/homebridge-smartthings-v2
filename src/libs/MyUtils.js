@@ -42,9 +42,9 @@ module.exports = class MyUtils {
 
     tempConversion(tempVal) {
         if (this.temperature_unit === "C") {
-            return Math.round(parseFloat(((tempVal - 32) / 1.8) * 10) / 10, 2);
+            return this.tempConversionFrom_C(tempVal);
         } else {
-            return Math.round(parseFloat(tempVal), 2);
+            return this.tempConversionFrom_F(tempVal);
         }
     }
 

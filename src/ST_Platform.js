@@ -246,26 +246,25 @@ module.exports = class ST_Platform {
                     res.send("WebApp is running...");
                 });
 
-
                 webApp.get("/logs", (req, res) => {
-                    if (process.platform === "win32") {
-                        res.send('Sorry but logging doesn\'t work on windows');
-                    } else {
-                        res.header('Content-Type', 'text/html;charset=utf-8');
-                        tail = spawn('tail', ['-f', `./${pluginName}.log`]);
-                        tail.stdout.on('data', function(data) {
-                            console.log('stdout: ' + data);
-                            res.write(data, 'utf-8');
-                        });
-                        tail.stderr.on('data', function(data) {
-                            console.log('stderr: ' + data);
-                            res.write(data, 'utf-8');
-                        });
-                        tail.on('exit', function(code) {
-                            console.log('child process exited with code ' + code);
-                            res.end(code);
-                        });
-                    }
+                    // if (process.platform === "win32") {
+                    //     res.send('Sorry but logging doesn\'t work on windows');
+                    // } else {
+                    res.header('Content-Type', 'text/html;charset=utf-8');
+                    tail = spawn('tail', ['-f', `./${pluginName}.log`]);
+                    tail.stdout.on('data', function(data) {
+                        console.log('stdout: ' + data);
+                        res.write(data, 'utf-8');
+                    });
+                    tail.stderr.on('data', function(data) {
+                        console.log('stderr: ' + data);
+                        res.write(data, 'utf-8');
+                    });
+                    tail.on('exit', function(code) {
+                        console.log('child process exited with code ' + code);
+                        res.end(code);
+                    });
+                    // }
                 });
 
                 webApp.post("/initial", (req, res) => {

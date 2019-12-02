@@ -5,6 +5,7 @@ require('winston-logrotate');
 var DEBUG_ENABLED = false;
 var TIMESTAMP_ENABLED = true;
 var logger;
+// var tailWindowsUrl = 'https://download.microsoft.com/download/8/e/c/8ec3a7d8-05b4-440a-a71e-ca3ee25fe057/rktools.exe';
 
 module.exports = class Logging {
     constructor(platform, prefix, config) {
