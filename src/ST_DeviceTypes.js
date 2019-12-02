@@ -1,6 +1,6 @@
 var Service, Characteristic;
 
-module.exports = class MyUtils {
+module.exports = class DeviceTypes {
     constructor(accessories, srvc, char) {
         this.platform = accessories;
         this.log = accessories.log;
@@ -819,7 +819,7 @@ module.exports = class MyUtils {
             .on("set", (newValue, callback) => {
                 // Convert the Celsius value to the appropriate unit for Smartthings
                 this.log.notice('TargetTemperature set: newValue', newValue);
-                this.log.notice('TargetTemperature set: validate', this.validateValue(newValue));
+                // this.log.notice('TargetTemperature set: validate', this.validateValue(newValue));
                 let temp = this.myUtils.tempConversionFrom_C(newValue);
                 // Set the appropriate temperature unit based on the mode
                 switch (accessory.context.deviceData.attributes.thermostatMode) {
@@ -875,7 +875,7 @@ module.exports = class MyUtils {
             })
             .on("set", (newValue, callback) => {
                 this.log.notice('HeatingThresholdTemperature set: newValue', newValue);
-                this.log.notice('HeatingThresholdTemperature set: validate', this.validateValue(newValue));
+                // this.log.notice('HeatingThresholdTemperature set: validate', this.validateValue(newValue));
                 // Convert the Celsius value to the appropriate unit for Smartthings
                 let temp = this.myUtils.tempConversionFrom_C(newValue);
                 this.log.notice('set HeatingThresholdTemperature', temp);
@@ -902,7 +902,7 @@ module.exports = class MyUtils {
             .on("set", (newValue, callback) => {
                 // Convert the Celsius value to the appropriate unit for Smartthings
                 this.log.notice('CoolingThresholdTemperature set: newValue', newValue);
-                this.log.notice('CoolingThresholdTemperature set: validate', this.validateValue(newValue));
+                // this.log.notice('CoolingThresholdTemperature set: validate', this.validateValue(newValue));
                 let temp = this.myUtils.tempConversionFrom_C(newValue);
                 this.log.notice('set CoolingThresholdTemperature', temp);
                 this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setCoolingSetpoint", {
