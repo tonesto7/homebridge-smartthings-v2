@@ -360,9 +360,11 @@ module.exports = class ST_Accessories {
             case "hue":
                 return Math.round(val * 3.6);
             case "temperature":
-            case "heatingSetpoint":
-            case "coolingSetpoint":
                 return this.myUtils.tempConversionTest(val);
+                // case "heatingSetpoint":
+                // case "coolingSetpoint":
+                // case "thermostatSetpoint":
+                //     return this.myUtils.tempConversionTest(val, true);
             case "fanSpeed":
                 return this.myUtils.fanSpeedIntToLevel(val);
             case "level":
