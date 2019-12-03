@@ -48,7 +48,7 @@ module.exports = class MyUtils {
         }
     }
 
-    tempConversionTest(temp, onlyC = false) {
+    tempConversion(temp, onlyC = false) {
         let tempIn = temp;
         if (this.temperature_unit === 'C' || onlyC) {
             temp = (parseFloat(temp * 10) / 10);
