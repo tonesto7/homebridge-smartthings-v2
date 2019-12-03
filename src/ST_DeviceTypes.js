@@ -777,8 +777,14 @@ module.exports = class DeviceTypes {
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.CurrentTemperature)
             .on("get", (callback) => {
-                this.log.alert('get CurrentTemperature: ', this.myUtils.tempConversionTest(accessory.context.deviceData.attributes.temperature));
-                callback(null, this.myUtils.tempConversionTest(accessory.context.deviceData.attributes.temperature));
+                let temp = 0;
+                if (this.temperature_unit === 'C') {
+                    temp = Math.round(accessory.context.deviceData.attributes.temperature * 10) / 10;
+                } else {
+                    temp = Math.round((accessory.context.deviceData.attributes.temperature - 32) / 1.8 * 10) / 10;
+                }
+                this.log.alert('get CurrentTemperature: ', temp);
+                callback(null, temp);
             });
         this.accessories.storeCharacteristicItem("temperature", accessory.context.deviceData.deviceid, thisChar);
 
@@ -809,11 +815,24 @@ module.exports = class DeviceTypes {
                         }
                         break;
                 }
-                callback(null, temp ? this.myUtils.tempConversionTest(temp) : 'Unknown');
+
+                if (!temp) {
+                    callback('Unknown');
+                } else if (this.temperature_unit === 'C') {
+                    callback(null, Math.round(temp * 10) / 10);
+                } else {
+                    callback(null, Math.round((temp - 32) / 1.8 * 10) / 10);
+                }
             })
             .on("set", (value, callback) => {
                 // Convert the Celsius value to the appropriate unit for Smartthings
-                let temp = this.myUtils.tempConversionTest(value, true);
+                let temp = value;
+                if (this.temperature_unit === 'C') {
+                    temp = value;
+                } else {
+                    temp = value * 1.8 + 32;
+                }
+                temp = Math.round(temp);
                 // Set the appropriate temperature unit based on the mode
                 switch (accessory.context.deviceData.attributes.thermostatMode) {
                     case "cool":
@@ -839,9 +858,11 @@ module.exports = class DeviceTypes {
                         accessory.context.deviceData.attributes.thermostatSetpoint = temp;
                 }
             });
+        this.accessories.storeCharacteristicItem("thermostatMode", accessory.context.deviceData.deviceid, thisChar);
         this.accessories.storeCharacteristicItem("coolingSetpoint", accessory.context.deviceData.deviceid, thisChar);
         this.accessories.storeCharacteristicItem("heatingSetpoint", accessory.context.deviceData.deviceid, thisChar);
         this.accessories.storeCharacteristicItem("thermostatSetpoint", accessory.context.deviceData.deviceid, thisChar);
+        this.accessories.storeCharacteristicItem("temperature", accessory.context.deviceData.deviceid, thisChar);
 
         thisChar = accessory
             .getOrAddService(Service.Thermostat)
@@ -855,7 +876,13 @@ module.exports = class DeviceTypes {
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.HeatingThresholdTemperature)
             .on("get", (callback) => {
-                callback(null, this.myUtils.tempConversionTest(accessory.context.deviceData.attributes.heatingSetpoint));
+                let temp = 0;
+                if (this.temperature_unit === 'C') {
+                    temp = Math.round(accessory.context.deviceData.attributes.heatingSetpoint * 10) / 10;
+                } else {
+                    temp = Math.round((accessory.context.deviceData.attributes.heatingSetpoint - 32) / 1.8 * 10) / 10;
+                }
+                callback(null, temp);
             })
             .on("set", (value, callback) => {
                 // Convert the Celsius value to the appropriate unit for Smartthings
@@ -872,11 +899,23 @@ module.exports = class DeviceTypes {
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.CoolingThresholdTemperature)
             .on("get", (callback) => {
-                callback(null, this.myUtils.tempConversionTest(accessory.context.deviceData.attributes.coolingSetpoint));
+                let temp = 0;
+                if (this.temperature_unit === 'C') {
+                    temp = Math.round(accessory.context.deviceData.attributes.heatingSetpoint * 10) / 10;
+                } else {
+                    temp = Math.round((accessory.context.deviceData.attributes.heatingSetpoint - 32) / 1.8 * 10) / 10;
+                }
+                callback(null, temp);
             })
             .on("set", (value, callback) => {
                 // Convert the Celsius value to the appropriate unit for Smartthings
-                let temp = this.myUtils.tempConversionTest(value, true);
+                let temp = value;
+                if (this.temperature_unit === 'C') {
+                    temp = value;
+                } else {
+                    temp = value * 1.8 + 32;
+                }
+                temp = Math.round(temp);
                 console.log('setCoolTemp: ', temp, value);
                 this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setCoolingSetpoint", {
                     value1: temp
