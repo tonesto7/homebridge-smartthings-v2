@@ -860,6 +860,7 @@ module.exports = class DeviceTypes {
             .on("set", (value, callback) => {
                 // Convert the Celsius value to the appropriate unit for Smartthings
                 let temp = this.myUtils.tempConversionTest(value, true);
+                console.log('setHeatTemp: ', temp, value);
                 this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setHeatingSetpoint", {
                     value1: temp
                 });
@@ -876,6 +877,7 @@ module.exports = class DeviceTypes {
             .on("set", (value, callback) => {
                 // Convert the Celsius value to the appropriate unit for Smartthings
                 let temp = this.myUtils.tempConversionTest(value, true);
+                console.log('setCoolTemp: ', temp, value);
                 this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setCoolingSetpoint", {
                     value1: temp
                 });
