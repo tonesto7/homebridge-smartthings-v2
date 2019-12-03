@@ -741,7 +741,7 @@ module.exports = class DeviceTypes {
                         state = "cool";
                         break;
                     case Characteristic.TargetHeatingCoolingState.HEAT:
-                        state = "ofheatf";
+                        state = "off";
                         break;
                     case Characteristic.TargetHeatingCoolingState.AUTO:
                         state = "auto";
