@@ -251,16 +251,35 @@ module.exports = class DeviceTypes {
             });
         this.accessories.storeCharacteristicItem("switch", accessory.context.deviceData.deviceid, thisChar);
 
-        if (accessory.context.deviceData.attributes.level || accessory.context.deviceData.attributes.fanSpeed) {
-            let spdAttr = accessory.context.deviceData.attributes.fanSpeed ? 'fanSpeed' : 'level';
+        //Uses the fanSpeed Attribute and Command instead of level when avail
+        if (accessory.context.deviceData.attributes.fanSpeed && accessory.context.deviceData.commands["setFanSpeed"]) {
             thisChar = accessory
                 .getOrAddService(Service.Fanv2)
                 .getCharacteristic(Characteristic.RotationSpeed)
                 .on("get", (callback) => {
-                    callback(null, this.accessories.attributeStateTransform(spdAttr, accessory.context.deviceData.attributes[spdAttr]));
+                    callback(null, this.accessories.attributeStateTransform("fanSpeed", accessory.context.deviceData.attributes.fanSpeed));
                 })
                 .on("change", (obj) => {
-                    this.log_change(spdAttr, 'RotationSpeed', accessory, obj);
+                    this.log_change('fanSpeed', 'RotationSpeed', accessory, obj);
+                })
+                .on("set", (value, callback) => {
+                    if (value >= 0 && value <= 100) {
+                        let spdVal = this.myUtils.fanSpeedLevelToInt(parseInt(value));
+                        this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setFanSpeed", {
+                            value1: spdVal
+                        });
+                    }
+                });
+            this.accessories.storeCharacteristicItem('fanSpeed', accessory.context.deviceData.deviceid, thisChar);
+        } else if (accessory.context.deviceData.attributes.level) {
+            thisChar = accessory
+                .getOrAddService(Service.Fanv2)
+                .getCharacteristic(Characteristic.RotationSpeed)
+                .on("get", (callback) => {
+                    callback(null, this.accessories.attributeStateTransform("level", accessory.context.deviceData.attributes.level));
+                })
+                .on("change", (obj) => {
+                    this.log_change("level", 'RotationSpeed', accessory, obj);
                 })
                 .on("set", (value, callback) => {
                     if (value >= 0 && value <= 100) {
@@ -269,7 +288,7 @@ module.exports = class DeviceTypes {
                         });
                     }
                 });
-            this.accessories.storeCharacteristicItem(spdAttr, accessory.context.deviceData.deviceid, thisChar);
+            this.accessories.storeCharacteristicItem("level", accessory.context.deviceData.deviceid, thisChar);
         }
         return accessory;
     }

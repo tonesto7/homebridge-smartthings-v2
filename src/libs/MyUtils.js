@@ -122,6 +122,18 @@ module.exports = class MyUtils {
         }
     }
 
+    fanSpeedLevelToInt(val) {
+        if (val > 0 && val < 33) {
+            return 1;
+        } else if (val >= 33 && val < 66) {
+            return 2;
+        } else if (val >= 66 && val <= 100) {
+            return 3;
+        } else {
+            return 0;
+        }
+    }
+
     convertAlarmState(value, valInt = false, Characteristic) {
         switch (value) {
             case "stay":
