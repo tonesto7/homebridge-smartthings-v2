@@ -9,7 +9,6 @@ const {
     SmartThingsClient = require("./ST_Client"),
     SmartThingsAccessories = require("./ST_Accessories"),
     express = require("express"),
-    spawn = require('child_process').spawn,
     bodyParser = require("body-parser"),
     chalk = require('chalk'),
     Logging = require("./libs/Logger"),
@@ -213,6 +212,8 @@ module.exports = class ST_Platform {
     }
 
     isValidRequestor(access_token, app_id, src) {
+        // this.log.alert(`app_id: (${app_id}) | config app_id: (${this.getConfigItems().app_id})`);
+        // this.log.alert(`access_token: (${access_token}) | config access_token: (${this.getConfigItems().access_token})`);
         if (app_id && access_token && (access_token === this.getConfigItems().access_token) && (app_id === this.getConfigItems().app_id)) return true;
         this.log.error(`(${src}) | We received a request from a client that didn't provide a valid access_token and app_id`);
         return false;
@@ -224,7 +225,6 @@ module.exports = class ST_Platform {
         return new Promise(resolve => {
             try {
                 let ip = that.configItems.direct_ip || that.myUtils.getIPAddress();
-                let tail;
                 that.log.info("WebServer Initiated...");
 
                 // Start the HTTP Server
@@ -244,27 +244,6 @@ module.exports = class ST_Platform {
 
                 webApp.get("/", (req, res) => {
                     res.send("WebApp is running...");
-                });
-
-                webApp.get("/logs", (req, res) => {
-                    // if (process.platform === "win32") {
-                    //     res.send('Sorry but logging doesn\'t work on windows');
-                    // } else {
-                    res.header('Content-Type', 'text/html;charset=utf-8');
-                    tail = spawn('tail', ['-f', `./${pluginName}.log`]);
-                    tail.stdout.on('data', function(data) {
-                        console.log('stdout: ' + data);
-                        res.write(data, 'utf-8');
-                    });
-                    tail.stderr.on('data', function(data) {
-                        console.log('stderr: ' + data);
-                        res.write(data, 'utf-8');
-                    });
-                    tail.on('exit', function(code) {
-                        console.log('child process exited with code ' + code);
-                        res.end(code);
-                    });
-                    // }
                 });
 
                 webApp.post("/initial", (req, res) => {

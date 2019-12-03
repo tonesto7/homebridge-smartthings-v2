@@ -5,7 +5,7 @@
  */
 
 String appVersion()         { return "2.0.0" }
-String appModified()        { return "12-02-2019" }
+String appModified()         { return "12-02-2019" }
 String branch()             { return "master" }
 String platform()           { return "SmartThings" }
 String pluginName()         { return "${platform()}-v2" }
@@ -46,7 +46,7 @@ private Map ignoreLists() {
     ]
 }
 
-def appInfoSect()	{
+def appInfoSect() {
     section() {
         String str = app?.name
         str += "\nVersion: ${appVersion()}"
@@ -154,7 +154,7 @@ def defineDevicesPage() {
 }
 
 def deviceSelectPage() {
-    return dynamicPage(name: "defineDevicesPage", title: "", install: false, uninstall: false) {
+    return dynamicPage(name: "deviceSelectPage", title: "", install: false, uninstall: false) {
         section("All Other Devices:") {
             input "sensorList", "capability.sensor", title: "Sensor Devices: (${sensorList ? sensorList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("sensors.png")
             input "switchList", "capability.switch", title: "Switch Devices: (${switchList ? switchList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("switch.png")
@@ -712,7 +712,7 @@ def deviceAttributeList(device) {
     }
 }
 
-String getAppEndpointUrl(subPath) { return "${apiServerUrl("/api/smartapps/installations/${app.id}${subPath ? "/${subPath}" : ""}?access_token=${state.accessToken}")}" }
+String getAppEndpointUrl(subPath) { return "${apiServerUrl("/api/smartapps/installations/${app.id}${subPath ? "/${subPath}" : ""}?access_token=${state?.accessToken}")}" }
 
 def getAllData() {
     state?.subscriptionRenewed = now()
