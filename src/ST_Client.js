@@ -1,6 +1,7 @@
 const {
     platformName,
-    platformDesc
+    platformDesc,
+    pluginVersion
 } = require("./libs/Constants"),
     rp = require("request-promise-native"),
     url = require("url");
@@ -119,7 +120,7 @@ module.exports = class ST_Client {
         let sendLocal = this.sendAsLocalCmd();
         let config = {
             method: 'POST',
-            uri: `${this.configItems.app_url}${this.configItems.app_id}/startDirect/${this.configItems.direct_ip}/${this.configItems.direct_port}`,
+            uri: `${this.configItems.app_url}${this.configItems.app_id}/startDirect/${this.configItems.direct_ip}/${this.configItems.direct_port}/${pluginVersion}`,
             qs: {
                 access_token: this.configItems.access_token
             },
@@ -129,7 +130,8 @@ module.exports = class ST_Client {
             },
             body: {
                 ip: that.configItems.direct_ip,
-                port: that.configItems.direct_port
+                port: that.configItems.direct_port,
+                version: pluginVersion
             },
             json: true
         };

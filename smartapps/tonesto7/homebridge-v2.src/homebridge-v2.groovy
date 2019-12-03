@@ -5,7 +5,7 @@
  */
 
 String appVersion()         { return "2.0.0" }
-String appModified()        { return "12-02-2019" }
+String appModified()         { return "12-02-2019" }
 String branch()             { return "master" }
 String platform()           { return "SmartThings" }
 String pluginName()         { return "${platform()}-v2" }
@@ -24,7 +24,7 @@ definition(
     oauth: true)
 
 {
-	appSetting "devMode"
+    appSetting "devMode"
 }
 
 preferences {
@@ -46,9 +46,12 @@ private Map ignoreLists() {
     ]
 }
 
-def appInfoSect()	{
-	section() {
-        paragraph "${app?.name}\nv${appVersion()}", image: appIconUrl()
+def appInfoSect() {
+    section() {
+        String str = app?.name
+        str += "\nVersion: ${appVersion()}"
+        str += state?.pluginDetails?.version ? "\nPlugin: ${state?.pluginDetails?.version}" : ""
+        paragraph str, image: appIconUrl()
     }
 }
 
@@ -151,7 +154,7 @@ def defineDevicesPage() {
 }
 
 def deviceSelectPage() {
-    return dynamicPage(name: "defineDevicesPage", title: "", install: false, uninstall: false) {
+    return dynamicPage(name: "deviceSelectPage", title: "", install: false, uninstall: false) {
         section("All Other Devices:") {
             input "sensorList", "capability.sensor", title: "Sensor Devices: (${sensorList ? sensorList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("sensors.png")
             input "switchList", "capability.switch", title: "Switch Devices: (${switchList ? switchList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("switch.png")
@@ -178,7 +181,7 @@ def capFilterPage() {
             }
         }
         section("Remove Capabilities from Devices") {
-            paragraph "This will allow you to filter out certain capabilities from creating unneeded devices under HomeKit"
+            paragraph "This will allow you to filter out certain capabilities from creating unwanted devices under HomeKit"
             input "removeBattery", "capability.battery", title: "Remove Battery from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("battery.png")
             input "removeButton", "capability.button", title: "Remove Buttons from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("button.png")
             input "removeContact", "capability.contactSensor", title: "Remove Contact from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("contact.png")
@@ -240,6 +243,7 @@ def installed() {
 def updated() {
     log.debug "Updated with settings: ${settings}"
     unsubscribe()
+    stateCleanup()
     initialize()
 }
 
@@ -273,6 +277,17 @@ def initialize() {
     }
     runIn(15, "sendDeviceRefreshCmd")
     runIn((settings?.restartService ? 60 : 10), "updateServicePrefs")
+}
+
+private stateCleanup() {
+    if(state?.directIP && state?.directPort) {
+        state?.pluginDetails = [
+            directIP: state?.directIP,
+            directPort: state?.directPort
+        ]
+        state?.remove("directIP")
+        state?.remove("directPort")
+    }
 }
 
 def onAppTouch(event) {
@@ -333,7 +348,7 @@ def getDeviceData(type, sItem) {
             obj = sItem
             // Define firmware variable and initialize it out of device handler attribute`
             try {
-            	if (sItem?.hasAttribute("firmware")) { firmware = sItem?.currentValue("firmware")?.toString() }
+                if (sItem?.hasAttribute("firmware")) { firmware = sItem?.currentValue("firmware")?.toString() }
             } catch (ex) { }
             break
     }
@@ -377,11 +392,11 @@ def getSecurityDevice() {
 }
 
 def findDevice(dev_id) {
-	def device = deviceList?.find { it?.id == dev_id }
-  	if (device) return device
-	device = sensorList?.find { it?.id == dev_id }
-	if (device) return device
-  	device = switchList?.find { it?.id == dev_id }
+    def device = deviceList?.find { it?.id == dev_id }
+      if (device) return device
+    device = sensorList?.find { it?.id == dev_id }
+    if (device) return device
+      device = switchList?.find { it?.id == dev_id }
     if (device) return device
     device = lightList?.find { it?.id == dev_id }
     if (device) return device
@@ -392,7 +407,7 @@ def findDevice(dev_id) {
     device = speakerList?.find { it?.id == dev_id }
     if (device) return device
     device = shadesList?.find { it?.id == dev_id }
-	return device
+    return device
 }
 
 def authError() {
@@ -492,8 +507,11 @@ def lanEventHandler(evt) {
                                 break
                             case "enableDirect":
                                 // log.trace "enableDirect($msgData)"
-                                state?.directIP = msgData?.ip
-                                state?.directPort = msgData?.port
+                                state?.pluginDetails = [
+                                    directIP: msgData?.ip,
+                                    directPort: msgData?.port,
+                                    version: msgData?.version ?: null
+                                ]
                                 activateDirectUpdates(true)
                                 break
                         }
@@ -694,7 +712,7 @@ def deviceAttributeList(device) {
     }
 }
 
-String getAppEndpointUrl(subPath) { return "${apiServerUrl("/api/smartapps/installations/${app.id}${subPath ? "/${subPath}" : ""}?access_token=${state.accessToken}")}" }
+String getAppEndpointUrl(subPath) { return "${apiServerUrl("/api/smartapps/installations/${app.id}${subPath ? "/${subPath}" : ""}?access_token=${state?.accessToken}")}" }
 
 def getAllData() {
     state?.subscriptionRenewed = now()
@@ -840,7 +858,7 @@ def changeHandler(evt) {
             break
     }
 
-    if (sendEvt && state?.directIP != "" && sendItems?.size()) {
+    if (sendEvt && state?.pluginDetails?.directIP != "" && sendItems?.size()) {
         //Send Using the Direct Mechanism
         sendItems?.each { send->
             if(settings?.showEventLogs) {
@@ -864,7 +882,7 @@ def changeHandler(evt) {
                         unitStr = "${send?.evtUnit}"
                         break
                 }
-                log.debug "Sending${" ${send?.evtSource}" ?: ""} Event (${send?.evtDeviceName} | ${send?.evtAttr.toUpperCase()}: ${send?.evtValue}${unitStr}) to Homebridge at (${state?.directIP}:${state?.directPort})"
+                log.debug "Sending${" ${send?.evtSource}" ?: ""} Event (${send?.evtDeviceName} | ${send?.evtAttr.toUpperCase()}: ${send?.evtValue}${unitStr}) to Homebridge at (${state?.pluginDetails?.directIP}:${state?.pluginDetails?.directPort})"
             }
             sendHttpPost("update", [
                 change_name: send?.evtDeviceName,
@@ -886,7 +904,7 @@ private sendHttpGet(path, contentType) {
             path: "/${path}",
             contentType: contentType
         ])
-    } else { sendHubCommand(new physicalgraph.device.HubAction(method: "GET", path: "/${path}", headers: [HOST: "${state?.directIP}:${state?.directPort}"])) }
+    } else { sendHubCommand(new physicalgraph.device.HubAction(method: "GET", path: "/${path}", headers: [HOST: getServerAddress()])) }
 }
 
 private sendHttpPost(path, body, contentType = "application/json") {
@@ -903,7 +921,7 @@ private sendHttpPost(path, body, contentType = "application/json") {
             method: "POST",
             path: "/${path}",
             headers: [
-                HOST: "${state?.directIP}:${state?.directPort}",
+                HOST: getServerAddress(),
                 'Content-Type': contentType
             ],
             body: body
@@ -912,6 +930,8 @@ private sendHttpPost(path, body, contentType = "application/json") {
         sendHubCommand(result)
     }
 }
+
+private getServerAddress() { return "${state?.pluginDetails?.directIP}:${state?.pluginDetails?.directPort}" }
 
 def getModeById(String mId) {
     return location?.modes?.find{it?.id?.toString() == mId}
@@ -936,18 +956,18 @@ def getShmIncidents() {
 }
 
 void settingUpdate(name, value, type=null) {
-	if(name && type) {
-		app?.updateSetting("$name", [type: "$type", value: value])
-	}
-	else if (name && type == null){ app?.updateSetting(name.toString(), value) }
+    if(name && type) {
+        app?.updateSetting("$name", [type: "$type", value: value])
+    }
+    else if (name && type == null){ app?.updateSetting(name.toString(), value) }
 }
 
 Boolean devMode() {
-	return (appSettings?.devMode?.toString() == "true")
+    return (appSettings?.devMode?.toString() == "true")
 }
 
 private activateDirectUpdates(isLocal=false) {
-    log.trace "activateDirectUpdates: ${state?.directIP}:${state?.directPort}${isLocal ? " | (Local)" : ""}"
+    log.trace "activateDirectUpdates: ${getServerAddress()}${isLocal ? " | (Local)" : ""}"
     sendHttpPost("initial", [
         app_id: app?.getId(),
         access_token: state?.accessToken
@@ -955,7 +975,7 @@ private activateDirectUpdates(isLocal=false) {
 }
 
 private attemptServiceRestart(isLocal=false) {
-    log.trace "attemptServiceRestart: ${state?.directIP}:${state?.directPort}${isLocal ? " | (Local)" : ""}"
+    log.trace "attemptServiceRestart: ${getServerAddress()}${isLocal ? " | (Local)" : ""}"
     sendHttpPost("restart", [
         app_id: app?.getId(),
         access_token: state?.accessToken
@@ -963,7 +983,7 @@ private attemptServiceRestart(isLocal=false) {
 }
 
 private sendDeviceRefreshCmd(isLocal=false) {
-    log.trace "sendDeviceRefreshCmd: ${state?.directIP}:${state?.directPort}${isLocal ? " | (Local)" : ""}"
+    log.trace "sendDeviceRefreshCmd: ${getServerAddress()}${isLocal ? " | (Local)" : ""}"
     sendHttpPost("refreshDevices", [
         app_id: app?.getId(),
         access_token: state?.accessToken
@@ -971,7 +991,7 @@ private sendDeviceRefreshCmd(isLocal=false) {
 }
 
 private updateServicePrefs(isLocal=false) {
-    log.trace "updateServicePrefs: ${state?.directIP}:${state?.directPort}${isLocal ? " | (Local)" : ""}"
+    log.trace "updateServicePrefs: ${getServerAddress()}${isLocal ? " | (Local)" : ""}"
     sendHttpPost("updateprefs", [
         app_id: app?.getId(),
         access_token: state?.accessToken,
@@ -982,8 +1002,11 @@ private updateServicePrefs(isLocal=false) {
 
 def enableDirectUpdates() {
     // log.trace "enableDirectUpdates: ($params)"
-    state?.directIP = params?.ip
-    state?.directPort = params?.port
+    state?.pluginDetails = [
+        directIP: params?.ip,
+        directPort: params?.port,
+        version: params?.version ?: null
+    ]
     activateDirectUpdates()
     def resultJson = new groovy.json.JsonOutput().toJson({ status: 'OK'})
     render contentType: "application/json", data: resultJson
@@ -997,7 +1020,7 @@ mappings {
         path("/:id/command/:command")		{ action: [POST: "authError"] }
         path("/:id/query")					{ action: [GET: "authError"] }
         path("/:id/attribute/:attribute") 	{ action: [GET: "authError"] }
-        path("/startDirect/:ip/:port")		{ action: [GET: "authError"] }
+        path("/startDirect/:ip/:port/:version")		{ action: [GET: "authError"] }
     } else {
         path("/devices")					{ action: [GET: "getAllData"] }
         path("/config")						{ action: [GET: "renderConfig"]  }
@@ -1005,6 +1028,6 @@ mappings {
         path("/:id/command/:command")		{ action: [POST: "deviceCommand"] }
         path("/:id/query")					{ action: [GET: "deviceQuery"] }
         path("/:id/attribute/:attribute")	{ action: [GET: "deviceAttribute"] }
-        path("/startDirect/:ip/:port")		{ action: [POST: "enableDirectUpdates"] }
+        path("/startDirect/:ip/:port/:version")		{ action: [POST: "enableDirectUpdates"] }
     }
 }

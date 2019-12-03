@@ -40,28 +40,28 @@ module.exports = class MyUtils {
         };
     }
 
-    tempConversion(tempVal) {
-        if (this.temperature_unit === "C") {
-            return this.tempConversionFrom_C(tempVal);
+    thermostatTempConversion(temp, isSet = false) {
+        if (isSet) {
+            return (this.temperature_unit === 'C') ? Math.round(temp) : Math.round(temp * 1.8 + 32);
         } else {
-            return this.tempConversionFrom_F(tempVal);
+            return (this.temperature_unit === 'C') ? Math.round(temp * 10) / 10 : Math.round((temp - 32) / 1.8 * 10) / 10;
         }
     }
 
-    tempConversionFrom_F(tempVal) {
-        if (this.temperature_unit === "C") {
-            return Math.round(parseFloat(tempVal * 10) / 10, 0);
+    tempConversion(temp, onlyC = false) {
+        if (this.temperature_unit === 'C' || onlyC) {
+            return (parseFloat(temp * 10) / 10);
         } else {
-            return Math.round(parseFloat(((tempVal - 32) / 1.8) * 10) / 10, 2);
+            return (parseFloat((temp - 32) / 1.8 * 10) / 10).toFixed(2);
         }
     }
 
-    tempConversionFrom_C(tempVal) {
-        if (this.temperature_unit === "C") {
-            return tempVal;
-        } else {
-            return tempVal * 1.8 + 32;
-        }
+    cToF(temp) {
+        return (parseFloat(temp * 10) / 10);
+    }
+
+    fToC(temp) {
+        return (parseFloat((temp - 32) / 1.8 * 10) / 10);
     }
 
     fanSpeedConversion(speedVal, has4Spd = false) {

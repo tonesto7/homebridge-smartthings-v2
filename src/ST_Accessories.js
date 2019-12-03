@@ -58,8 +58,8 @@ module.exports = class ST_Accessories {
             accessory.context.uuid = accessory.UUID || this.uuid.generate(`smartthings_v2_${accessory.deviceid}`);
             accessory.getOrAddService = this.getOrAddService.bind(accessory);
             return this.initializeDeviceCharacteristics(accessory);
-        } catch (ex) {
-            this.log.error('CreateAccessoryFromHomebridgeCache Error:', ex);
+        } catch (err) {
+            this.log.error('CreateAccessoryFromHomebridgeCache Error:', err.message);
             return accessory;
         }
     }
@@ -263,7 +263,7 @@ module.exports = class ST_Accessories {
             this.log.debug(deviceGroups);
         }
         accessory = this.removeUnusedServices(prevAccessory, accessory);
-        return that.loadAccessoryData(accessory, devData) || accessory;
+        return this.loadAccessoryData(accessory, devData) || accessory;
     }
 
     processDeviceAttributeUpdate(change) {
@@ -360,9 +360,11 @@ module.exports = class ST_Accessories {
             case "hue":
                 return Math.round(val * 3.6);
             case "temperature":
+                return this.myUtils.tempConversion(val);
             case "heatingSetpoint":
             case "coolingSetpoint":
-                return this.myUtils.tempConversionFrom_F(val);
+            case "thermostatSetpoint":
+                return this.myUtils.thermostatTempConversion(val);
             case "fanSpeed":
                 return this.myUtils.fanSpeedIntToLevel(val);
             case "level":
