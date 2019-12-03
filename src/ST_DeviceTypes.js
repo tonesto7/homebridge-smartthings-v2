@@ -700,6 +700,7 @@ module.exports = class DeviceTypes {
     }
 
     thermostat(accessory) {
+        //TODO:  Still seeing an issue when setting mode from OFF to HEAT.  It's setting the temp to 40 but if I change to cool then back to heat it sets the correct value.
         let validModes = [];
         if (typeof accessory.context.deviceData.attributes.supportedThermostatModes === "string") {
             if (accessory.context.deviceData.attributes.supportedThermostatModes.includes("off")) {
@@ -795,24 +796,20 @@ module.exports = class DeviceTypes {
                     case 'cool':
                     case 'cooling':
                         temp = accessory.context.deviceData.attributes.coolingSetpoint;
-                        this.log.alert(`GetTargetTemperature | Mode: ${accessory.context.deviceData.attributes.thermostatMode} | temp: ${temp} | coolingSetpoint: ${accessory.context.deviceData.attributes.coolingSetpoint}`);
                         break;
                     case 'emergency heat':
                     case 'heat':
                     case 'heating':
                         temp = accessory.context.deviceData.attributes.heatingSetpoint;
-                        this.log.alert(`GetTargetTemperature | Mode: ${accessory.context.deviceData.attributes.thermostatMode} | temp: ${temp} | heatingSetpoint: ${accessory.context.deviceData.attributes.heatingSetpoint}`);
                         break;
                     default:
                         switch (accessory.context.deviceData.attributes.thermostatOperatingState) {
                             case 'cooling':
                             case 'cool':
                                 temp = accessory.context.deviceData.attributes.coolingSetpoint;
-                                this.log.alert(`GetTargetTemperature | Mode: ${accessory.context.deviceData.attributes.thermostatMode} | temp: ${temp} | thermostatOperatingState: ${accessory.context.deviceData.attributes.thermostatOperatingState} | coolingSetpoint: ${accessory.context.deviceData.attributes.coolingSetpoint}`);
                                 break;
                             default:
                                 temp = accessory.context.deviceData.attributes.heatingSetpoint;
-                                this.log.alert(`GetTargetTemperature | Mode: ${accessory.context.deviceData.attributes.thermostatMode} | temp: ${temp} | thermostatOperatingState: ${accessory.context.deviceData.attributes.thermostatOperatingState} | heatingSetpoint: ${accessory.context.deviceData.attributes.heatingSetpoint}`);
                                 break;
                         }
                         break;
@@ -830,7 +827,6 @@ module.exports = class DeviceTypes {
                         });
                         accessory.context.deviceData.attributes.coolingSetpoint = temp;
                         accessory.context.deviceData.attributes.thermostatSetpoint = temp;
-                        this.log.alert(`SetTargetTemperature | Mode: ${accessory.context.deviceData.attributes.thermostatMode} | temp: ${temp} | thermostatSetpoint: ${accessory.context.deviceData.attributes.thermostatSetpoint} | heatingSetpoint: ${accessory.context.deviceData.attributes.heatingSetpoint} | coolingSetpoint: ${accessory.context.deviceData.attributes.coolingSetpoint}`);
                         break;
                     case "emergency heat":
                     case "heat":
@@ -839,14 +835,12 @@ module.exports = class DeviceTypes {
                         });
                         accessory.context.deviceData.attributes.heatingSetpoint = temp;
                         accessory.context.deviceData.attributes.thermostatSetpoint = temp;
-                        this.log.alert(`SetTargetTemperature | Mode: ${accessory.context.deviceData.attributes.thermostatMode} | temp: ${temp} | thermostatSetpoint: ${accessory.context.deviceData.attributes.thermostatSetpoint} | heatingSetpoint: ${accessory.context.deviceData.attributes.heatingSetpoint} | coolingSetpoint: ${accessory.context.deviceData.attributes.coolingSetpoint}`);
                         break;
                     default:
                         this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setThermostatSetpoint", {
                             value1: temp
                         });
                         accessory.context.deviceData.attributes.thermostatSetpoint = temp;
-                        this.log.alert(`SetTargetTemperature | Mode: ${accessory.context.deviceData.attributes.thermostatMode} | temp: ${temp} | thermostatSetpoint: ${accessory.context.deviceData.attributes.thermostatSetpoint} | heatingSetpoint: ${accessory.context.deviceData.attributes.heatingSetpoint} | coolingSetpoint: ${accessory.context.deviceData.attributes.coolingSetpoint}`);
                 }
             });
         this.accessories.storeCharacteristicItem("thermostatMode", accessory.context.deviceData.deviceid, thisChar);
