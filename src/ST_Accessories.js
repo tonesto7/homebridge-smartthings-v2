@@ -364,7 +364,7 @@ module.exports = class ST_Accessories {
             case "heatingSetpoint":
             case "coolingSetpoint":
             case "thermostatSetpoint":
-                return this.myUtils.tempConversionTest(val);
+                return this.myUtils.thermostatTempConversion(val);
             case "fanSpeed":
                 return this.myUtils.fanSpeedIntToLevel(val);
             case "level":
