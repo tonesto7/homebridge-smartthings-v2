@@ -6,7 +6,8 @@
         "express": "4.17.1",
         "request-promise-native": "^1.0.8",
         "compare-versions": "^3.5.1",
-        "winston-logrotate": "^1.3.0"
+        "winston-logrotate": "^1.3.0",
+        "debounce-promise": "^3.1.2"
     },
     "devDependencies": {
         "eslint": "^6.7.2",
@@ -26,7 +27,7 @@
             "git add"
         ]
     },
-    "homepage": "https://github.com/tonesto7/homebridge-smartthings-2.0/#readme",
+    "homepage": "https://github.com/tonesto7/homebridge-smartthings-v2/#readme",
     "keywords": [
         "homebridge-plugin",
         "smartthings",

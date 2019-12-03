@@ -104,6 +104,7 @@ module.exports = class ST_Accessories {
         let isFan = (hasCapability('Fan') || hasCapability('Fan Light') || hasCapability('Fan Speed') || hasCapability('Fan Control') || hasCommand('setFanSpeed') || hasCommand('lowSpeed') || hasAttribute('fanSpeed'));
         let isWindowShade = (hasCapability('Window Shade') && (hasCommand('levelOpenClose') || hasCommand('presetPosition')));
         let isLight = (hasCapability('LightBulb') || hasCapability('Fan Light') || hasCapability('Bulb') || devData.name.includes('light'));
+        let isColorLight = (hasAttribute('saturation') || hasAttribute('hue') || hasAttribute('colorTemperature') || hasCapability("Color Control"));
         let isSpeaker = hasCapability('Speaker');
         let isSonos = (devData.manufacturerName === "Sonos");
         let isThermostat = (hasCapability('Thermostat') || hasCapability('Thermostat Operating State') || hasAttribute('thermostatOperatingState'));
@@ -117,7 +118,7 @@ module.exports = class ST_Accessories {
                     deviceGroups.push("light");
                     accessory = that.device_types.light_bulb(accessory);
                     accessory = that.device_types.light_level(accessory);
-                    if (hasCapability("Color Control")) {
+                    if (isColorLight) {
                         accessory = that.device_types.light_color(accessory);
                     }
                 }
@@ -359,6 +360,8 @@ module.exports = class ST_Accessories {
                 }
             case "hue":
                 return Math.round(val * 3.6);
+            case "colorTemperature":
+                return this.myUtils.colorTempFromK(val);
             case "temperature":
                 return this.myUtils.tempConversion(val);
             case "heatingSetpoint":
@@ -545,11 +548,3 @@ module.exports = class ST_Accessories {
         return this.getAccessoryId(accessory1) === this.getAccessoryId(accessory2);
     }
 };
-
-// eslint-disable-next-line no-unused-vars
-function clearAndSetTimeout(timeoutReference, fn, timeoutMs) {
-    if (timeoutReference) {
-        clearTimeout(timeoutReference);
-    }
-    return setTimeout(fn, timeoutMs);
-}

@@ -48,6 +48,14 @@ module.exports = class MyUtils {
         }
     }
 
+    colorTempFromK(temp) {
+        return (1000000 / temp).toFixed();
+    }
+
+    colorTempToK(temp) {
+        return (1000000 / temp).toFixed();
+    }
+
     tempConversion(temp, onlyC = false) {
         if (this.temperature_unit === 'C' || onlyC) {
             return (parseFloat(temp * 10) / 10);

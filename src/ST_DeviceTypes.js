@@ -1,3 +1,4 @@
+// const debounce = require('debounce-promise');
 var Service, Characteristic;
 
 module.exports = class DeviceTypes {
@@ -369,59 +370,64 @@ module.exports = class DeviceTypes {
     }
 
     light_color(accessory) {
-        let thisChar = accessory
-            .getOrAddService(Service.Lightbulb)
-            .getCharacteristic(Characteristic.Hue)
-            .setProps({
-                minValue: 1,
-                maxValue: 30000
-            })
-            .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('hue', accessory.context.deviceData.attributes.hue));
-            })
-            .on("set", (value, callback) => {
-                this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setHue", {
-                    value1: Math.round(value / 3.6)
+        let thisChar;
+        if (accessory.context.deviceData.attributes.hue) {
+            thisChar = accessory
+                .getOrAddService(Service.Lightbulb)
+                .getCharacteristic(Characteristic.Hue)
+                .setProps({
+                    minValue: 1,
+                    maxValue: 30000
+                })
+                .on("get", (callback) => {
+                    callback(null, this.accessories.attributeStateTransform('hue', accessory.context.deviceData.attributes.hue));
+                })
+                .on("set", (value, callback) => {
+                    this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setHue", {
+                        value1: Math.round(value / 3.6)
+                    });
+                })
+                .on("change", (obj) => {
+                    this.log_change('hue', 'Hue', accessory, obj);
                 });
-            })
-            .on("change", (obj) => {
-                this.log_change('hue', 'Hue', accessory, obj);
-            });
-        this.accessories.storeCharacteristicItem("hue", accessory.context.deviceData.deviceid, thisChar);
-
-        thisChar = accessory
-            .getOrAddService(Service.Lightbulb)
-            .getCharacteristic(Characteristic.Saturation)
-            .on("get", (callback) => {
-                callback(null, this.accessories.attributeStateTransform('saturation', accessory.context.deviceData.attributes.saturation));
-            })
-            .on("set", (value, callback) => {
-                this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setSaturation", {
-                    value1: value
+            this.accessories.storeCharacteristicItem("hue", accessory.context.deviceData.deviceid, thisChar);
+        }
+        if (accessory.context.deviceData.attributes.saturation) {
+            thisChar = accessory
+                .getOrAddService(Service.Lightbulb)
+                .getCharacteristic(Characteristic.Saturation)
+                .on("get", (callback) => {
+                    callback(null, this.accessories.attributeStateTransform('saturation', accessory.context.deviceData.attributes.saturation));
+                })
+                .on("set", (value, callback) => {
+                    this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setSaturation", {
+                        value1: value
+                    });
+                })
+                .on("change", (obj) => {
+                    this.log_change('saturation', 'Saturation', accessory, obj);
                 });
-            })
-            .on("change", (obj) => {
-                this.log_change('saturation', 'Saturation', accessory, obj);
-            });
-        this.accessories.storeCharacteristicItem("saturation", accessory.context.deviceData.deviceid, thisChar);
-
-        // if (accessory.context.deviceData.attributes.colorTemperature) {
-        //     thisChar = accessory
-        //         .getOrAddService(Service.Lightbulb)
-        //         .getCharacteristic(Characteristic.ColorTemperature)
-        //         .on("get", (callback) => {
-        //             callback(null, this.accessories.attributeStateTransform('colorTemperature', accessory.context.deviceData.attributes.colorTemperature));
-        //         })
-        //         .on("set", (value, callback) => {
-        //             this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setColorTemperature", {
-        //                 value1: value
-        //             });
-        //         })
-        //         .on("change", (obj) => {
-        //             this.change_log('colorTemperature', 'ColorTemperature', accessory, obj);
-        //         });
-        //     this.accessories.storeCharacteristicItem("colorTemperature", accessory.context.deviceData.deviceid, thisChar);
-        // }
+            this.accessories.storeCharacteristicItem("saturation", accessory.context.deviceData.deviceid, thisChar);
+        }
+        if (accessory.context.deviceData.attributes.colorTemperature) {
+            thisChar = accessory
+                .getOrAddService(Service.Lightbulb)
+                .getCharacteristic(Characteristic.ColorTemperature)
+                .on("get", (callback) => {
+                    callback(null, this.accessories.attributeStateTransform('colorTemperature', accessory.context.deviceData.attributes.colorTemperature));
+                })
+                .on("set", (value, callback) => {
+                    let temp = this.myUtils.colorTempToK(value);
+                    this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setColorTemperature", {
+                        value1: temp
+                    });
+                    accessory.context.deviceData.attributes.colorTemperature = temp;
+                })
+                .on("change", (obj) => {
+                    this.change_log('colorTemperature', 'ColorTemperature', accessory, obj);
+                });
+            this.accessories.storeCharacteristicItem("colorTemperature", accessory.context.deviceData.deviceid, thisChar);
+        }
         return accessory;
     }
 
