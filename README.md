@@ -7,18 +7,29 @@ V2 of this plugin is a complete rewrite of the homebridge-smartthings-tonesto7 p
 
 **```Latest SmartApp Version: 2.0.0```**
 
-What's New:
+### What's New for 2.0:
 
-* It is now much easier to decode, maintain and modify.
-* It is now a dynamic homebridge platform meaning it no longer requires a restart of homebridge for device changes to occur.
-* It removes devices no longer selected under SmartThings.
-* It uses the homebridge device cache to load devices meaning it will no longer remove all of your devices when the plugin fails to start for an extended period of time.
+
+#### Plugin
+* Completely rewrote the entire plugin. It's now much cleaner, easier to maintain and follow.
+* It's Faster/leaner and way more stable that previous versions.
+* It now uses Homebridges Dynamic platform API, meaning it no longer requires a restart of homebridge for device changes to occur and uses a device cache on service restart to prevent losing all of your devices when the plugin fails to start for an extended period of time.
+* It will now removes devices no longer selected under SmartThings.
 * All new logging system to provide more insight into issues and status, as well as write them to a file.
-* Faster and way more stable that previous versions.
-* Many bug fixes for devices and commands.
+* Many, many other bug fixes for devices, commands and many other items.
+* ***Important NOTICE:*** Due to the changes in the plugin api you can not directly update the plugin, you will need to add as a new accessory and set it up your devices/automations/scenes again. On a positive note you can use the same SmartApp instance though as long as you update to the latest code.***
+
+#### SmartApp
+* Cleaned up the UI and made it easier to follow and more organized.
+* Added new filter options.
+* Optimized the command/event streaming system.
+* Added duplicate device detection and cleanups.
+* Many, many other bug fixes and cleanups.
 
 ## Credits
-I used the following projects as inspiration for design and fixes:
+Big thanks for @Areson for his help/motivation in rewriting this.
+
+I also wanted to mention the following projects I referenced for inspiration for design and fixes:
 * homebridge-wink3
 * homebridge-hubconnect-hubitat
 
