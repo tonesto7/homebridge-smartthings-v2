@@ -40,6 +40,14 @@ module.exports = class MyUtils {
         };
     }
 
+    thermostatTempConversion(temp, isSet = false) {
+        if (isSet) {
+            return (this.temperature_unit === 'C') ? Math.round(temp) : Math.round(temp * 1.8 + 32);
+        } else {
+            return (this.temperature_unit === 'C') ? Math.round(temp * 10) / 10 : Math.round((temp - 32) / 1.8 * 10) / 10;
+        }
+    }
+
     tempConversionTest(temp, onlyC = false) {
         let tempIn = temp;
         if (this.temperature_unit === 'C' || onlyC) {
