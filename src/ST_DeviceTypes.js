@@ -267,15 +267,41 @@ module.exports = class DeviceTypes {
             thisChar = accessory
                 .getOrAddService(Service.Fanv2)
                 .getCharacteristic(Characteristic.RotationSpeed)
+                .setProps({
+                    minSteps: 33
+                })
                 .on("get", (callback) => {
-                    callback(null, this.accessories.attributeStateTransform("fanSpeed", accessory.context.deviceData.attributes.fanSpeed));
+                    switch (parseInt(accessory.context.deviceData.attributes.fanSpeed)) {
+                        case 0:
+                            callback(null, 0);
+                            break;
+                        case 1:
+                            callback(null, 33);
+                            break
+                        case 2:
+                            callback(null, 66);
+                            break
+                        case 3:
+                            callback(null, 100);
+                            break
+                    }
                 })
                 .on("set", (value, callback) => {
+                    let spd;
                     if (value >= 0 && value <= 100) {
-                        let spdVal = this.myUtils.fanSpeedLevelToInt(value);
+                        if (value === 0) {
+                            spd = 0
+                        } else if (value < 34) {
+                            spd = 1
+                        } else if (value < 67) {
+                            spd = 2
+                        } else {
+                            spd = 3
+                        }
                         this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setFanSpeed", {
-                            value1: parseInt(spdVal)
+                            value1: spd
                         });
+                        accessory.context.deviceData.attributes.fanSpeed = spd;
                     }
                 });
             this.accessories.storeCharacteristicItem('fanSpeed', accessory.context.deviceData.deviceid, thisChar);
@@ -291,6 +317,7 @@ module.exports = class DeviceTypes {
                         this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setLevel", {
                             value1: parseInt(value)
                         });
+                        accessory.context.deviceData.attributes.level = value;
                     }
                 });
             this.accessories.storeCharacteristicItem("level", accessory.context.deviceData.deviceid, thisChar);
