@@ -810,11 +810,7 @@ module.exports = class DeviceTypes {
                         }
                         break;
                 }
-                if (!temp) {
-                    callback("Unknown");
-                } else {
-                    callback(null, this.myUtils.tempConversionTest(temp));
-                }
+                callback(null, temp ? this.myUtils.tempConversionTest(temp) : 'Unknown');
             })
             .on("set", (value, callback) => {
                 // Convert the Celsius value to the appropriate unit for Smartthings
