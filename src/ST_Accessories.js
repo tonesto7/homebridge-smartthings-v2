@@ -263,7 +263,9 @@ module.exports = class ST_Accessories {
             this.log.debug(deviceGroups);
         }
         accessory = this.removeUnusedServices(prevAccessory, accessory);
-        return that.loadAccessoryData(accessory, devData) || accessory;
+        accessory = this.loadAccessoryData(accessory, devData) || accessory;
+        console.log(accessory);
+        return accessory;
     }
 
     processDeviceAttributeUpdate(change) {
