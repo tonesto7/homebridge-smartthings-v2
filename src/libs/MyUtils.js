@@ -56,11 +56,23 @@ module.exports = class MyUtils {
     }
 
     cToF(temp) {
-        return (parseFloat(temp * 10) / 10).toFixed(1);
+        return (parseFloat(temp * 10) / 10);
     }
 
     fToC(temp) {
-        return (parseFloat((temp - 32) / 1.8 * 10) / 10).toFixed(1);
+        return (parseFloat((temp - 32) / 1.8 * 10) / 10);
+    }
+
+    // Assumes Temp Coming In is FAHRENHEIT
+    tempConversionTest(temp, onlyC = false) {
+        let tempIn = temp;
+        if (this.temperature_unit === 'C' || onlyC) {
+            temp = (parseFloat(temp * 10) / 10);
+        } else {
+            temp = (parseFloat((temp - 32) / 1.8 * 10) / 10).toFixed(2);
+        }
+        console.log(`tempConversion(${tempIn}) | Unit: ${this.temperature_unit}`, temp);
+        return temp;
     }
 
     fanSpeedConversion(speedVal, has4Spd = false) {

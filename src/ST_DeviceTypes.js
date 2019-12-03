@@ -92,20 +92,7 @@ module.exports = class DeviceTypes {
 
     button(accessory) {
         // New STATELESS BUTTON LOGIC (By @shnhrrsn)
-        let thisChar = accessory
-            .getOrAddService(Service.StatelessProgrammableSwitch)
-            .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
-            .on("get", (callback) => {
-                // Reset value to force `change` to fire for repeated presses
-                this.value = -1;
-                callback(null, this.accessories.attributeStateTransform('button', accessory.context.deviceData.attributes.button));
-            })
-            .on("change", (obj) => {
-                this.log_change('button', 'ProgrammableSwitchEvent', accessory, obj);
-            });
-
-        const validValues = [];
-
+        let validValues = [];
         if (typeof accessory.context.deviceData.attributes.supportedButtonValues === "string") {
             for (const value of JSON.parse(accessory.context.deviceData.attributes.supportedButtonValues)) {
                 switch (value) {
@@ -122,11 +109,21 @@ module.exports = class DeviceTypes {
                         this.log.info("Button: (" + accessory.name + ") unsupported button value: " + value);
                 }
             }
-
-            thisChar.setProps({
-                validValues
-            });
         }
+        let thisChar = accessory
+            .getOrAddService(Service.StatelessProgrammableSwitch)
+            .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
+            .setProps({
+                validValues
+            })
+            .on("get", (callback) => {
+                // Reset value to force `change` to fire for repeated presses
+                this.value = -1;
+                callback(null, this.accessories.attributeStateTransform('button', accessory.context.deviceData.attributes.button));
+            })
+            .on("change", (obj) => {
+                this.log_change('button', 'ProgrammableSwitchEvent', accessory, obj);
+            });
 
         // Turned on by default for Characteristic.ProgrammableSwitchEvent, required to emit `change`
         thisChar.eventOnlyCharacteristic = false;
@@ -681,7 +678,7 @@ module.exports = class DeviceTypes {
                 maxValue: 200
             })
             .on("get", (callback) => {
-                callback(null, this.myUtils.tempConversion(accessory.context.deviceData.attributes.temperature));
+                callback(null, this.myUtils.tempConversionTest(accessory.context.deviceData.attributes.temperature));
             })
             .on("change", (obj) => {
                 this.log_change('temperature', 'CurrentTemperature', accessory, obj);
@@ -706,53 +703,20 @@ module.exports = class DeviceTypes {
         let validModes = [];
         if (typeof accessory.context.deviceData.attributes.supportedThermostatModes === "string") {
             if (accessory.context.deviceData.attributes.supportedThermostatModes.includes("off")) {
-                validModes.push(0);
+                validModes.push(Characteristic.TargetHeatingCoolingState.OFF);
             }
             if (accessory.context.deviceData.attributes.supportedThermostatModes.includes("heat") || accessory.context.deviceData.attributes.supportedThermostatModes.includes("emergency heat")) {
-                validModes.push(1);
+                validModes.push(Characteristic.TargetHeatingCoolingState.HEAT);
             }
             if (accessory.context.deviceData.attributes.supportedThermostatModes.includes("cool")) {
-                validModes.push(2);
+                validModes.push(Characteristic.TargetHeatingCoolingState.COOL);
             }
             if (accessory.context.deviceData.attributes.supportedThermostatModes.includes("auto")) {
-                validModes.push(3);
+                validModes.push(Characteristic.TargetHeatingCoolingState.AUTO);
             }
         }
 
         let thisChar = accessory
-            .getOrAddService(Service.Thermostat)
-            .getCharacteristic(Characteristic.TemperatureDisplayUnits)
-            .on("get", (callback) => {
-                callback(null, (this.temperature_unit === 'F') ? Characteristic.TemperatureDisplayUnits.FAHRENHEIT : Characteristic.TemperatureDisplayUnits.CELSIUS);
-            });
-        this.accessories.storeCharacteristicItem("temperature_unit", accessory.context.deviceData.deviceid, thisChar);
-
-        if (accessory.context.deviceData.capabilities["Relative Humidity Measurement"]) {
-            thisChar = accessory
-                .getOrAddService(Service.Thermostat)
-                .getCharacteristic(Characteristic.CurrentRelativeHumidity)
-                .on("get", (callback) => {
-                    callback(null, parseInt(accessory.context.deviceData.attributes.humidity));
-                });
-            this.accessories.storeCharacteristicItem("humidity", accessory.context.deviceData.deviceid, thisChar);
-        }
-
-        // Defines the Thermostats Current Ambient Temperature
-        thisChar = accessory
-            .getOrAddService(Service.Thermostat)
-            .getCharacteristic(Characteristic.CurrentTemperature)
-            .setProps({
-                minValue: this.myUtils.tempConversion(0, 'C'),
-                maxValue: this.myUtils.tempConversion(35, 'C'),
-                minStep: (this.temperature_unit === 'F') ? 1.0 : 0.5
-            })
-            .on("get", (callback) => {
-                callback(null, this.myUtils.tempConversion(accessory.context.deviceData.attributes.temperature));
-            });
-        this.accessories.storeCharacteristicItem("temperature", accessory.context.deviceData.deviceid, thisChar);
-
-        // Defines the Thermostats Current Operating State
-        thisChar = accessory
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.CurrentHeatingCoolingState)
             .on("get", (callback) => {
@@ -760,10 +724,13 @@ module.exports = class DeviceTypes {
             });
         this.accessories.storeCharacteristicItem("thermostatOperatingState", accessory.context.deviceData.deviceid, thisChar);
 
-        // Handle the Target Heating Cooling State
+        // Handle the Target State
         thisChar = accessory
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.TargetHeatingCoolingState)
+            .setProps({
+                validValues: validModes
+            })
             .on("get", (callback) => {
                 callback(null, this.accessories.attributeStateTransform('thermostatMode', accessory.context.deviceData.attributes.thermostatMode));
             })
@@ -774,7 +741,7 @@ module.exports = class DeviceTypes {
                         state = "cool";
                         break;
                     case Characteristic.TargetHeatingCoolingState.HEAT:
-                        state = "heat";
+                        state = "ofheatf";
                         break;
                     case Characteristic.TargetHeatingCoolingState.AUTO:
                         state = "auto";
@@ -788,24 +755,43 @@ module.exports = class DeviceTypes {
                 });
                 accessory.context.deviceData.attributes.thermostatMode = state;
             });
+
         this.accessories.storeCharacteristicItem("thermostatMode", accessory.context.deviceData.deviceid, thisChar);
+
+        if (accessory.context.deviceData.capabilities["Relative Humidity Measurement"]) {
+            thisChar = accessory
+                .getOrAddService(Service.Thermostat)
+                .getCharacteristic(Characteristic.CurrentRelativeHumidity)
+                .on("get", (callback) => {
+                    this.log.alert('get Humidity: ', accessory.context.deviceData.attributes.humidity);
+                    callback(null, parseInt(accessory.context.deviceData.attributes.humidity));
+                });
+            this.accessories.storeCharacteristicItem("humidity", accessory.context.deviceData.deviceid, thisChar);
+        }
+
+        thisChar = accessory
+            .getOrAddService(Service.Thermostat)
+            .getCharacteristic(Characteristic.CurrentTemperature)
+            .on("get", (callback) => {
+                this.log.alert('get CurrentTemperature: ', this.myUtils.tempConversionTest(accessory.context.deviceData.attributes.temperature));
+                callback(null, this.myUtils.tempConversionTest(accessory.context.deviceData.attributes.temperature));
+            });
+        this.accessories.storeCharacteristicItem("temperature", accessory.context.deviceData.deviceid, thisChar);
 
         thisChar = accessory
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.TargetTemperature)
             .setProps({
-                minValue: this.myUtils.tempConversion(0, 'C'),
-                maxValue: this.myUtils.tempConversion(35, 'C'),
-                minStep: (this.temperature_unit === 'F') ? 1.0 : 0.5
+                minValue: 0,
+                maxValue: 35,
+                minSteps: (this.temperature_unit === 'F') ? 1.0 : 0.5
             })
             .on("get", (callback) => {
                 let temp;
-                // let useHeat = (accessory.context.deviceData.attributes.thermostatMode === 'heat' && accessory.context.deviceData.attributes.temperature < this.targetTemperature) || (this.targetHeatingCoolingState === Characteristic.TargetHeatingCoolingState.AUTO && this.currentTemperature < this.heatingThresholdTemperature);
-                // let useCool = (this.targetHeatingCoolingState === Characteristic.TargetHeatingCoolingState.COOL && this.currentTemperature > this.targetTemperature) || (this.targetHeatingCoolingState === Characteristic.TargetHeatingCoolingState.AUTO && this.currentTemperature > this.coolingThresholdTemperature);
                 switch (accessory.context.deviceData.attributes.thermostatMode) {
                     case 'cool':
                     case 'cooling':
-                        temp = accessory.context.deviceData.attributes.coolingSetpoint;
+                        temp = accessory.context.deviceData.coolingSetpoint;
                         break;
                     case 'emergency heat':
                     case 'heat':
@@ -813,7 +799,7 @@ module.exports = class DeviceTypes {
                         temp = accessory.context.deviceData.attributes.heatingSetpoint;
                         break;
                     default:
-                        switch (accessory.context.deviceData.attributes.thermostatOperatingState) {
+                        switch (accessory.context.deviceData.thermostatOperatingState) {
                             case 'cooling':
                             case 'cool':
                                 temp = accessory.context.deviceData.attributes.coolingSetpoint;
@@ -827,14 +813,16 @@ module.exports = class DeviceTypes {
                 if (!temp) {
                     callback("Unknown");
                 } else {
-                    callback(null, this.myUtils.tempConversion(temp));
+                    callback(null, this.myUtils.tempConversionTest(temp));
                 }
             })
             .on("set", (value, callback) => {
                 // Convert the Celsius value to the appropriate unit for Smartthings
-                let temp = this.myUtils.tempConversion(value, 'C');
+                let temp = this.myUtils.tempConversionTest(value, true);
+                // Set the appropriate temperature unit based on the mode
                 switch (accessory.context.deviceData.attributes.thermostatMode) {
                     case "cool":
+                        this.log.notice('set cool TargetTemperature', temp);
                         this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setCoolingSetpoint", {
                             value1: temp
                         });
@@ -862,17 +850,26 @@ module.exports = class DeviceTypes {
 
         thisChar = accessory
             .getOrAddService(Service.Thermostat)
+            .getCharacteristic(Characteristic.TemperatureDisplayUnits)
+            .on("get", (callback) => {
+                callback(null, (this.temperature_unit === 'F') ? Characteristic.TemperatureDisplayUnits.FAHRENHEIT : Characteristic.TemperatureDisplayUnits.CELSIUS);
+            });
+        this.accessories.storeCharacteristicItem("temperature_unit", "platform", thisChar);
+
+        thisChar = accessory
+            .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.HeatingThresholdTemperature)
             .setProps({
-                minValue: this.myUtils.tempConversion(0, 'C'),
-                maxValue: this.myUtils.tempConversion(35, 'C'),
-                minStep: (this.temperature_unit === 'F') ? 1.0 : 0.5
+                minValue: 0,
+                maxValue: 35,
+                minSteps: (this.temperature_unit === 'F') ? 1.0 : 0.5
             })
             .on("get", (callback) => {
-                callback(null, this.myUtils.tempConversion(accessory.context.deviceData.attributes.heatingSetpoint));
+                callback(null, this.myUtils.tempConversionTest(accessory.context.deviceData.attributes.heatingSetpoint));
             })
             .on("set", (value, callback) => {
-                let temp = this.myUtils.tempConversion(value, 'C');
+                // Convert the Celsius value to the appropriate unit for Smartthings
+                let temp = this.myUtils.tempConversionTest(value, true);
                 this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setHeatingSetpoint", {
                     value1: temp
                 });
@@ -884,16 +881,16 @@ module.exports = class DeviceTypes {
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.CoolingThresholdTemperature)
             .setProps({
-                minValue: this.myUtils.tempConversion(0, 'C'),
-                maxValue: this.myUtils.tempConversion(35, 'C'),
-                minStep: (this.temperature_unit === 'F') ? 1.0 : 0.5
+                minValue: 0,
+                maxValue: 35,
+                minSteps: (this.temperature_unit === 'F') ? 1.0 : 0.5
             })
             .on("get", (callback) => {
-                callback(null, this.myUtils.tempConversion(accessory.context.deviceData.attributes.coolingSetpoint));
+                callback(null, this.myUtils.tempConversionTest(accessory.context.deviceData.attributes.coolingSetpoint));
             })
             .on("set", (value, callback) => {
                 // Convert the Celsius value to the appropriate unit for Smartthings
-                let temp = this.myUtils.tempConversion(value, 'C');
+                let temp = this.myUtils.tempConversionTest(value, true);
                 this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setCoolingSetpoint", {
                     value1: temp
                 });
@@ -1050,4 +1047,6 @@ module.exports = class DeviceTypes {
             .setCharacteristic(Characteristic.PositionState, Characteristic.PositionState.STOPPED);
         return accessory;
     }
+
+
 };
