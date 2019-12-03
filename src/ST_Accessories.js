@@ -362,7 +362,7 @@ module.exports = class ST_Accessories {
             case "temperature":
             case "heatingSetpoint":
             case "coolingSetpoint":
-                return this.myUtils.tempConversion(val);
+                return this.myUtils.tempConversionTest(val);
             case "fanSpeed":
                 return this.myUtils.fanSpeedIntToLevel(val);
             case "level":

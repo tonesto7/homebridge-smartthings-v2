@@ -40,21 +40,6 @@ module.exports = class MyUtils {
         };
     }
 
-    tempConversion(temp, unitIn = undefined, unitOut = undefined) {
-        // let tempIn = temp;
-        if (unitIn === undefined) unitIn = this.temperature_unit;
-        if (unitOut === undefined) unitOut = this.temperature_unit;
-        if (unitIn === 'C' && unitOut === 'F') {
-            temp = this.cToF(temp);
-        } else if (unitIn === 'F' && unitOut === 'C') {
-            temp = this.fToC(temp);
-        } else {
-            temp = parseFloat(temp).toFixed(1);
-        }
-        // console.log(`tempConversion(${unitIn}) | tempIn: ${tempIn}  | tempOut: ${temp} | src: ${src}`);
-        return temp;
-    }
-
     cToF(temp) {
         return (parseFloat(temp * 10) / 10);
     }
