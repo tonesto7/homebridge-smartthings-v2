@@ -790,7 +790,6 @@ module.exports = class DeviceTypes {
                 minSteps: (this.temperature_unit === 'F') ? 1.0 : 0.5
             })
             .on("get", (callback) => {
-                this.log.alert('Target Temp Get');
                 let temp;
                 switch (accessory.context.deviceData.attributes.thermostatMode) {
                     case 'cool':
@@ -819,7 +818,6 @@ module.exports = class DeviceTypes {
             .on("set", (value, callback) => {
                 // Convert the Celsius value to the appropriate unit for Smartthings
                 let temp = this.myUtils.thermostatTempConversion(value, true);
-                // Set the appropriate temperature unit based on the mode
                 switch (accessory.context.deviceData.attributes.thermostatMode) {
                     case "cool":
                         this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setCoolingSetpoint", {
