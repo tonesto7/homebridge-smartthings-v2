@@ -1,20 +1,21 @@
 # homebridge-smartthings-v2
+
+## About
 V2 of this plugin is a complete rewrite of the homebridge-smartthings-tonesto7 plugin using modern Javascript structure using classes, promises, arrow functions.
 
 [![npm version](https://badge.fury.io/js/homebridge-smartthings-v2.svg)](https://badge.fury.io/js/homebridge-smartthings-v2)
 
-**```Current SmartApp version: 2.0.0```**
+**```Latest SmartApp Version: 2.0.0```**
 
-What's new:
+What's New:
 
 * It is now much easier to decode, maintain and modify.
 * It is now a dynamic homebridge platform meaning it no longer requires a restart of homebridge for device changes to occur.
-* It removes devices no longer selected under smartthings.
+* It removes devices no longer selected under SmartThings.
 * It uses the homebridge device cache to load devices meaning it will no longer remove all of your devices when the plugin fails to start for an extended period of time.
 * All new logging system to provide more insight into issues and status, as well as write them to a file.
 * Faster and way more stable that previous versions.
-* Many bug fixes for devices and commands
-
+* Many bug fixes for devices and commands.
 
 ## Credits
 I used the following projects as inspiration for design and fixes:
@@ -25,7 +26,7 @@ I used the following projects as inspiration for design and fixes:
 
 ### SmartThing App:
 
-***v2.0.0*** - Updated to support v2.0 of the plugin, cleaner layout, tons, of optimizations, and many bugfixes;
+***v2.0.0*** - Updated to support v2.0 of the plugin, cleaner layout, tons of optimizations, and many bugfixes;
 
 ### Homebridge Plugin:
 
@@ -71,11 +72,11 @@ _Note to users updating from homebridge-smartthings-tonesto7: You can continue t
 * Click on <u><b>```My SmartApps```</b></u>
 * Click on Settings and Add the New repository:
    * Owner: <u>```tonesto7```</u>
-   * Name: <u>```homebridge-v2```</u>
+   * Name: <u>```homebridge-smartthings-v2```</u>
    * Branch: <u>```master```</u>
    * Click <u><b>```Save```</b></u>.
 * Click <u><b>```Update From Repo```</b></u>
-   * Select <u>```homebridge-v2```</u>
+   * Select <u>```homebridge-smartthings-v2```</u>
 * You should have <u>homebridge-v2.groovy</u> in the New section.
    * Check the Box next to <u>```homebridge-v2.groovy```</u>
    * Check <u><b>```Publish```</b></u> at the bottom
@@ -92,7 +93,7 @@ _Note to users updating from homebridge-smartthings-tonesto7: You can continue t
 
 * In the [SmartThings Classic Mobile App](https://apps.apple.com/app/smartthings-classic/id590800740), goto <u>```Marketplace```</u> and select <u>```SmartApps```</u>.
 * At the bottom of the list, select <u>```My Apps```</u>
-* Select <u>```Homebridge (SmartThings)```</u> from the choices on thelist.
+* Select <u>```Homebridge v2```</u> from the choices on thelist.
 * Configuring the App:
 
    <u>There are 4 inputs at the top that can be used to force a device to be discovered as a specific type in HomeKit</u>
@@ -113,6 +114,9 @@ _Note to users updating from homebridge-smartthings-tonesto7: You can continue t
 
 ## 3. Homebridge Plugin Installation:
 
+***NOTICE:*** I highly recommend installing the plugin [homebridge-config-ui-x](https://github.com/oznu/homebridge-config-ui-x) to manage your homebridge instance and configs. This will allow you to use the web based form to configure this plugin.
+
+
  1. Install homebridge using: ```npm i -g homebridge``` (For Homebridge Install: [Homebridge Instructions](https://github.com/nfarina/homebridge/blob/master/README.md))
  2. Install SmartThings plugin using: ```npm i -g homebridge-smartthings-v2```
  3. Update your configuration file. See sample config.json snippet below.
@@ -125,8 +129,8 @@ _Note to users updating from homebridge-smartthings-tonesto7: You can continue t
       "platform": "SmartThings-v2",
       "name": "SmartThings-v2",
       "app_url": "https://graph.api.smartthings.com:443/api/smartapps/installations/",
-      "app_id": "ffc2dd6e-6fa5-48a9-b274-35c4185dd9ac",
-      "access_token": "1888d2bc-7792-4114-9f32-e4724e388a26",
+      "app_id": "ffc2dd6e-6fa5-48a9-b274-35c4185ed9ac",
+      "access_token": "1888d2bc-7792-1114-9f32-e4724e388a26",
       "direct": true,
       "direct_port": 8000,
       "excluded_capabilities": {
@@ -190,6 +194,14 @@ _Note to users updating from homebridge-smartthings-tonesto7: You can continue t
      - <u>level</u><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `good`</i></small><br>
      Defines the log entry levels that are written to the file. `good`(recommended) is the default which will write all necessary entries.
    </p>
+
+## Frequently Asked Question:
+
+ ***Q:*** Can this support Samsung Washer, Dryers, Window AC, Robot Vacuum's<br>
+ ***A:*** Not in the way you hoped. There are no characteristics in Homekit to allow it beyond simple On/Off Switches
+
+ ***Q:*** Can this support Axis Blinds<br>
+ ***A:*** Maybe, I can support any device that has windowShade capability and/or level attributes
 
 
 ## DONATIONS:

@@ -2,7 +2,7 @@
     "pluginAlias": "SmartThings-v2",
     "pluginType": "platform",
     "singular": true,
-    "footerDisplay": "For help/issues [issues](https://github.com/tonesto7/homebridge-smartthings-v2/issues).",
+    "footerDisplay": "If you need help or have issues visit: [issues](https://github.com/tonesto7/homebridge-smartthings-v2/issues)",
     "schema": {
         "name": {
             "title": "Name",
@@ -40,7 +40,98 @@
             "description": "This is the port that the plugin will listen on for traffic from your hub. Make sure your firewall allows incoming traffic on this port from your hub's IP address.",
             "type": "integer",
             "maximum": 65535,
-            "required": false
+            "default": 8000,
+            "required": true
+        },
+        "logConfig": {
+            "type": "object",
+            "properties": {
+                "debug": {
+                    "title": "Enable Debug logging?",
+                    "description": "This will show just about every log output available.",
+                    "type": "boolean",
+                    "required": false,
+                    "default": false
+                },
+                "showChanges": {
+                    "title": "Show Device Events in the Logs?",
+                    "description": "This will log device event changes received by SmartThings.",
+                    "type": "boolean",
+                    "required": false,
+                    "default": true
+                },
+                "hideTimestamp": {
+                    "title": "Hide TimeStamp Prefix inLogs?",
+                    "description": "This will remove the prefix from all console log output.",
+                    "type": "boolean",
+                    "required": false,
+                    "default": true
+                },
+                "hideNamePrefix": {
+                    "title": "Hide Plugin Name Prefix in Logs?",
+                    "description": "This will remove the prefix from all console log output.",
+                    "type": "boolean",
+                    "required": false,
+                    "default": true
+                },
+                "file": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "title": "Enable Logging to file",
+                            "description": "This log will be created as homebridge-smartthings-v2.log in the same folder as this config.json file.",
+                            "type": "boolean",
+                            "required": false,
+                            "default": true
+                        },
+                        "level": {
+                            "title": "Log File Output Level",
+                            "type": "string",
+                            "default": "good",
+                            "oneOf": [{
+                                    "title": "Debug",
+                                    "enum": [
+                                        "debug"
+                                    ]
+                                },
+                                {
+                                    "title": "Good",
+                                    "enum": [
+                                        "good"
+                                    ]
+                                },
+                                {
+                                    "title": "Notice",
+                                    "enum": [
+                                        "pink"
+                                    ]
+                                },
+                                {
+                                    "title": "Alert",
+                                    "enum": [
+                                        "alert"
+                                    ]
+                                },
+                                {
+                                    "title": "Warnings",
+                                    "enum": [
+                                        "warn"
+                                    ]
+                                },
+                                {
+                                    "title": "Errors",
+                                    "enum": [
+                                        "error"
+                                    ]
+                                }
+                            ],
+                            "required": false
+                        }
+
+                    }
+                }
+            }
         }
+
     }
 }
