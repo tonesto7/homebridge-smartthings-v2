@@ -772,6 +772,11 @@ module.exports = class DeviceTypes {
         thisChar = accessory
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.CurrentTemperature)
+            .setProps({
+                minValue: this.myUtils.tempConversionTest(40),
+                maxValue: this.myUtils.tempConversionTest(90),
+                minSteps: (this.temperature_unit === 'F') ? 1.0 : 0.5
+            })
             .on("get", (callback) => {
                 this.log.alert('get CurrentTemperature: ', this.myUtils.tempConversionTest(accessory.context.deviceData.attributes.temperature));
                 callback(null, this.myUtils.tempConversionTest(accessory.context.deviceData.attributes.temperature));
@@ -782,8 +787,8 @@ module.exports = class DeviceTypes {
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.TargetTemperature)
             .setProps({
-                minValue: 0,
-                maxValue: 35,
+                minValue: this.myUtils.tempConversionTest(40),
+                maxValue: this.myUtils.tempConversionTest(90),
                 minSteps: (this.temperature_unit === 'F') ? 1.0 : 0.5
             })
             .on("get", (callback) => {
@@ -856,8 +861,8 @@ module.exports = class DeviceTypes {
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.HeatingThresholdTemperature)
             .setProps({
-                minValue: 0,
-                maxValue: 35,
+                minValue: this.myUtils.tempConversionTest(40),
+                maxValue: this.myUtils.tempConversionTest(90),
                 minSteps: (this.temperature_unit === 'F') ? 1.0 : 0.5
             })
             .on("get", (callback) => {
@@ -877,8 +882,8 @@ module.exports = class DeviceTypes {
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.CoolingThresholdTemperature)
             .setProps({
-                minValue: 0,
-                maxValue: 35,
+                minValue: this.myUtils.tempConversionTest(40),
+                maxValue: this.myUtils.tempConversionTest(90),
                 minSteps: (this.temperature_unit === 'F') ? 1.0 : 0.5
             })
             .on("get", (callback) => {
