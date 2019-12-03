@@ -678,7 +678,7 @@ module.exports = class DeviceTypes {
                 maxValue: 200
             })
             .on("get", (callback) => {
-                callback(null, this.myUtils.tempConversionTest(accessory.context.deviceData.attributes.temperature));
+                callback(null, this.myUtils.tempConversion(accessory.context.deviceData.attributes.temperature));
             })
             .on("change", (obj) => {
                 this.log_change('temperature', 'CurrentTemperature', accessory, obj);
