@@ -239,7 +239,6 @@ module.exports = class DeviceTypes {
     }
 
     fan(accessory) {
-        this.log.alert('Fan Switch');
         let thisChar = accessory
             .getOrAddService(Service.Fanv2)
             .getCharacteristic(Characteristic.Active)
@@ -262,10 +261,9 @@ module.exports = class DeviceTypes {
                 callback(null, curState);
             });
         this.accessories.storeCharacteristicItem("switch", accessory.context.deviceData.deviceid, thisChar);
-        this.log.info(accessory.context.deviceData);
-        //Uses the fanSpeed Attribute and Command instead of level when avail
+
         if (this.hasAttribute('fanSpeed', accessory) && this.hasCommand('setFanSpeed', accessory)) {
-            this.log.alert('Fan Using FanSpeed');
+            //Uses the fanSpeed Attribute and Command instead of level when avail
             thisChar = accessory
                 .getOrAddService(Service.Fanv2)
                 .getCharacteristic(Characteristic.RotationSpeed)
@@ -274,15 +272,14 @@ module.exports = class DeviceTypes {
                 })
                 .on("set", (value, callback) => {
                     if (value >= 0 && value <= 100) {
-                        let spdVal = this.myUtils.fanSpeedLevelToInt(parseInt(value));
+                        let spdVal = this.myUtils.fanSpeedLevelToInt(value);
                         this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setFanSpeed", {
-                            value1: spdVal
+                            value1: parseInt(spdVal)
                         });
                     }
                 });
             this.accessories.storeCharacteristicItem('fanSpeed', accessory.context.deviceData.deviceid, thisChar);
         } else if (this.hasAttribute('level', accessory)) {
-            this.log.alert('Fan Using Level');
             thisChar = accessory
                 .getOrAddService(Service.Fanv2)
                 .getCharacteristic(Characteristic.RotationSpeed)
