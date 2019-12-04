@@ -4,13 +4,14 @@
  *  Copyright 2018, 2019, 2020 Anthony Santilli
  */
 
-String appVersion()         { return "2.0.1" }
-String appModified()         { return "12-04-2019" }
-String branch()             { return "master" }
-String platform()           { return "SmartThings" }
-String pluginName()         { return "${platform()}-v2" }
-String appIconUrl()         { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/${branch()}/images/hb_tonesto7@2x.png" }
+String appVersion()                     { return "2.0.1" }
+String appModified()                    { return "12-04-2019" }
+String branch()                         { return "master" }
+String platform()                       { return "SmartThings" }
+String pluginName()                     { return "${platform()}-v2" }
+String appIconUrl()                     { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/${branch()}/images/hb_tonesto7@2x.png" }
 String getAppImg(imgName, ext=".png")   { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/${branch()}/images/${imgName}${ext}" }
+Map minVersions()                       { return [plugin: 201] } //These values define the minimum versions of code this app will work with.
 
 definition(
     name: "Homebridge v2",
@@ -64,15 +65,6 @@ def startPage() {
     if(showChgLogOk()) { return changeLogPage() }
     else if(showDonationOk()) { return donationPage() }
     else { return mainPage() }
-}
-
-def appInfoSect() {
-    section() {
-        String str = "Version: v${appVersion()}"
-        str += state?.pluginDetails?.version ? "\nPlugin: v${state?.pluginDetails?.version}" : ""
-        str += state?.pluginUpdates != null ? " (${(state?.pluginUpdates?.hasUpdate == true) ? "Update Available: v${state?.pluginUpdates?.newVersion}" : "Up-to-Date"})" : ""
-        href "changeLogPage", title: "${app?.name}", description: str, image: appIconUrl()
-    }
 }
 
 def mainPage() {
@@ -312,7 +304,7 @@ private subscribeToEvts() {
     runIn(4, "registerDevices_2")
     runIn(6, "registerDevices_3")
     log.info "--------------------------------------"
-    log.info "Registered (${getDeviceCnt()} Devices)"
+    log.info "Starting Device Subscription Process"
     log.info "--------------------------------------"
     if(settings?.addSecurityDevice) {
         subscribe(location, "alarmSystemStatus", changeHandler)
@@ -334,7 +326,7 @@ private subscribeToEvts() {
 private healthCheck() {
     checkVersionData()
     if(checkIfCodeUpdated()) {
-        logWarn("Code Version Change Detected... Health Check will occur on next cycle.")
+        log.warn("Code Version Change Detected... Health Check will occur on next cycle.")
         return
     }
 }
@@ -353,7 +345,7 @@ private checkIfCodeUpdated() {
                 iData["shownDonation"] = false
             }
             atomicState?.installData = iData
-            log.info("Code Version Change Detected... | Re-Initializing SmartApp in 5 seconds | Changes: ${chgs}")
+            log.info("Code Version Change Detected... | Re-Initializing SmartApp in 5 seconds")
             return true
         }
     }
@@ -597,7 +589,7 @@ def lanEventHandler(evt) {
                                     directIP: msgData?.ip,
                                     directPort: msgData?.port,
                                 ]
-                                updCodeVerMap("mainApp", msgData?.version ?: null)
+                                updCodeVerMap("plugin", msgData?.version ?: null)
                                 activateDirectUpdates(true)
                                 break
                         }
@@ -831,6 +823,9 @@ def registerDevices_3() {
         if(showDebugLogs) log.debug "Registering (${settings?."${k}"?.size() ?: 0}) ${v}"
         registerChangeHandler(settings?."${k}")
     }
+    log.info "--------------------------------------"
+    log.info "Registered (${getDeviceCnt()} Devices)"
+    log.info "--------------------------------------"
 }
 
 Boolean isDeviceInInput(setKey, devId) {
@@ -1074,6 +1069,7 @@ private updateServicePrefs(isLocal=false) {
 def pluginStatus() {
     def body = request.JSON;
     state?.pluginUpdates = [hasUpdate: (body?.hasUpdate == true), newVersion: (body?.newVersion ?: null)]
+    if(body?.version) { updCodeVerMap("plugin", body?.version)}
     def resultJson = new groovy.json.JsonOutput().toJson({ status: 'OK'})
     render contentType: "application/json", data: resultJson
 }
@@ -1084,7 +1080,7 @@ def enableDirectUpdates() {
         directIP: params?.ip,
         directPort: params?.port
     ]
-    updCodeVerMap("mainApp", params?.version ?: null)
+    updCodeVerMap("plugin", params?.version ?: null)
     activateDirectUpdates()
     updTsVal("lastDirectUpdsEnabled")
     def resultJson = new groovy.json.JsonOutput().toJson({ status: 'OK'})
@@ -1113,10 +1109,78 @@ mappings {
     }
 }
 
+def appInfoSect() {
+    Map codeVer = state?.codeVersions ?: null
+    Boolean isNote = false
+    section() {
+        String str = "Version: v${appVersion()}"
+        str += state?.pluginDetails?.version ? "\nPlugin: v${state?.pluginDetails?.version}" : ""
+        str += (state?.pluginDetails?.version && state?.pluginUpdates) ? " (${(state?.pluginUpdates?.hasUpdate == true) ? "Update Available: v${state?.pluginUpdates?.newVersion}" : "Up-to-Date"})" : ""
+        href "changeLogPage", title: "${app?.name}", description: str, image: appIconUrl()
+        Map minUpdMap = getMinVerUpdsRequired()
+        List codeUpdItems = codeUpdateItems(true)
+        if(minUpdMap?.updRequired && minUpdMap?.updItems?.size()) {
+            isNote=true
+            String str3 = "Updates Required:"
+            minUpdMap?.updItems?.each { item-> str3 += bulletItem(str3, item)  }
+            paragraph str3, required: true, state: null
+            paragraph "If you just updated the code please press Done/Save to let the app process the changes.", required: true, state: null
+        } else if(codeUpdItems?.size()) {
+            isNote=true
+            String str2 = "Code Updates Available:"
+            codeUpdItems?.each { item-> str2 += bulletItem(str2, item) }
+            paragraph str2, required: true, state: null
+        }
+        if(!isNote) { paragraph "No Issues to Report" }
+    }
+}
+
 /**********************************************
         APP HELPER FUNCTIONS
 ***********************************************/
+String bulletItem(String inStr, String strVal) { return "${inStr == "" ? "" : "\n"} \u2022 ${strVal}" }
+String dashItem(String inStr, String strVal, newLine=false) { return "${(inStr == "" && !newLine) ? "" : "\n"} - ${strVal}" }
 String textDonateLink() { return "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RVFJTG8H86SK8&source=url" }
+Integer versionStr2Int(str) { return str ? str.toString()?.replaceAll("\\.", "")?.toInteger() : null }
+Boolean codeUpdIsAvail(String newVer, String curVer, String type) {
+    Boolean result = false
+    def latestVer
+    if(newVer && curVer) {
+        List versions = [newVer, curVer]
+        if(newVer != curVer) {
+            latestVer = versions?.max { a, b ->
+                List verA = a?.tokenize('.'); List verB = b?.tokenize('.'); Integer commonIndices = Math.min(verA?.size(), verB?.size());
+                for (int i = 0; i < commonIndices; ++i) { if(verA[i]?.toInteger() != verB[i]?.toInteger()) { return verA[i]?.toInteger() <=> verB[i]?.toInteger() }; }
+                verA?.size() <=> verB?.size()
+            }
+            result = (latestVer == newVer) ? true : false
+        }
+    }
+    return result
+}
+Boolean appUpdAvail() { return (state?.appData?.versions && state?.codeVersions?.mainApp && codeUpdIsAvail(state?.appData?.versions?.mainApp, appVersion(), "main_app")) }
+Boolean pluginUpdAvail() { return (state?.appData?.versions && state?.codeVersions?.plugin && codeUpdIsAvail(state?.appData?.versions?.plugin, state?.codeVersions?.plugin, "plugin")) }
+private Map getMinVerUpdsRequired() {
+    Boolean updRequired = false
+    List updItems = []
+    Map codeItems = [plugin: "Homebridge Plugin"]
+    Map codeVers = state?.codeVersions ?: [:]
+    codeVers?.each { k,v->
+        if(codeItems?.containsKey(k as String) && v != null && (versionStr2Int(v) < minVersions()[k as String])) { updRequired = true; updItems?.push(codeItems[k]); }
+    }
+    return [updRequired: updRequired, updItems: updItems]
+}
+
+private List codeUpdateItems(shrt=false) {
+    Boolean appUpd = appUpdAvail()
+    Boolean plugUpd = pluginUpdAvail()
+    List updItems = []
+    if(appUpd || servUpd) {
+        if(appUpd) updItems.push("${!shrt ? "\nHomebridge " : ""}App: (v${state?.appData?.versions?.mainApp?.toString()})")
+        if(plugUpd) updItems.push("${!shrt ? "\n" : ""}Plugin: (v${state?.appData?.versions?.server?.toString()})")
+    }
+    return updItems
+}
 
 Integer getLastTsValSecs(val, nullVal=1000000) {
     def tsMap = atomicState?.tsDtMap
@@ -1203,8 +1267,8 @@ private getWebData(params, desc, text=true) {
     } catch (ex) {
         incrementCntByKey("appErrorCnt")
         if(ex instanceof groovyx.net.http.HttpResponseException) {
-            logWarn("${desc} file not found")
-        } else { logError("getWebData(params: $params, desc: $desc, text: $text) Exception: ${ex}") }
+            log.warn("${desc} file not found")
+        } else { log.error("getWebData(params: $params, desc: $desc, text: $text) Exception: ${ex}") }
         return "${label} info not found"
     }
 }
