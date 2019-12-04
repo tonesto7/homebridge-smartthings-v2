@@ -115,16 +115,16 @@ module.exports = class ST_Client {
         });
     }
 
-    sendUpdateStatus(status) {
+    sendUpdateStatus(hasUpdate, newVersion = null) {
         return new Promise((resolve, reject) => {
-            this.log.notice(`Sending Plugin Status to SmartThings | UpdateAvailable: ${status}`);
+            this.log.notice(`Sending Plugin Status to SmartThings | UpdateAvailable: ${hasUpdate} | newVersion: ${newVersion}`);
             rp({
                     method: 'POST',
                     uri: `${this.configItems.app_url}${this.configItems.app_id}/pluginStatus`,
                     qs: {
                         access_token: this.configItems.access_token
                     },
-                    body: { hasUpdate: status },
+                    body: { hasUpdate: hasUpdate, newVersion: newVersion, version: pluginVersion },
                     json: true
                 })
                 .catch((err) => {

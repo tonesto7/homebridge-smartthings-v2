@@ -1,4 +1,7 @@
-Plugin (v2.0.1) [2019-12-04]
+ ══════════
+   Plugin (v2.0.1)
+   December 4th, 2019
+ ══════════
 • Completely rewrote the entire plugin using modern javascript structure.
 
 • The code is now much cleaner,  easier to update/maintain, and easier for others to follow.
@@ -21,7 +24,10 @@ Plugin (v2.0.1) [2019-12-04]
 **Due to the changes in the plugin API you can not directly update the plugin, you will need to add as a new accessory and setup your devices/automations/scenes again.
 On a positive note, you can use the same SmartApp instance though as long as you update to the latest code.**
 
-SmartApp (v2.0.1) [2019-12-04]
+ ══════════
+   SmartApp (v2.0.1)
+   December 4th, 2019
+ ══════════
 • Reworked and cleaned up the UI so it's now more organized and easier to follow.
 
 • Added new capability filter options.
