@@ -94,13 +94,18 @@ module.exports = class DeviceTypes {
             .getCharacteristic(Characteristic.StatusLowBattery)
             .on("get", (callback) => {
                 callback(null, this.accessories.attributeStateTransform('battery', accessory.context.deviceData.attributes.battery, 'Status Low Battery'));
-            })
-            .on("change", (obj) => {
-                this.log_change('battery', 'StatusLowBattery', accessory, obj);
             });
-        accessory
+        this.accessories.storeCharacteristicItem("battery", accessory.context.deviceData.deviceid, thisChar);
+        thisChar = accessory
             .getOrAddService(Service.BatteryService)
-            .setCharacteristic(Characteristic.ChargingState, Characteristic.ChargingState.NOT_CHARGING);
+            .getCharacteristic(Characteristic.ChargingState)
+            .on("get", (callback) => {
+                let status = Characteristic.ChargingState.NOT_CHARGING;
+                if (accessory.context.deviceData.attributes.batteryStatus && accessory.context.deviceData.attributes.batteryStatus === "USB Cable") {
+                    status = Characteristic.ChargingState.CHARGING;
+                }
+                callback(null, status);
+            });
         this.accessories.storeCharacteristicItem("battery", accessory.context.deviceData.deviceid, thisChar);
         return accessory;
     }
@@ -533,6 +538,20 @@ module.exports = class DeviceTypes {
                 this.log_change('lock', 'LockTargetState', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("lock", accessory.context.deviceData.deviceid, thisChar);
+
+        let relockSeconds = accessory.context.deviceData.attributes.relockSeconds || 300;
+        accessory.context.deviceData.attributes.relockSeconds = relockSeconds;
+        thisChar = accessory
+            .getOrAddService(Service.LockMechanism)
+            .getCharacteristic(Characteristic.LockManagementAutoSecurityTimeout)
+            .on("get", (callback) => {
+                callback(null, relockSeconds);
+            })
+            .on("set", (value, callback) => {
+                callback(null);
+                accessory.context.deviceData.attributes.relockSeconds = value;
+            });
+        // this.accessories.storeCharacteristicItem("relockSeconds", accessory.context.deviceData.deviceid, thisChar);
         return accessory;
     }
 
