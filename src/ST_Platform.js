@@ -49,7 +49,7 @@ module.exports = class ST_Platform {
         this.local_hub_ip = undefined;
         this.myUtils = new myUtils(this);
         this.configItems = this.getConfigItems();
-        this.myUtils.checkVersion();
+
         this.deviceCache = {};
         this.attributeLookup = {};
         this.knownCapabilities = knownCapabilities;
@@ -57,6 +57,10 @@ module.exports = class ST_Platform {
         this.client = new SmartThingsClient(this);
         this.SmartThingsAccessories = new SmartThingsAccessories(this);
         this.homebridge.on("didFinishLaunching", this.didFinishLaunching.bind(this));
+        this.myUtils.checkVersion()
+            .then((res) => {
+                this.client.sendUpdateStatus(null, res);
+            });
     }
 
     getLogConfig() {

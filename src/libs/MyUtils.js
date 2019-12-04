@@ -216,20 +216,22 @@ module.exports = class MyUtils {
 
     checkVersion() {
         this.log.info("Checking Package Version for Updates...");
-        childProcess.exec(
-            `npm view ${packageFile.name} version`,
-            (error, stdout) => {
-                const newVer = stdout && stdout.trim();
-                if (newVer && compareVersions(stdout.trim(), packageFile.version) > 0) {
-                    this.log.warn(`---------------------------------------------------------------`);
-                    this.log.warn(`NOTICE: New version of ${packageFile.name} available: ${newVer}`);
-                    this.log.warn(`---------------------------------------------------------------`);
-                    this.client.sendUpdateStatus(null, true);
-                } else {
-                    this.log.info(`INFO: Your plugin version is up-to-date`);
-                    this.client.sendUpdateStatus(null, false);
+        return new Promise((resolve) => {
+            childProcess.exec(
+                `npm view ${packageFile.name} version`,
+                (error, stdout) => {
+                    const newVer = stdout && stdout.trim();
+                    if (newVer && compareVersions(stdout.trim(), packageFile.version) > 0) {
+                        this.log.warn(`---------------------------------------------------------------`);
+                        this.log.warn(`NOTICE: New version of ${packageFile.name} available: ${newVer}`);
+                        this.log.warn(`---------------------------------------------------------------`);
+                        resolve(true);
+                    } else {
+                        this.log.info(`INFO: Your plugin version is up-to-date`);
+                        resolve(false);
+                    }
                 }
-            }
-        );
+            );
+        });
     }
 };

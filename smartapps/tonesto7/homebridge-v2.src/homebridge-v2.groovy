@@ -4,8 +4,8 @@
  *  Copyright 2018, 2019, 2020 Anthony Santilli
  */
 
-String appVersion()         { return "2.0.0" }
-String appModified()         { return "12-02-2019" }
+String appVersion()         { return "2.0.1" }
+String appModified()         { return "12-04-2019" }
 String branch()             { return "master" }
 String platform()           { return "SmartThings" }
 String pluginName()         { return "${platform()}-v2" }
@@ -65,16 +65,15 @@ def mainPage() {
         section("Define Specific Categories:") {
             paragraph "Each category below will adjust the device attributes to make sure they are recognized as the desired device type under HomeKit", state: "complete"
             Boolean conf = (lightList || buttonList || fanList || fan3SpdList || fan4SpdList || speakerList || shadesList)
+            Integer fansize = (fanList?.size() ?: 0) + (fan3SpdList?.size() ?: 0) + (fan4SpdList?.size() ?: 0)
             String desc = "Tap to configure"
             if(conf) {
                 desc = ""
-                desc += lightList ? "(${lightList?.size()}) Lights\n" : ""
-                desc += buttonList ? "(${buttonList?.size()}) Buttons\n" : ""
-                desc += fanList ? "(${fanList?.size()}) Fans\n" : ""
-                desc += fan3SpdList ? "(${fan3SpdList?.size()}) Fans (4 Speed)\n" : ""
-                desc += fan4SpdList ? "(${fan4SpdList?.size()}) Fans (3 Speed)\n" : ""
-                desc += speakerList ? "(${speakerList?.size()}) Speakers\n" : ""
-                desc += shadesList ? "(${shadesList?.size()}) Shades\n" : ""
+                desc += lightList ? "(${lightList?.size()}) Light Devices\n" : ""
+                desc += buttonList ? "(${buttonList?.size()}) Button Devices\n" : ""
+                desc += (fanList || fan3SpdList || fan4SpdList) ? "(${fansize}) Fan Devices\n" : ""
+                desc += speakerList ? "(${speakerList?.size()}) Speaker Devices\n" : ""
+                desc += shadesList ? "(${shadesList?.size()}) Shade Devices\n" : ""
                 desc += "\nTap to modify..."
             }
             href "defineDevicesPage", title: "Define Device Types", required: false, image: getAppImg("devices2.png"), state: (conf ? "complete" : null), description: desc
@@ -85,9 +84,9 @@ def mainPage() {
             String desc = "Tap to configure"
             if(conf) {
                 desc = ""
-                desc += sensorList ? "(${sensorList?.size()}) Sensors\n" : ""
-                desc += switchList ? "(${switchList?.size()}) Switches\n" : ""
-                desc += deviceList ? "(${deviceList?.size()}) Others\n" : ""
+                desc += sensorList ? "(${sensorList?.size()}) Sensor Devices\n" : ""
+                desc += switchList ? "(${switchList?.size()}) Switch Devices\n" : ""
+                desc += deviceList ? "(${deviceList?.size()}) Other Devices\n" : ""
                 desc += "\nTap to modify..."
             }
             href "deviceSelectPage", title: "Select your Devices", required: false, image: getAppImg("devices.png"), state: (conf ? "complete" : null), description: desc
