@@ -1010,6 +1010,15 @@ private updateServicePrefs(isLocal=false) {
     ])
 }
 
+def pluginStatus() {
+    // log.trace "enableDirectUpdates: ($params)"
+    def body = request.JSON;
+    log.debug "body: ${body}"
+    state?.pluginHasUpdate = (body?.hasUpdate == true)
+    def resultJson = new groovy.json.JsonOutput().toJson({ status: 'OK'})
+    render contentType: "application/json", data: resultJson
+}
+
 def enableDirectUpdates() {
     // log.trace "enableDirectUpdates: ($params)"
     state?.pluginDetails = [
@@ -1035,6 +1044,7 @@ mappings {
         path("/devices")					{ action: [GET: "getAllData"] }
         path("/config")						{ action: [GET: "renderConfig"]  }
         path("/location")					{ action: [GET: "renderLocation"] }
+        path("/pluginStatus")			    { action: [POST: "pluginStatus"] }
         path("/:id/command/:command")		{ action: [POST: "deviceCommand"] }
         path("/:id/query")					{ action: [GET: "deviceQuery"] }
         path("/:id/attribute/:attribute")	{ action: [GET: "deviceAttribute"] }

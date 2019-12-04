@@ -12,6 +12,7 @@ const {
 module.exports = class MyUtils {
     constructor(platform) {
         this.platform = platform;
+        this.client = platform.client;
         this.log = platform.log;
         this.homebridge = platform.homebridge;
         this.temperature_unit = platform.temperature_unit;
@@ -223,8 +224,10 @@ module.exports = class MyUtils {
                     this.log.warn(`---------------------------------------------------------------`);
                     this.log.warn(`NOTICE: New version of ${packageFile.name} available: ${newVer}`);
                     this.log.warn(`---------------------------------------------------------------`);
+                    this.client.sendUpdateStatus(null, true);
                 } else {
                     this.log.info(`INFO: Your plugin version is up-to-date`);
+                    this.client.sendUpdateStatus(null, false);
                 }
             }
         );
