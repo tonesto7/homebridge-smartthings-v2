@@ -42,6 +42,15 @@ private Map ignoreLists() {
     return [
         commands: ["indicatorWhenOn", "indicatorWhenOff", "ping", "refresh", "indicatorNever", "configure", "poll", "reset"],
         attributes: ['DeviceWatch-Enroll', 'DeviceWatch-Status', "checkInterval"],
+        evt_attributes: [
+            'DeviceWatch-DeviceStatus', "DeviceWatch-Enroll", 'checkInterval', 'devTypeVer', 'dayPowerAvg', 'apiStatus', 'yearCost', 'yearUsage','monthUsage', 'monthEst', 'weekCost', 'todayUsage',
+            'maxCodeLength', 'maxCodes', 'readingUpdated', 'maxEnergyReading', 'monthCost', 'maxPowerReading', 'minPowerReading', 'monthCost', 'weekUsage', 'minEnergyReading',
+            'codeReport', 'scanCodes', 'verticalAccuracy', 'horizontalAccuracyMetric', 'altitudeMetric', 'latitude', 'distanceMetric', 'closestPlaceDistanceMetric',
+            'closestPlaceDistance', 'leavingPlace', 'currentPlace', 'codeChanged', 'codeLength', 'lockCodes', 'healthStatus', 'horizontalAccuracy', 'bearing', 'speedMetric',
+            'speed', 'verticalAccuracyMetric', 'altitude', 'indicatorStatus', 'todayCost', 'longitude', 'distance', 'previousPlace','closestPlace', 'places', 'minCodeLength',
+            'arrivingAtPlace', 'lastUpdatedDt', 'scheduleType', 'zoneStartDate', 'zoneElapsed', 'zoneDuration', 'watering', 'eventTime', 'eventSummary', 'endOffset', 'startOffset',
+            'closeTime', 'endMsgTime', 'endMsg', 'openTime', 'startMsgTime', 'startMsg', 'calName', "deleteInfo", "eventTitle", "floor", "sleeping", "powerSource", "batteryStatus"
+        ],
         capabilities: ["Health Check", "Ultraviolet Index", "Indicator"]
     ]
 }
@@ -242,12 +251,12 @@ def getDeviceCnt() {
 }
 
 def installed() {
-    log.debug "Installed with settings: ${settings}"
+    log.debug "${app.name} | installed() has been called..."
     initialize()
 }
 
 def updated() {
-    log.debug "Updated with settings: ${settings}"
+    log.debug "${app.name} | updated() has been called..."
     unsubscribe()
     stateCleanup()
     initialize()
@@ -258,14 +267,17 @@ def initialize() {
     if(!state?.accessToken) {
         createAccessToken()
     }
-    runIn(2, "registerDevices", [overwrite: true])
-    runIn(4, "registerSensors", [overwrite: true])
-    runIn(6, "registerSwitches", [overwrite: true])
+    runIn(2, "registerDevices_1")
+    runIn(4, "registerDevices_2")
+    runIn(6, "registerDevices_3")
+    log.info "--------------------------------------"
+    log.info "Registered (${getDeviceCnt()} Devices)"
+    log.info "--------------------------------------"
     if(settings?.addSecurityDevice) {
         subscribe(location, "alarmSystemStatus", changeHandler)
     }
     if(settings?.modeList) {
-        log.debug "Registering (${settings?.modeList?.size() ?: 0}) Virtual Mode Devices"
+        if(showDebugLogs) log.debug "Registering (${settings?.modeList?.size() ?: 0}) Virtual Mode Devices"
         subscribe(location, "mode", changeHandler)
         if(state.lastMode == null) { state?.lastMode = location.mode?.toString() }
     }
@@ -273,7 +285,7 @@ def initialize() {
     subscribe(app, onAppTouch)
     if(settings?.allowLocalCmds != false) { subscribe(location, null, lanEventHandler, [filterEvents:false]) }
     if(settings?.routineList) {
-        log.debug "Registering (${settings?.routineList?.size() ?: 0}) Virtual Routine Devices"
+        if(showDebugLogs) log.debug "Registering (${settings?.routineList?.size() ?: 0}) Virtual Routine Devices"
         subscribe(location, "routineExecuted", changeHandler)
     }
     if(settings?.restartService == true) {
@@ -730,52 +742,31 @@ def getAllData() {
     render contentType: "application/json", data: deviceJson
 }
 
-def registerDevices() {
+def registerDevices_1() {
     //This has to be done at startup because it takes too long for a normal command.
-    log.debug "Registering (${settings?.fanList?.size() ?: 0}) Fans"
-    registerChangeHandler(settings?.fanList)
-    log.debug "Registering (${settings?.fan3SpdList?.size() ?: 0}) Fans (3Spd)"
-    registerChangeHandler(settings?.fan3SpdList)
-    log.debug "Registering (${settings?.fan4SpdList?.size() ?: 0}) Fans (4Spd)"
-    registerChangeHandler(settings?.fan4SpdList)
-    log.debug "Registering (${settings?.buttonList?.size() ?: 0}) Buttons"
-    registerChangeHandler(settings?.buttonList)
-    log.debug "Registering (${settings?.deviceList?.size() ?: 0}) Other Devices"
-    registerChangeHandler(settings?.deviceList)
+    ["fanList": "Fan Devices", "fan3SpdList": "Fans (3Spd) Devices", "fan4SpdList": "Fans (4Spd) Devices", "buttonList": "Button Devices", "deviceList": "Other Devices"]?.each { k,v->
+        if(showDebugLogs) log.debug "Registering (${settings?."${k}"?.size() ?: 0}) ${v}"
+        registerChangeHandler(settings?."${k}")
+    }
 }
 
-def registerSensors() {
+def registerDevices_2() {
     //This has to be done at startup because it takes too long for a normal command.
-    log.debug "Registering (${settings?.sensorList?.size() ?: 0}) Sensors"
-    registerChangeHandler(settings?.sensorList)
-    log.debug "Registering (${settings?.speakerList?.size() ?: 0}) Speakers"
-    registerChangeHandler(settings?.speakerList)
+    ["sensorList": "Sensor Devices", "speakerList": "Speaker Devices"]?.each { k,v->
+        if(showDebugLogs) log.debug "Registering (${settings?."${k}"?.size() ?: 0}) ${v}"
+        registerChangeHandler(settings?."${k}")
+    }
 }
 
-def registerSwitches() {
+def registerDevices_3() {
     //This has to be done at startup because it takes too long for a normal command.
-    log.debug "Registering (${settings?.switchList?.size() ?: 0}) Switches"
-    registerChangeHandler(settings?.switchList)
-    log.debug "Registering (${settings?.lightList?.size() ?: 0}) Lights"
-    registerChangeHandler(settings?.lightList)
-    log.debug "Registering (${settings?.shadesList?.size() ?: 0}) Window Shades"
-    registerChangeHandler(settings?.shadesList)
-    log.debug "Registered (${getDeviceCnt()} Devices)"
+    ["switchList": "Switch Devices", "lightList": "Light Devices", "shadesList": "Window Shade Devices"]?.each { k,v->
+        if(showDebugLogs) log.debug "Registering (${settings?."${k}"?.size() ?: 0}) ${v}"
+        registerChangeHandler(settings?."${k}")
+    }
 }
 
-def ignoreTheseAttributes() {
-    return [
-        'DeviceWatch-DeviceStatus', "DeviceWatch-Enroll", 'checkInterval', 'devTypeVer', 'dayPowerAvg', 'apiStatus', 'yearCost', 'yearUsage','monthUsage', 'monthEst', 'weekCost', 'todayUsage',
-        'maxCodeLength', 'maxCodes', 'readingUpdated', 'maxEnergyReading', 'monthCost', 'maxPowerReading', 'minPowerReading', 'monthCost', 'weekUsage', 'minEnergyReading',
-        'codeReport', 'scanCodes', 'verticalAccuracy', 'horizontalAccuracyMetric', 'altitudeMetric', 'latitude', 'distanceMetric', 'closestPlaceDistanceMetric',
-        'closestPlaceDistance', 'leavingPlace', 'currentPlace', 'codeChanged', 'codeLength', 'lockCodes', 'healthStatus', 'horizontalAccuracy', 'bearing', 'speedMetric',
-        'speed', 'verticalAccuracyMetric', 'altitude', 'indicatorStatus', 'todayCost', 'longitude', 'distance', 'previousPlace','closestPlace', 'places', 'minCodeLength',
-        'arrivingAtPlace', 'lastUpdatedDt', 'scheduleType', 'zoneStartDate', 'zoneElapsed', 'zoneDuration', 'watering', 'eventTime', 'eventSummary', 'endOffset', 'startOffset',
-        'closeTime', 'endMsgTime', 'endMsg', 'openTime', 'startMsgTime', 'startMsg', 'calName', "deleteInfo", "eventTitle", "floor", "sleeping", "powerSource", "batteryStatus"
-    ]
-}
-
-def isDeviceInInput(setKey, devId) {
+Boolean isDeviceInInput(setKey, devId) {
     if(settings[setKey]) {
         List aItems = settings[setKey] ? settings[setKey]?.collect { it?.getId() as String } : []
         if(aItems?.contains(devId as String)) { return true }
@@ -788,7 +779,7 @@ def registerChangeHandler(devices, showlog=false) {
         List theAtts = device?.supportedAttributes?.collect { it?.name as String }?.unique()
         if(showlog) { log.debug "atts: ${theAtts}" }
         theAtts?.each {att ->
-            if(!(ignoreTheseAttributes().contains(att))) {
+            if(!(ignoreLists().evt_attributes?.contains(att))) {
                 if(settings?.noTemp && att == "temperature" && (device?.hasAttribute("contact") || device?.hasAttribute("water"))) {
                     Boolean skipAtt = true
                     if(settings?.sensorAllowTemp) {
