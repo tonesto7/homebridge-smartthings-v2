@@ -268,8 +268,9 @@ module.exports = class DeviceTypes {
         this.accessories.storeCharacteristicItem("switch", accessory.context.deviceData.deviceid, thisChar);
 
         let spdSteps = 1;
-        if (this.hasCapability("Fan_3_Spd")) spdSteps = 33;
-        if (this.hasCapability("Fan_4_Spd")) spdSteps = 25;
+        console.log(accessory.context.deviceData.optionFlags);
+        if (accessory.context.deviceData.optionFlags.fan_3_spd) spdSteps = 33;
+        if (accessory.context.deviceData.optionFlags.fan_4_spd) spdSteps = 25;
         if (this.hasAttribute('fanSpeed', accessory) && this.hasCommand('setFanSpeed', accessory)) {
             //Uses the fanSpeed Attribute and Command instead of level when avail
             thisChar = accessory

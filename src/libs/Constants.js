@@ -49,8 +49,6 @@ module.exports = {
         "Fan Control",
         "Fan Light",
         "Fan",
-        "Fan_3_Spd",
-        "Fan_4_Spd",
         "Speaker",
         "Tamper Alert",
         "Alarm",

@@ -371,6 +371,7 @@ def getDeviceData(type, sItem) {
             lastTime: !isVirtual ? (sItem?.getLastActivity() ?: null) : now(),
             capabilities: !isVirtual ? deviceCapabilityList(sItem) : ["${curType}": 1],
             commands: !isVirtual ? deviceCommandList(sItem) : [on:[]],
+            optionFlags: getOptionFlags(sItem),
             attributes: !isVirtual ? deviceAttributeList(sItem) : ["switch": attrVal]
         ]
     } else { return null }
@@ -380,7 +381,7 @@ String modeSwitchState(String mode) {
     return location?.mode?.toString() == mode ? "on" : "off"
 }
 
-def getSecurityDevice() {
+private Map getSecurityDevice() {
     return [
         name: "Security Alarm",
         basename: "Security Alarm",
@@ -397,27 +398,22 @@ def getSecurityDevice() {
     ]
 }
 
+private Map getOptionFlags(device) {
+    Map opts = [:]
+    if(settings?.fan3SpdList?.find { it?.id == device?.id }) {
+        opts["fan_3_spd"] = 1
+    }
+    if(settings?.fan4SpdList?.find { it?.id == device?.id }) {
+        opts["fan_4_spd"] = 1
+    }
+    return opts
+}
+
 def findDevice(dev_id) {
-    def device = deviceList?.find { it?.id == dev_id }
-      if (device) return device
-    device = sensorList?.find { it?.id == dev_id }
-    if (device) return device
-      device = switchList?.find { it?.id == dev_id }
-    if (device) return device
-    device = lightList?.find { it?.id == dev_id }
-    if (device) return device
-    device = buttonList?.find { it?.id == dev_id }
-    if (device) return device
-    device = fanList?.find { it?.id == dev_id }
-    if (device) return device
-    device = fan3SpdList?.find { it?.id == dev_id }
-    if (device) return device
-    device = fan4SpdList?.find { it?.id == dev_id }
-    if (device) return device
-    device = speakerList?.find { it?.id == dev_id }
-    if (device) return device
-    device = shadesList?.find { it?.id == dev_id }
-    return device
+    ["deviceList", "sensorList", "switchList", "lightList", "buttonList", "fanList", "fan3SpdList", "fan4SpdList", "speakerList", "shadesList"]?.each { setKey->
+        def d = settings?."${setKey}"?.find { it?.id == dev_id }
+        if (d) return d
+    }
 }
 
 def authError() {
@@ -675,12 +671,6 @@ def deviceCapabilityList(device) {
     }
     if(settings?.fanList?.find { it?.id == device?.id }) {
         items["Fan"] = 1
-    }
-    if(settings?.fan3SpdList?.find { it?.id == device?.id }) {
-        items["Fan_3_Spd"] = 1
-    }
-    if(settings?.fan4SpdList?.find { it?.id == device?.id }) {
-        items["Fan_4_Spd"] = 1
     }
     if(settings?.speakerList?.find { it?.id == device?.id }) {
         items["Speaker"] = 1
