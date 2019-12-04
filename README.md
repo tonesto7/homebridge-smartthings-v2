@@ -12,14 +12,14 @@ V2 of this plugin is a complete rewrite of the homebridge-smartthings-tonesto7 p
 
 #### Plugin
 * Completely rewrote the entire plugin using modern javascript structure.
-* The is now much cleaner,  easier to maintain, and easier for others to follow.
+* The code is now much cleaner,  easier to update/maintain, and easier for others to follow.
 * This translates into a  faster/leaner and way more stable plugin than previous versions.
 * The plugin now uses the Homebridge Dynamic platform API, meaning it no longer requires a restart of the Homebridge service for device changes to occur.
 * The plugin now utilizes the device cache on service restart to prevent losing all of your devices when the plugin fails to start for an extended period of time.
 * It will now remove devices no longer selected under SmartThings.
 * Introduced an all-new logging system to provide more insight into issues and status, as well as write them to a file.
+* I used all of the issues from my existing plugin to repair this new version.
 * Many, many other bug fixes for devices, commands and many other items.
-
 * ***Important NOTICE:***
 **Due to the changes in the plugin API you can not directly update the plugin, you will need to add as a new accessory and setup your devices/automations/scenes again.
 On a positive note, you can use the same SmartApp instance though as long as you update to the latest code.**
@@ -35,8 +35,8 @@ On a positive note, you can use the same SmartApp instance though as long as you
 Big thanks for @Areson for his help/motivation in rewriting this.
 
 I also wanted to mention the following projects I referenced for inspiration for design and fixes:
-* homebridge-wink3
-* homebridge-hubconnect-hubitat
+* [homebridge-wink3](https://github.com/sibartlett/homebridge-wink3)
+* [homebridge-hubconnect-hubitat](https://github.com/danTapps/homebridge-hubitat-hubconnect)
 
 ## Change Log:
 

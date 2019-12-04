@@ -1,0 +1,10 @@
+{
+    "appDataVer": "1.0",
+    "versions": {
+        "mainApp": "2.0.1",
+        "plugin": "2.0.1"
+    },
+    "settings": {
+        "allowLocalCmds": true
+    }
+}
