@@ -49,8 +49,9 @@ private Map ignoreLists() {
 def appInfoSect() {
     section() {
         String str = app?.name
-        str += "\nVersion: ${appVersion()}"
-        str += state?.pluginDetails?.version ? "\nPlugin: ${state?.pluginDetails?.version}" : ""
+        str += "\nVersion: v${appVersion()}"
+        str += state?.pluginDetails?.version ? "\nPlugin: v${state?.pluginDetails?.version}" : ""
+        str += state?.pluginHasUpdate != null ? " (${state?.pluginHasUpdate == true ? "Update Available" : "Up-to-Date"})" : ""
         paragraph str, image: appIconUrl()
     }
 }
@@ -327,12 +328,14 @@ def getDeviceData(type, sItem) {
     Boolean isVirtual = false
     String firmware = null
     String name = null
+    Map optFlags = [:]
     def attrVal = null
     def obj = null
     switch(type) {
         case "routineList":
             isVirtual = true
             curType = "Routine"
+            optFlags["virtual_routine"] = 1
             obj = getRoutineById(sItem)
             if(obj) {
                 name = "Routine - " + obj?.label
@@ -342,6 +345,7 @@ def getDeviceData(type, sItem) {
         case "modeList":
             isVirtual = true
             curType = "Mode"
+            optFlags["virtual_mode"] = 1
             obj = getModeById(sItem)
             if(obj) {
                 name = "Mode - " + obj?.name
@@ -370,7 +374,7 @@ def getDeviceData(type, sItem) {
             lastTime: !isVirtual ? (sItem?.getLastActivity() ?: null) : now(),
             capabilities: !isVirtual ? deviceCapabilityList(sItem) : ["${curType}": 1],
             commands: !isVirtual ? deviceCommandList(sItem) : [on:[]],
-            optionFlags: getOptionFlags(sItem),
+            optionFlags: !isVirtual ? getOptionFlags(sItem) : optFlags,
             attributes: !isVirtual ? deviceAttributeList(sItem) : ["switch": attrVal]
         ]
     } else { return null }
@@ -380,7 +384,7 @@ String modeSwitchState(String mode) {
     return location?.mode?.toString() == mode ? "on" : "off"
 }
 
-private Map getSecurityDevice() {
+def getSecurityDevice() {
     return [
         name: "Security Alarm",
         basename: "Security Alarm",
@@ -397,7 +401,7 @@ private Map getSecurityDevice() {
     ]
 }
 
-private Map getOptionFlags(device) {
+def getOptionFlags(device) {
     Map opts = [:]
     if(settings?.fan3SpdList?.find { it?.id == device?.id }) {
         opts["fan_3_spd"] = 1
@@ -411,7 +415,7 @@ private Map getOptionFlags(device) {
 def findDevice(dev_id) {
     ["deviceList", "sensorList", "switchList", "lightList", "buttonList", "fanList", "fan3SpdList", "fan4SpdList", "speakerList", "shadesList"]?.each { setKey->
         def d = settings?."${setKey}"?.find { it?.id == dev_id }
-        if (d) return d
+        if (d) { return d }
     }
 }
 
@@ -1010,9 +1014,7 @@ private updateServicePrefs(isLocal=false) {
 }
 
 def pluginStatus() {
-    // log.trace "enableDirectUpdates: ($params)"
     def body = request.JSON;
-    log.debug "body: ${body}"
     state?.pluginHasUpdate = (body?.hasUpdate == true)
     def resultJson = new groovy.json.JsonOutput().toJson({ status: 'OK'})
     render contentType: "application/json", data: resultJson
@@ -1035,6 +1037,7 @@ mappings {
         path("/devices")					{ action: [GET: "authError"] }
         path("/config")						{ action: [GET: "authError"] }
         path("/location")					{ action: [GET: "authError"] }
+        path("/pluginStatus")			    { action: [POST: "authError"] }
         path("/:id/command/:command")		{ action: [POST: "authError"] }
         path("/:id/query")					{ action: [GET: "authError"] }
         path("/:id/attribute/:attribute") 	{ action: [GET: "authError"] }
