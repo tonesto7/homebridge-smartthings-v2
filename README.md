@@ -219,7 +219,10 @@ _Note to users updating from homebridge-smartthings-tonesto7: You can continue t
  ***Q:*** Can this support Axis Blinds<br>
  ***A:*** Maybe, I can support any device that has windowShade capability and/or level attributes
 
+## Known Issues:
+
+* When you change capability filters on a device already created under homekit it will not remove the old capabilities from the device (I'm working on this)
 
 ## DONATIONS:
 
-<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=HWBN4LB9NMHZ4">PayPal Donations Link</a>
+<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RVFJTG8H86SK8&source=url">PayPal Donations Link</a>
