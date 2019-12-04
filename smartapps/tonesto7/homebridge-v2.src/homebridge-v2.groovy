@@ -64,13 +64,13 @@ def mainPage() {
         appInfoSect()
         section("Define Specific Categories:") {
             paragraph "Each category below will adjust the device attributes to make sure they are recognized as the desired device type under HomeKit", state: "complete"
-            Boolean conf = (lightList || buttonList || fanList || speakerList || shadesList)
+            Boolean conf = (lightList || buttonList || fanList || fan3SpdList || fan4SpdList || speakerList || shadesList)
             String desc = "Tap to configure"
             if(conf) {
                 desc = ""
                 desc += lightList ? "(${lightList?.size()}) Light Devices\n" : ""
                 desc += buttonList ? "(${buttonList?.size()}) Button Devices\n" : ""
-                desc += fanList ? "(${fanList?.size()}) Fan Devices\n" : ""
+                desc += fanList ? "(${fanList?.size() + fan3SpdList?.size() + fan4SpdList?.size()}) Fan Devices\n" : ""
                 desc += speakerList ? "(${speakerList?.size()}) Speaker Devices\n" : ""
                 desc += shadesList ? "(${shadesList?.size()}) Shade Devices\n" : ""
                 desc += "\nTap to modify..."
@@ -146,9 +146,13 @@ def defineDevicesPage() {
             paragraph "Each category below will adjust the device attributes to make sure they are recognized as the desired device type under HomeKit", state: "complete"
             input "lightList", "capability.switch", title: "Lights: (${lightList ? lightList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("light_on.png")
             input "buttonList", "capability.button", title: "Buttons: (${buttonList ? buttonList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("button.png")
-            input "fanList", "capability.switch", title: "Fans: (${fanList ? fanList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on.png")
             input "speakerList", "capability.switch", title: "Speakers: (${speakerList ? speakerList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("media_player.png")
             input "shadesList", "capability.windowShade", title: "Window Shades: (${shadesList ? shadesList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("window_shade.png")
+        }
+        section("Fan Categories") {
+            input "fanList", "capability.switch", title: "Fans: (${fanList ? fanList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on.png")
+            input "fan3SpdList", "capability.switch", title: "Fans with 3 Speeds: (${fan3SpdList ? fan3SpdList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on.png")
+            input "fan4SpdList", "capability.switch", title: "Fans with 4 Speeds: (${fan4SpdList ? fan4SpdList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on.png")
         }
     }
 }
@@ -226,12 +230,8 @@ def confirmPage() {
 
 def getDeviceCnt() {
     def devices = []
-    def items = ["deviceList", "sensorList", "switchList", "lightList", "buttonList", "fanList", "speakerList", "shadesList", "modeList", "routineList"]
-    items?.each { item ->
-        if(settings[item]?.size() > 0) {
-            devices = devices + settings[item]
-        }
-    }
+    def items = ["deviceList", "sensorList", "switchList", "lightList", "buttonList", "fanList", "fan3SpdList", "fan4SpdList", "speakerList", "shadesList", "modeList", "routineList"]
+    items?.each { item -> if(settings[item]?.size() > 0) { devices = devices + settings[item] } }
     return devices?.unique()?.size() ?: 0
 }
 
@@ -297,7 +297,7 @@ def onAppTouch(event) {
 def renderDevices() {
     Map devMap = [:]
     List devList = []
-    List items = ["deviceList", "sensorList", "switchList", "lightList", "buttonList", "fanList", "speakerList", "shadesList", "modeList", "routineList"]
+    List items = ["deviceList", "sensorList", "switchList", "lightList", "buttonList", "fanList", "fan3SpdList", "fan4SpdList", "speakerList", "shadesList", "modeList", "routineList"]
     items?.each { item ->
         if(settings[item]?.size()) {
             settings[item]?.each { dev->
@@ -403,6 +403,10 @@ def findDevice(dev_id) {
     device = buttonList?.find { it?.id == dev_id }
     if (device) return device
     device = fanList?.find { it?.id == dev_id }
+    if (device) return device
+    device = fan3SpdList?.find { it?.id == dev_id }
+    if (device) return device
+    device = fan4SpdList?.find { it?.id == dev_id }
     if (device) return device
     device = speakerList?.find { it?.id == dev_id }
     if (device) return device
@@ -666,6 +670,12 @@ def deviceCapabilityList(device) {
     if(settings?.fanList?.find { it?.id == device?.id }) {
         items["Fan"] = 1
     }
+    if(settings?.fan3SpdList?.find { it?.id == device?.id }) {
+        items["Fan_3_Spd"] = 1
+    }
+    if(settings?.fan4SpdList?.find { it?.id == device?.id }) {
+        items["Fan_4_Spd"] = 1
+    }
     if(settings?.speakerList?.find { it?.id == device?.id }) {
         items["Speaker"] = 1
     }
@@ -725,6 +735,10 @@ def registerDevices() {
     //This has to be done at startup because it takes too long for a normal command.
     log.debug "Registering (${settings?.fanList?.size() ?: 0}) Fans"
     registerChangeHandler(settings?.fanList)
+    log.debug "Registering (${settings?.fan3SpdList?.size() ?: 0}) Fans (3Spd)"
+    registerChangeHandler(settings?.fan3SpdList)
+    log.debug "Registering (${settings?.fan4SpdList?.size() ?: 0}) Fans (4Spd)"
+    registerChangeHandler(settings?.fan4SpdList)
     log.debug "Registering (${settings?.buttonList?.size() ?: 0}) Buttons"
     registerChangeHandler(settings?.buttonList)
     log.debug "Registering (${settings?.deviceList?.size() ?: 0}) Other Devices"

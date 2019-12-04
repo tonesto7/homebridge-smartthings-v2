@@ -262,13 +262,16 @@ module.exports = class DeviceTypes {
             });
         this.accessories.storeCharacteristicItem("switch", accessory.context.deviceData.deviceid, thisChar);
 
+        let spdSteps = 1;
+        if (this.hasCapability("Fan_3_Spd")) spdSteps = 33;
+        if (this.hasCapability("Fan_4_Spd")) spdSteps = 25;
         if (this.hasAttribute('fanSpeed', accessory) && this.hasCommand('setFanSpeed', accessory)) {
             //Uses the fanSpeed Attribute and Command instead of level when avail
             thisChar = accessory
                 .getOrAddService(Service.Fanv2)
                 .getCharacteristic(Characteristic.RotationSpeed)
                 .setProps({
-                    minSteps: 33
+                    minSteps: spdSteps
                 })
                 .on("get", (callback) => {
                     switch (parseInt(accessory.context.deviceData.attributes.fanSpeed)) {
@@ -277,26 +280,26 @@ module.exports = class DeviceTypes {
                             break;
                         case 1:
                             callback(null, 33);
-                            break
+                            break;
                         case 2:
                             callback(null, 66);
-                            break
+                            break;
                         case 3:
                             callback(null, 100);
-                            break
+                            break;
                     }
                 })
                 .on("set", (value, callback) => {
                     let spd;
                     if (value >= 0 && value <= 100) {
                         if (value === 0) {
-                            spd = 0
+                            spd = 0;
                         } else if (value < 34) {
-                            spd = 1
+                            spd = 1;
                         } else if (value < 67) {
-                            spd = 2
+                            spd = 2;
                         } else {
-                            spd = 3
+                            spd = 3;
                         }
                         this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setFanSpeed", {
                             value1: spd
@@ -309,6 +312,9 @@ module.exports = class DeviceTypes {
             thisChar = accessory
                 .getOrAddService(Service.Fanv2)
                 .getCharacteristic(Characteristic.RotationSpeed)
+                .setProps({
+                    minSteps: spdSteps
+                })
                 .on("get", (callback) => {
                     callback(null, this.accessories.attributeStateTransform("level", accessory.context.deviceData.attributes.level));
                 })
