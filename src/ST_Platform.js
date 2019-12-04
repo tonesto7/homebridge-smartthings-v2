@@ -15,7 +15,7 @@ const {
     webApp = express();
 
 var PlatformAccessory;
-
+// TODO: Verify/fix the removal of unused services from accessories where there Capabilities change.
 module.exports = class ST_Platform {
     constructor(log, config, api) {
         this.config = config;
