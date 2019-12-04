@@ -68,11 +68,13 @@ def mainPage() {
             String desc = "Tap to configure"
             if(conf) {
                 desc = ""
-                desc += lightList ? "(${lightList?.size()}) Light Devices\n" : ""
-                desc += buttonList ? "(${buttonList?.size()}) Button Devices\n" : ""
-                desc += fanList ? "(${fanList?.size() + fan3SpdList?.size() + fan4SpdList?.size()}) Fan Devices\n" : ""
-                desc += speakerList ? "(${speakerList?.size()}) Speaker Devices\n" : ""
-                desc += shadesList ? "(${shadesList?.size()}) Shade Devices\n" : ""
+                desc += lightList ? "(${lightList?.size()}) Lights\n" : ""
+                desc += buttonList ? "(${buttonList?.size()}) Buttons\n" : ""
+                desc += fanList ? "(${fanList?.size()}) Fans\n" : ""
+                desc += fan3SpdList ? "(${fan3SpdList?.size()}) Fans (4 Speed)\n" : ""
+                desc += fan4SpdList ? "(${fan4SpdList?.size()}) Fans (3 Speed)\n" : ""
+                desc += speakerList ? "(${speakerList?.size()}) Speakers\n" : ""
+                desc += shadesList ? "(${shadesList?.size()}) Shades\n" : ""
                 desc += "\nTap to modify..."
             }
             href "defineDevicesPage", title: "Define Device Types", required: false, image: getAppImg("devices2.png"), state: (conf ? "complete" : null), description: desc
@@ -83,9 +85,9 @@ def mainPage() {
             String desc = "Tap to configure"
             if(conf) {
                 desc = ""
-                desc += sensorList ? "(${sensorList?.size()}) Sensor Devices\n" : ""
-                desc += switchList ? "(${switchList?.size()}) Switch Devices\n" : ""
-                desc += deviceList ? "(${deviceList?.size()}) Other Devices\n" : ""
+                desc += sensorList ? "(${sensorList?.size()}) Sensors\n" : ""
+                desc += switchList ? "(${switchList?.size()}) Switches\n" : ""
+                desc += deviceList ? "(${deviceList?.size()}) Others\n" : ""
                 desc += "\nTap to modify..."
             }
             href "deviceSelectPage", title: "Select your Devices", required: false, image: getAppImg("devices.png"), state: (conf ? "complete" : null), description: desc
@@ -151,8 +153,8 @@ def defineDevicesPage() {
         }
         section("Fan Categories") {
             input "fanList", "capability.switch", title: "Fans: (${fanList ? fanList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on.png")
-            input "fan3SpdList", "capability.switch", title: "Fans with 3 Speeds: (${fan3SpdList ? fan3SpdList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on.png")
-            input "fan4SpdList", "capability.switch", title: "Fans with 4 Speeds: (${fan4SpdList ? fan4SpdList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on.png")
+            input "fan3SpdList", "capability.switch", title: "Fans (3 Speeds): (${fan3SpdList ? fan3SpdList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on.png")
+            input "fan4SpdList", "capability.switch", title: "Fans (4 Speeds): (${fan4SpdList ? fan4SpdList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on.png")
         }
     }
 }
@@ -160,9 +162,9 @@ def defineDevicesPage() {
 def deviceSelectPage() {
     return dynamicPage(name: "deviceSelectPage", title: "", install: false, uninstall: false) {
         section("All Other Devices:") {
-            input "sensorList", "capability.sensor", title: "Sensor Devices: (${sensorList ? sensorList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("sensors.png")
-            input "switchList", "capability.switch", title: "Switch Devices: (${switchList ? switchList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("switch.png")
-            input "deviceList", "capability.refresh", title: "Other Devices: (${deviceList ? deviceList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("devices2.png")
+            input "sensorList", "capability.sensor", title: "Sensors: (${sensorList ? sensorList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("sensors.png")
+            input "switchList", "capability.switch", title: "Switches: (${switchList ? switchList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("switch.png")
+            input "deviceList", "capability.refresh", title: "Others: (${deviceList ? deviceList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("devices2.png")
         }
     }
 }
@@ -231,7 +233,11 @@ def confirmPage() {
 def getDeviceCnt() {
     def devices = []
     def items = ["deviceList", "sensorList", "switchList", "lightList", "buttonList", "fanList", "fan3SpdList", "fan4SpdList", "speakerList", "shadesList", "modeList", "routineList"]
-    items?.each { item -> if(settings[item]?.size() > 0) { devices = devices + settings[item] } }
+    items?.each { item ->
+        if(settings[item]?.size() > 0) {
+            devices = devices + settings[item]
+        }
+    }
     return devices?.unique()?.size() ?: 0
 }
 
