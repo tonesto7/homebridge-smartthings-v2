@@ -105,7 +105,7 @@ module.exports = class ST_Client {
                         callback();
                         callback = undefined;
                     };
-                    reject(undefined);
+                    reject(err);
                 })
                 .then((body) => {
                     that.log.debug('sendDeviceCommand Resp:', body);

@@ -426,10 +426,9 @@ def getDeviceFlags(device) {
 }
 
 def findDevice(dev_id) {
-    ["deviceList", "sensorList", "switchList", "lightList", "buttonList", "fanList", "fan3SpdList", "fan4SpdList", "speakerList", "shadesList"]?.each { setKey->
-        def d = settings?."${setKey}"?.find { it?.id == dev_id }
-        if (d) { return d }
-    }
+    List allDevs = []
+    ["deviceList", "sensorList", "switchList", "lightList", "buttonList", "fanList", "fan3SpdList", "fan4SpdList", "speakerList", "shadesList"]?.each { key-> allDevs = allDevs + (settings?."${key}" ?: []) }
+    return allDevs?.find { it?.id == dev_id } ?: null
 }
 
 def authError() {
@@ -594,6 +593,7 @@ private processCmd(devId, cmd, value1, value2, local=false) {
             }
         }
     }
+
 }
 
 def changeMode(modeId) {
