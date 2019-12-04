@@ -115,10 +115,9 @@ module.exports = class ST_Client {
         });
     }
 
-    sendUpdateStatus(callback, status) {
-        let that = this;
+    sendUpdateStatus(status) {
         return new Promise((resolve, reject) => {
-            that.log.notice(`Sending Plugin Status to SmartThings | UpdateAvailable: ${status}`);
+            this.log.notice(`Sending Plugin Status to SmartThings | UpdateAvailable: ${status}`);
             rp({
                     method: 'POST',
                     uri: `${this.configItems.app_url}${this.configItems.app_id}/pluginStatus`,
@@ -129,20 +128,16 @@ module.exports = class ST_Client {
                     json: true
                 })
                 .catch((err) => {
-                    that.log.error('sendUpdateStatus Error:', err.message);
-                    if (callback) {
-                        callback();
-                        callback = undefined;
-                    };
+                    this.log.error('sendUpdateStatus Error:', err.message);
                     reject(undefined);
                 })
                 .then((body) => {
-                    that.log.debug('sendUpdateStatus Resp:', body);
-                    callback(undefined);
+                    this.log.debug('sendUpdateStatus Resp:', body);
                     resolve(body);
                 });
         });
     }
+
     sendStartDirect() {
         let that = this;
         let sendLocal = this.sendAsLocalCmd();

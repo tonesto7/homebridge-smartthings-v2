@@ -31,20 +31,6 @@ module.exports = class DeviceTypes {
             this.log.warn(`[CHARACTERISTIC (${char}) SET] ${attr} (${acc.displayName}) | LastUpdate: (${acc.context.lastUpdate}) | Value: (${val})`);
     }
 
-    hasCapability(obj, acc) {
-        let keys = Object.keys(acc.context.deviceData.capabilities);
-        if (keys.includes(obj) || keys.includes(obj.toString().replace(/\s/g, ""))) return true;
-        return false;
-    }
-
-    hasAttribute(attr, acc) {
-        return Object.keys(acc.context.deviceData.attributes).includes(attr);
-    }
-
-    hasCommand(cmd, acc) {
-        return Object.keys(acc.context.deviceData.commands).includes(cmd);
-    }
-
     alarm_system(accessory) {
         let thisChar = accessory
             .getOrAddService(Service.SecuritySystem)
@@ -101,7 +87,7 @@ module.exports = class DeviceTypes {
             .getCharacteristic(Characteristic.ChargingState)
             .on("get", (callback) => {
                 let status = Characteristic.ChargingState.NOT_CHARGING;
-                if (accessory.context.deviceData.attributes.batteryStatus && accessory.context.deviceData.attributes.batteryStatus === "USB Cable") {
+                if (accessory.hasAttribute('batteryStatus') && accessory.context.deviceData.attributes.batteryStatus === "USB Cable") {
                     status = Characteristic.ChargingState.CHARGING;
                 }
                 callback(null, status);
@@ -171,7 +157,7 @@ module.exports = class DeviceTypes {
                 }
             });
         this.accessories.storeCharacteristicItem("carbonDioxideMeasurement", accessory.context.deviceData.deviceid, thisChar);
-        if (accessory.context.deviceData.capabilities['Tamper Alert']) {
+        if (accessory.hasCapability('Tamper Alert')) {
             thisChar = accessory
                 .getOrAddService(Service.CarbonDioxideSensor)
                 .getCharacteristic(Characteristic.StatusTampered)
@@ -194,7 +180,7 @@ module.exports = class DeviceTypes {
                 this.log.info(`[CHARACTERISTIC CHANGE] Carbon Monoxide (${accessory.displayName}) | LastUpdate: (${accessory.context.lastUpdate}) | NewValue: (${obj.newValue}) | OldValue: (${obj.oldValue})`);
             });
         this.accessories.storeCharacteristicItem("carbonMonoxide", accessory.context.deviceData.deviceid, thisChar);
-        if (accessory.context.deviceData.capabilities["Tamper Alert"]) {
+        if (accessory.hasCapability('Tamper Alert')) {
             thisChar = accessory
                 .getOrAddService(Service.CarbonMonoxideSensor)
                 .getCharacteristic(Characteristic.StatusTampered)
@@ -217,7 +203,7 @@ module.exports = class DeviceTypes {
                 this.log.info(`[CHARACTERISTIC CHANGE] Contact (${accessory.displayName}) | LastUpdate: (${accessory.context.lastUpdate}) | NewValue: (${obj.newValue}) | OldValue: (${obj.oldValue})`);
             });
         this.accessories.storeCharacteristicItem("contact", accessory.context.deviceData.deviceid, thisChar);
-        if (accessory.context.deviceData.capabilities["Tamper Alert"]) {
+        if (accessory.hasCapability('Tamper Alert')) {
             thisChar = accessory
                 .getOrAddService(Service.ContactSensor)
                 .getCharacteristic(Characteristic.StatusTampered)
@@ -268,10 +254,9 @@ module.exports = class DeviceTypes {
         this.accessories.storeCharacteristicItem("switch", accessory.context.deviceData.deviceid, thisChar);
 
         let spdSteps = 1;
-        console.log(accessory.context.deviceData.optionFlags);
-        if (accessory.context.deviceData.optionFlags.fan_3_spd) spdSteps = 33;
-        if (accessory.context.deviceData.optionFlags.fan_4_spd) spdSteps = 25;
-        if (this.hasAttribute('fanSpeed', accessory) && this.hasCommand('setFanSpeed', accessory)) {
+        if (accessory.hasDeviceFlag('fan_3_spd')) spdSteps = 33;
+        if (accessory.hasDeviceFlag('fan_4_spd')) spdSteps = 25;
+        if (accessory.hasAttribute('fanSpeed') && accessory.hasCommand('setFanSpeed')) {
             //Uses the fanSpeed Attribute and Command instead of level when avail
             thisChar = accessory
                 .getOrAddService(Service.Fanv2)
@@ -314,7 +299,8 @@ module.exports = class DeviceTypes {
                     }
                 });
             this.accessories.storeCharacteristicItem('fanSpeed', accessory.context.deviceData.deviceid, thisChar);
-        } else if (this.hasAttribute('level', accessory)) {
+        } else if (accessory.hasAttribute('level')) {
+
             thisChar = accessory
                 .getOrAddService(Service.Fanv2)
                 .getCharacteristic(Characteristic.RotationSpeed)
@@ -386,7 +372,7 @@ module.exports = class DeviceTypes {
                 this.log_change('humidity', 'CurrentRelativeHumidity', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("humidity", accessory.context.deviceData.deviceid, thisChar);
-        if (accessory.context.deviceData.capabilities['Tamper Alert']) {
+        if (accessory.hasCapability('Tamper Alert')) {
             thisChar = accessory
                 .getOrAddService(Service.HumiditySensor)
                 .getCharacteristic(Characteristic.StatusTampered)
@@ -434,7 +420,7 @@ module.exports = class DeviceTypes {
 
     light_color(accessory) {
         let thisChar;
-        if (accessory.context.deviceData.attributes.hue) {
+        if (accessory.hasAttribute('hue')) {
             thisChar = accessory
                 .getOrAddService(Service.Lightbulb)
                 .getCharacteristic(Characteristic.Hue)
@@ -455,7 +441,7 @@ module.exports = class DeviceTypes {
                 });
             this.accessories.storeCharacteristicItem("hue", accessory.context.deviceData.deviceid, thisChar);
         }
-        if (accessory.context.deviceData.attributes.saturation) {
+        if (accessory.hasAttribute('saturation')) {
             thisChar = accessory
                 .getOrAddService(Service.Lightbulb)
                 .getCharacteristic(Characteristic.Saturation)
@@ -472,7 +458,7 @@ module.exports = class DeviceTypes {
                 });
             this.accessories.storeCharacteristicItem("saturation", accessory.context.deviceData.deviceid, thisChar);
         }
-        if (accessory.context.deviceData.attributes.colorTemperature) {
+        if (accessory.hasAttribute('colorTemperature')) {
             thisChar = accessory
                 .getOrAddService(Service.Lightbulb)
                 .getCharacteristic(Characteristic.ColorTemperature)
@@ -567,7 +553,7 @@ module.exports = class DeviceTypes {
                 this.log_change('motion', 'MotionDetected', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("motion", accessory.context.deviceData.deviceid, thisChar);
-        if (accessory.context.deviceData.capabilities['Tamper Alert']) {
+        if (accessory.hasCapability('Tamper Alert')) {
             thisChar = accessory
                 .getOrAddService(Service.MotionSensor)
                 .getCharacteristic(Characteristic.StatusTampered)
@@ -607,7 +593,7 @@ module.exports = class DeviceTypes {
                 this.log_change('presence', 'OccupancyDetected', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("presence", accessory.context.deviceData.deviceid, thisChar);
-        if (accessory.context.deviceData.capabilities['Tamper Alert']) {
+        if (accessory.hasCapability('Tamper Alert')) {
             thisChar = accessory
                 .getOrAddService(Service.OccupancySensor)
                 .getCharacteristic(Characteristic.StatusTampered)
@@ -633,7 +619,7 @@ module.exports = class DeviceTypes {
                 this.log_change('smoke', 'SmokeDetected', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("smoke", accessory.context.deviceData.deviceid, thisChar);
-        if (accessory.context.deviceData.capabilities["Tamper Alert"]) {
+        if (accessory.hasCapability('Tamper Alert')) {
             thisChar = accessory
                 .getOrAddService(Service.SmokeSensor)
                 .getCharacteristic(Characteristic.StatusTampered)
@@ -650,10 +636,9 @@ module.exports = class DeviceTypes {
 
     sonos_speaker(accessory) {
         let thisChar;
-        if (accessory.context.deviceData.capabilities["Audio Volume"]) {
+        if (accessory.hasCapability('Audio Volume')) {
             let sonosVolumeTimeout = null;
             let lastVolumeWriteValue = null;
-
             thisChar = accessory
                 .getOrAddService(Service.Speaker)
                 .getCharacteristic(Characteristic.Volume)
@@ -682,7 +667,7 @@ module.exports = class DeviceTypes {
             this.accessories.storeCharacteristicItem("volume", accessory.context.deviceData.deviceid, thisChar);
         }
 
-        if (accessory.context.deviceData.capabilities["Audio Mute"]) {
+        if (accessory.hasCapability('Audio Mute')) {
             thisChar = accessory
                 .getOrAddService(Service.Speaker)
                 .getCharacteristic(Characteristic.Mute)
@@ -767,7 +752,7 @@ module.exports = class DeviceTypes {
                 this.log_change('temperature', 'CurrentTemperature', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("temperature", accessory.context.deviceData.deviceid, thisChar);
-        if (accessory.context.deviceData.capabilities["Tamper Alert"]) {
+        if (accessory.hasCapability('Tamper Alert')) {
             thisChar = accessory
                 .getOrAddService(Service.TemperatureSensor)
                 .getCharacteristic(Characteristic.StatusTampered)
@@ -842,7 +827,7 @@ module.exports = class DeviceTypes {
 
         this.accessories.storeCharacteristicItem("thermostatMode", accessory.context.deviceData.deviceid, thisChar);
 
-        if (accessory.context.deviceData.capabilities["Relative Humidity Measurement"]) {
+        if (accessory.hasCapability('Relative Humidity Measurement')) {
             thisChar = accessory
                 .getOrAddService(Service.Thermostat)
                 .getCharacteristic(Characteristic.CurrentRelativeHumidity)
@@ -1077,7 +1062,7 @@ module.exports = class DeviceTypes {
                 this.log_change('water', 'LeakDetected', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("water", accessory.context.deviceData.deviceid, thisChar);
-        if (accessory.context.deviceData.capabilities['Tamper Alert']) {
+        if (accessory.hasCapability('Tamper Alert')) {
             thisChar = accessory
                 .getOrAddService(Service.LeakSensor)
                 .getCharacteristic(Characteristic.StatusTampered)
@@ -1100,7 +1085,7 @@ module.exports = class DeviceTypes {
                 callback(null, parseInt(accessory.context.deviceData.attributes.level));
             })
             .on("set", (value, callback) => {
-                if (accessory.context.deviceData.commands.close && value === 0) {
+                if (accessory.hasCommand('close') && value === 0) {
                     // setLevel: 0, not responding on spring fashion blinds
                     this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "close");
                 } else {

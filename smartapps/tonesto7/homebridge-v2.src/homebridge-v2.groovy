@@ -386,7 +386,7 @@ def getDeviceData(type, sItem) {
             lastTime: !isVirtual ? (sItem?.getLastActivity() ?: null) : now(),
             capabilities: !isVirtual ? deviceCapabilityList(sItem) : ["${curType}": 1],
             commands: !isVirtual ? deviceCommandList(sItem) : [on:[]],
-            optionFlags: !isVirtual ? getOptionFlags(sItem) : optFlags,
+            deviceflags: !isVirtual ? getDeviceFlags(sItem) : optFlags,
             attributes: !isVirtual ? deviceAttributeList(sItem) : ["switch": attrVal]
         ]
     } else { return null }
@@ -413,7 +413,7 @@ def getSecurityDevice() {
     ]
 }
 
-def getOptionFlags(device) {
+def getDeviceFlags(device) {
     Map opts = [:]
     if(settings?.fan3SpdList?.find { it?.id == device?.id }) {
         opts["fan_3_spd"] = 1
@@ -421,6 +421,7 @@ def getOptionFlags(device) {
     if(settings?.fan4SpdList?.find { it?.id == device?.id }) {
         opts["fan_4_spd"] = 1
     }
+    // if(opts?.size()) log.debug "opts: ${opts}"
     return opts
 }
 

@@ -59,7 +59,7 @@ module.exports = class ST_Platform {
         this.homebridge.on("didFinishLaunching", this.didFinishLaunching.bind(this));
         this.myUtils.checkVersion()
             .then((res) => {
-                this.client.sendUpdateStatus(null, res);
+                this.client.sendUpdateStatus(res);
             });
     }
 
