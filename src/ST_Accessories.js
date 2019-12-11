@@ -8,7 +8,6 @@ module.exports = class ST_Accessories {
         this.platform = platform;
         this.logConfig = platform.logConfig;
         this.configItems = platform.getConfigItems();
-        this.temperature_unit = platform.temperature_unit;
         this.myUtils = platform.myUtils;
         this.log = platform.log;
         this.hap = platform.hap;

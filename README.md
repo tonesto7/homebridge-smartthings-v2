@@ -5,7 +5,7 @@ V2 of this plugin is a complete rewrite of the homebridge-smartthings-tonesto7 p
 
 [![npm version](https://badge.fury.io/js/homebridge-smartthings-v2.svg)](https://badge.fury.io/js/homebridge-smartthings-v2)
 
-**```Latest SmartApp Version: 2.0.1```**
+**```Latest SmartApp Version: 2.0.2```**
 
 ### What's New for 2.0:
 
@@ -42,11 +42,15 @@ I also wanted to mention the following projects I referenced for inspiration for
 
 ### SmartThing App:
 
+***v2.0.2*** - Added support for setting the temperature unit in the smartapp;
+
 ***v2.0.0*** - Updated to support v2.0 of the plugin, cleaner layout, tons of optimizations, and many bugfixes;
 
 ### Homebridge Plugin:
 
-***v2.0.0*** - Update to v2.0.0 to support Homebridge dynamic plugin api (Thanks @areson).  So devices can be loaded from cache.
+***v2.0.2*** - Support for Temp unit setting in config/or smartapp, also fixes using Celcius under ST.
+
+***v2.0.1*** - Update to v2.0.0 to support Homebridge dynamic plugin api (Thanks @areson).  So devices can be loaded from cache.
 
 
 #### Direct Updates from SmartThings
@@ -183,7 +187,10 @@ _Note to users updating from homebridge-smartthings-tonesto7: You can continue t
    </p>
 
  * <p><u>local_commands</u>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `false`</i></small><br>
-    This will allow the service to send homekit commands to hub locally (SmartThings only)</p>
+    This will allow the service to send homekit commands to hub locally.</p>
+
+ * <p><u>temperature_unit</u>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `F`</i></small><br>
+    This will allow you to define the temp unit to use.  This can also be set in the SmartApp</p>
 
  * <p><u>excluded_capabilities</u><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `{}` (None)</i></small><br>
    NOTICE: The smartapp offers many inputs to help filter out device capabilities. Only use this if the available inputs don't meet your needs.

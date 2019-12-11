@@ -43,6 +43,24 @@
             "default": 8000,
             "required": true
         },
+        "temperature_unit": {
+            "title": "Define Temperature Unit",
+            "type": "string",
+            "default": "F",
+            "oneOf": [{
+                    "title": "Fahrenheit",
+                    "enum": [
+                        "F"
+                    ]
+                },
+                {
+                    "title": "Celcius",
+                    "enum": [
+                        "C"
+                    ]
+                }
+            ]
+        },
         "logConfig": {
             "type": "object",
             "properties": {

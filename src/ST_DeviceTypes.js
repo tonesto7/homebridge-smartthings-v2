@@ -6,7 +6,6 @@ module.exports = class DeviceTypes {
         this.platform = accessories;
         this.log = accessories.log;
         this.logConfig = accessories.logConfig;
-        this.temperature_unit = accessories.temperature_unit;
         this.accessories = accessories;
         this.client = accessories.client;
         this.myUtils = accessories.myUtils;
@@ -38,9 +37,6 @@ module.exports = class DeviceTypes {
             .on("get", (callback) => {
                 this.log_get('alarmSystemStatus', 'SecuritySystemCurrentState', accessory, accessory.context.deviceData.attributes.alarmSystemStatus);
                 callback(null, this.accessories.attributeStateTransform('alarmSystemStatus', accessory.context.deviceData.attributes.alarmSystemStatus));
-            })
-            .on("change", (obj) => {
-                this.log_change('alarmSystemStatus', 'SecuritySystemCurrentState', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("alarmSystemStatus", accessory.context.deviceData.deviceid, thisChar);
 
@@ -55,9 +51,6 @@ module.exports = class DeviceTypes {
                 this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, this.myUtils.convertAlarmState(value, false, Characteristic));
                 this.log_set('alarmSystemStatus', 'SecuritySystemTargetState', accessory, this.myUtils.convertAlarmState(value, false, Characteristic));
                 accessory.context.deviceData.attributes.alarmSystemStatus = this.myUtils.convertAlarmState(value, false, Characteristic);
-            })
-            .on("change", (obj) => {
-                this.log_change('alarmSystemStatus', 'SecuritySystemTargetState', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("alarmSystemStatus", accessory.context.deviceData.deviceid, thisChar);
         return accessory;
@@ -69,9 +62,6 @@ module.exports = class DeviceTypes {
             .getCharacteristic(Characteristic.BatteryLevel)
             .on("get", (callback) => {
                 callback(null, this.accessories.attributeStateTransform('battery', accessory.context.deviceData.attributes.battery, 'Battery Level'));
-            })
-            .on("change", (obj) => {
-                this.log_change('battery', 'BatteryLevel', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("battery", accessory.context.deviceData.deviceid, thisChar);
 
@@ -126,9 +116,6 @@ module.exports = class DeviceTypes {
                 // Reset value to force `change` to fire for repeated presses
                 this.value = -1;
                 callback(null, this.accessories.attributeStateTransform('button', accessory.context.deviceData.attributes.button));
-            })
-            .on("change", (obj) => {
-                this.log_change('button', 'ProgrammableSwitchEvent', accessory, obj);
             });
 
         // Turned on by default for Characteristic.ProgrammableSwitchEvent, required to emit `change`
@@ -143,11 +130,9 @@ module.exports = class DeviceTypes {
             .getCharacteristic(Characteristic.CarbonDioxideDetected)
             .on("get", (callback) => {
                 callback(null, this.accessories.attributeStateTransform('carbonDioxideMeasurement', accessory.context.deviceData.attributes.carbonDioxideMeasurement, 'Carbon Dioxide Detected'));
-            })
-            .on("change", (obj) => {
-                this.log.info(`[CHARACTERISTIC CHANGE] Carbon Dioxide (${accessory.displayName}) | LastUpdate: (${accessory.context.lastUpdate}) | NewValue: (${obj.newValue}) | OldValue: (${obj.oldValue})`);
             });
         this.accessories.storeCharacteristicItem("carbonDioxideMeasurement", accessory.context.deviceData.deviceid, thisChar);
+
         thisChar = accessory
             .getOrAddService(Service.CarbonDioxideSensor)
             .getCharacteristic(Characteristic.CarbonDioxideLevel)
@@ -157,6 +142,7 @@ module.exports = class DeviceTypes {
                 }
             });
         this.accessories.storeCharacteristicItem("carbonDioxideMeasurement", accessory.context.deviceData.deviceid, thisChar);
+
         if (accessory.hasCapability('Tamper Alert')) {
             thisChar = accessory
                 .getOrAddService(Service.CarbonDioxideSensor)
@@ -175,9 +161,6 @@ module.exports = class DeviceTypes {
             .getCharacteristic(Characteristic.CarbonMonoxideDetected)
             .on("get", (callback) => {
                 callback(null, this.accessories.attributeStateTransform('carbonMonoxide', accessory.context.deviceData.attributes.carbonMonoxide));
-            })
-            .on("change", (obj) => {
-                this.log.info(`[CHARACTERISTIC CHANGE] Carbon Monoxide (${accessory.displayName}) | LastUpdate: (${accessory.context.lastUpdate}) | NewValue: (${obj.newValue}) | OldValue: (${obj.oldValue})`);
             });
         this.accessories.storeCharacteristicItem("carbonMonoxide", accessory.context.deviceData.deviceid, thisChar);
         if (accessory.hasCapability('Tamper Alert')) {
@@ -198,9 +181,6 @@ module.exports = class DeviceTypes {
             .getCharacteristic(Characteristic.ContactSensorState)
             .on("get", (callback) => {
                 callback(null, this.accessories.attributeStateTransform('contact', accessory.context.deviceData.attributes.contact));
-            })
-            .on("change", (obj) => {
-                this.log.info(`[CHARACTERISTIC CHANGE] Contact (${accessory.displayName}) | LastUpdate: (${accessory.context.lastUpdate}) | NewValue: (${obj.newValue}) | OldValue: (${obj.oldValue})`);
             });
         this.accessories.storeCharacteristicItem("contact", accessory.context.deviceData.deviceid, thisChar);
         if (accessory.hasCapability('Tamper Alert')) {
@@ -221,9 +201,6 @@ module.exports = class DeviceTypes {
             .addCharacteristic(this.CommunityTypes.KilowattHours)
             .on("get", (callback) => {
                 callback(null, this.accessories.attributeStateTransform('energy', accessory.context.deviceData.attributes.energy));
-            })
-            .on("change", (obj) => {
-                this.log_change('energy', 'KilowattHours', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("energy", accessory.context.deviceData.deviceid, thisChar);
         return accessory;
@@ -238,9 +215,6 @@ module.exports = class DeviceTypes {
             })
             .on("set", (value, callback) => {
                 this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, (value ? "on" : "off"));
-            })
-            .on("change", (obj) => {
-                this.log_change('switch', 'Active', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("switch", accessory.context.deviceData.deviceid, thisChar);
 
@@ -338,9 +312,6 @@ module.exports = class DeviceTypes {
                     this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "close");
                     accessory.context.deviceData.attributes.door = "closing";
                 }
-            })
-            .on("change", (obj) => {
-                this.log_change('door', 'TargetDoorState', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("door", accessory.context.deviceData.deviceid, char);
 
@@ -349,9 +320,6 @@ module.exports = class DeviceTypes {
             .getCharacteristic(Characteristic.CurrentDoorState)
             .on("get", (callback) => {
                 callback(null, this.accessories.attributeStateTransform('door', accessory.context.deviceData.attributes.door, 'Current Door State'));
-            })
-            .on("change", (obj) => {
-                this.log_change('door', 'CurrentDoorState', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("door", accessory.context.deviceData.deviceid, char);
         accessory
@@ -367,9 +335,6 @@ module.exports = class DeviceTypes {
             .getCharacteristic(Characteristic.CurrentRelativeHumidity)
             .on("get", (callback) => {
                 callback(null, this.accessories.attributeStateTransform('humidity', accessory.context.deviceData.attributes.humidity));
-            })
-            .on("change", (obj) => {
-                this.log_change('humidity', 'CurrentRelativeHumidity', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("humidity", accessory.context.deviceData.deviceid, thisChar);
         if (accessory.hasCapability('Tamper Alert')) {
@@ -378,9 +343,6 @@ module.exports = class DeviceTypes {
                 .getCharacteristic(Characteristic.StatusTampered)
                 .on("get", (callback) => {
                     callback(null, this.accessories.attributeStateTransform('tamper', accessory.context.deviceData.attributes.tamper));
-                })
-                .on("change", (obj) => {
-                    this.log_change('tamper', 'StatusTampered', accessory, obj);
                 });
             this.accessories.storeCharacteristicItem("tamper", accessory.context.deviceData.deviceid, thisChar);
         }
@@ -393,9 +355,6 @@ module.exports = class DeviceTypes {
             .getCharacteristic(Characteristic.CurrentAmbientLightLevel)
             .on("get", (callback) => {
                 callback(null, this.accessories.attributeStateTransform('illuminance', accessory.context.deviceData.attributes.illuminance));
-            })
-            .on("change", (obj) => {
-                this.log_change('illuminance', 'CurrentAmbientLightLevel', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("illuminance", accessory.context.deviceData.deviceid, thisChar);
         return accessory;
@@ -410,9 +369,6 @@ module.exports = class DeviceTypes {
             })
             .on("set", (value, callback) => {
                 this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, (value ? "on" : "off"));
-            })
-            .on("change", (obj) => {
-                this.log_change('switch', 'On', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("switch", accessory.context.deviceData.deviceid, thisChar);
         return accessory;
@@ -435,9 +391,6 @@ module.exports = class DeviceTypes {
                     this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setHue", {
                         value1: Math.round(value / 3.6)
                     });
-                })
-                .on("change", (obj) => {
-                    this.log_change('hue', 'Hue', accessory, obj);
                 });
             this.accessories.storeCharacteristicItem("hue", accessory.context.deviceData.deviceid, thisChar);
         }
@@ -452,9 +405,6 @@ module.exports = class DeviceTypes {
                     this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setSaturation", {
                         value1: value
                     });
-                })
-                .on("change", (obj) => {
-                    this.log_change('saturation', 'Saturation', accessory, obj);
                 });
             this.accessories.storeCharacteristicItem("saturation", accessory.context.deviceData.deviceid, thisChar);
         }
@@ -471,9 +421,6 @@ module.exports = class DeviceTypes {
                         value1: temp
                     });
                     accessory.context.deviceData.attributes.colorTemperature = temp;
-                })
-                .on("change", (obj) => {
-                    this.change_log('colorTemperature', 'ColorTemperature', accessory, obj);
                 });
             this.accessories.storeCharacteristicItem("colorTemperature", accessory.context.deviceData.deviceid, thisChar);
         }
@@ -491,9 +438,6 @@ module.exports = class DeviceTypes {
                 this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setLevel", {
                     value1: value
                 });
-            })
-            .on("change", (obj) => {
-                this.log_change('level', 'Brightness', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("level", accessory.context.deviceData.deviceid, thisChar);
         return accessory;
@@ -505,9 +449,6 @@ module.exports = class DeviceTypes {
             .getCharacteristic(Characteristic.LockCurrentState)
             .on("get", (callback) => {
                 callback(null, this.accessories.attributeStateTransform('lock', accessory.context.deviceData.attributes.lock));
-            })
-            .on("change", (obj) => {
-                this.log.info(`[CHARACTERISTIC CHANGE] Lock (${accessory.displayName}) | LastUpdate: (${accessory.context.lastUpdate}) | NewValue: (${obj.newValue}) | OldValue: (${obj.oldValue})`);
             });
         this.accessories.storeCharacteristicItem("lock", accessory.context.deviceData.deviceid, thisChar);
 
@@ -520,9 +461,6 @@ module.exports = class DeviceTypes {
             .on("set", (value, callback) => {
                 this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, (value === 1 || value === true) ? "lock" : "unlock");
                 accessory.context.deviceData.attributes.lock = (value === 1 || value === true) ? "locked" : "unlocked";
-            })
-            .on("change", (obj) => {
-                this.log_change('lock', 'LockTargetState', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("lock", accessory.context.deviceData.deviceid, thisChar);
 
@@ -548,9 +486,6 @@ module.exports = class DeviceTypes {
             .getCharacteristic(Characteristic.MotionDetected)
             .on("get", (callback) => {
                 callback(null, this.accessories.attributeStateTransform('motion', accessory.context.deviceData.attributes.motion));
-            })
-            .on("change", (obj) => {
-                this.log_change('motion', 'MotionDetected', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("motion", accessory.context.deviceData.deviceid, thisChar);
         if (accessory.hasCapability('Tamper Alert')) {
@@ -559,9 +494,6 @@ module.exports = class DeviceTypes {
                 .getCharacteristic(Characteristic.StatusTampered)
                 .on("get", (callback) => {
                     callback(null, this.accessories.attributeStateTransform('tamper', accessory.context.deviceData.attributes.tamper));
-                })
-                .on("change", (obj) => {
-                    this.log_change('tamper', 'StatusTampered', accessory, obj);
                 });
             this.accessories.storeCharacteristicItem("tamper", accessory.context.deviceData.deviceid, thisChar);
         }
@@ -574,9 +506,6 @@ module.exports = class DeviceTypes {
             .addCharacteristic(this.CommunityTypes.Watts)
             .on("get", (callback) => {
                 callback(null, this.accessories.attributeStateTransform('power', accessory.context.deviceData.attributes.power));
-            })
-            .on("change", (obj) => {
-                this.log_change('power', 'Watts', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("power", accessory.context.deviceData.deviceid, thisChar);
         return accessory;
@@ -588,9 +517,6 @@ module.exports = class DeviceTypes {
             .getCharacteristic(Characteristic.OccupancyDetected)
             .on("get", (callback) => {
                 callback(null, this.accessories.attributeStateTransform('presence', accessory.context.deviceData.attributes.presence));
-            })
-            .on("change", (obj) => {
-                this.log_change('presence', 'OccupancyDetected', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("presence", accessory.context.deviceData.deviceid, thisChar);
         if (accessory.hasCapability('Tamper Alert')) {
@@ -599,9 +525,6 @@ module.exports = class DeviceTypes {
                 .getCharacteristic(Characteristic.StatusTampered)
                 .on("get", (callback) => {
                     callback(null, this.accessories.attributeStateTransform('tamper', accessory.context.deviceData.attributes.tamper));
-                })
-                .on("change", (obj) => {
-                    this.log_change('tamper', 'StatusTampered', accessory, obj);
                 });
             this.storeCharacteristicItem("tamper", accessory.context.deviceData.deviceid, thisChar);
         }
@@ -614,9 +537,6 @@ module.exports = class DeviceTypes {
             .getCharacteristic(Characteristic.SmokeDetected)
             .on("get", (callback) => {
                 callback(null, this.accessories.attributeStateTransform('smoke', accessory.context.deviceData.attributes.smoke));
-            })
-            .on("change", (obj) => {
-                this.log_change('smoke', 'SmokeDetected', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("smoke", accessory.context.deviceData.deviceid, thisChar);
         if (accessory.hasCapability('Tamper Alert')) {
@@ -625,9 +545,6 @@ module.exports = class DeviceTypes {
                 .getCharacteristic(Characteristic.StatusTampered)
                 .on("get", (callback) => {
                     callback(null, this.accessories.attributeStateTransform('tamper', accessory.context.deviceData.attributes.tamper));
-                })
-                .on("change", (obj) => {
-                    this.log_change('tamper', 'StatusTampered', accessory, obj);
                 });
             this.accessories.storeCharacteristicItem("tamper", accessory.context.deviceData.deviceid, thisChar);
         }
@@ -659,11 +576,7 @@ module.exports = class DeviceTypes {
                             });
                         }, 1000);
                     }
-                })
-                .on("change", (obj) => {
-                    this.log_change('level', 'Volume', accessory, obj);
                 });
-
             this.accessories.storeCharacteristicItem("volume", accessory.context.deviceData.deviceid, thisChar);
         }
 
@@ -676,9 +589,6 @@ module.exports = class DeviceTypes {
                 })
                 .on("set", (value, callback) => {
                     this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, (value === "muted") ? "mute" : "unmute");
-                })
-                .on("change", (obj) => {
-                    this.log_change('mute', 'Mute', accessory, obj);
                 });
             this.accessories.storeCharacteristicItem("mute", accessory.context.deviceData.deviceid, thisChar);
         }
@@ -698,9 +608,6 @@ module.exports = class DeviceTypes {
                         value1: value
                     });
                 }
-            })
-            .on("change", (obj) => {
-                this.log_change('level', 'Volume', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("volume", accessory.context.deviceData.deviceid, thisChar);
 
@@ -712,9 +619,6 @@ module.exports = class DeviceTypes {
             })
             .on("set", (value, callback) => {
                 this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, (value === "muted") ? "mute" : "unmute");
-            })
-            .on("change", (obj) => {
-                this.log_change('mute', 'Mute', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("mute", accessory.context.deviceData.deviceid, thisChar);
         return accessory;
@@ -729,9 +633,6 @@ module.exports = class DeviceTypes {
             })
             .on("set", (value, callback) => {
                 this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, (value ? "on" : "off"));
-            })
-            .on("change", (obj) => {
-                this.log_change('switch', 'On', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("switch", accessory.context.deviceData.deviceid, char);
         return accessory;
@@ -747,9 +648,6 @@ module.exports = class DeviceTypes {
             })
             .on("get", (callback) => {
                 callback(null, this.myUtils.tempConversion(accessory.context.deviceData.attributes.temperature));
-            })
-            .on("change", (obj) => {
-                this.log_change('temperature', 'CurrentTemperature', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("temperature", accessory.context.deviceData.deviceid, thisChar);
         if (accessory.hasCapability('Tamper Alert')) {
@@ -758,9 +656,6 @@ module.exports = class DeviceTypes {
                 .getCharacteristic(Characteristic.StatusTampered)
                 .on("get", (callback) => {
                     callback(null, this.accessories.attributeStateTransform('tamper', accessory.context.deviceData.attributes.tamper));
-                })
-                .on("change", (obj) => {
-                    this.log_change('tamper', 'StatusTampered', accessory, obj);
                 });
             this.accessories.storeCharacteristicItem("tamper", accessory.context.deviceData.deviceid, thisChar);
         }
@@ -842,7 +737,7 @@ module.exports = class DeviceTypes {
             .setProps({
                 minValue: this.myUtils.thermostatTempConversion(40),
                 maxValue: this.myUtils.thermostatTempConversion(90),
-                minSteps: (this.temperature_unit === 'F') ? 1.0 : 0.5
+                minSteps: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5
             })
             .on("get", (callback) => {
                 callback(null, this.myUtils.thermostatTempConversion(accessory.context.deviceData.attributes.temperature));
@@ -855,7 +750,7 @@ module.exports = class DeviceTypes {
             .setProps({
                 minValue: this.myUtils.thermostatTempConversion(40),
                 maxValue: this.myUtils.thermostatTempConversion(90),
-                minSteps: (this.temperature_unit === 'F') ? 1.0 : 0.5
+                minSteps: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5
             })
             .on("get", (callback) => {
                 let temp;
@@ -919,7 +814,7 @@ module.exports = class DeviceTypes {
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.TemperatureDisplayUnits)
             .on("get", (callback) => {
-                callback(null, (this.temperature_unit === 'F') ? Characteristic.TemperatureDisplayUnits.FAHRENHEIT : Characteristic.TemperatureDisplayUnits.CELSIUS);
+                callback(null, (this.platform.getTempUnit() === 'F') ? Characteristic.TemperatureDisplayUnits.FAHRENHEIT : Characteristic.TemperatureDisplayUnits.CELSIUS);
             });
         this.accessories.storeCharacteristicItem("temperature_unit", "platform", thisChar);
 
@@ -929,7 +824,7 @@ module.exports = class DeviceTypes {
             .setProps({
                 minValue: this.myUtils.thermostatTempConversion(40),
                 maxValue: this.myUtils.thermostatTempConversion(90),
-                minSteps: (this.temperature_unit === 'F') ? 1.0 : 0.5
+                minSteps: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5
             })
             .on("get", (callback) => {
                 callback(null, this.myUtils.thermostatTempConversion(accessory.context.deviceData.attributes.heatingSetpoint));
@@ -950,7 +845,7 @@ module.exports = class DeviceTypes {
             .setProps({
                 minValue: this.myUtils.thermostatTempConversion(40),
                 maxValue: this.myUtils.thermostatTempConversion(90),
-                minSteps: (this.temperature_unit === 'F') ? 1.0 : 0.5
+                minSteps: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5
             })
             .on("get", (callback) => {
                 callback(null, this.myUtils.thermostatTempConversion(accessory.context.deviceData.attributes.coolingSetpoint));
@@ -973,9 +868,6 @@ module.exports = class DeviceTypes {
             .getCharacteristic(Characteristic.InUse)
             .on("get", (callback) => {
                 callback(null, this.accessories.attributeStateTransform('valve', accessory.context.deviceData.attributes.valve));
-            })
-            .on("change", (obj) => {
-                this.log_change('valve', 'InUse', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("valve", accessory.context.deviceData.deviceid, thisChar);
 
@@ -988,9 +880,6 @@ module.exports = class DeviceTypes {
             })
             .on("set", (value, callback) => {
                 this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, (value ? "on" : "off"));
-            })
-            .on("change", (obj) => {
-                this.log_change('valve', 'Active', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("valve", accessory.context.deviceData.deviceid, thisChar);
 
@@ -1016,9 +905,6 @@ module.exports = class DeviceTypes {
                 if (value && (accessory.context.deviceData.attributes.switch === "off")) {
                     this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "mode");
                 }
-            })
-            .on("change", (obj) => {
-                this.log_change('switch', 'On', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("switch", accessory.context.deviceData.deviceid, thisChar);
         return accessory;
@@ -1043,9 +929,6 @@ module.exports = class DeviceTypes {
                             .updateValue(false);
                     }, 2000);
                 }
-            })
-            .on("change", (obj) => {
-                this.log_change('switch', 'On', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("switch", accessory.context.deviceData.deviceid, thisChar);
         return accessory;
@@ -1057,9 +940,6 @@ module.exports = class DeviceTypes {
             .getCharacteristic(Characteristic.LeakDetected)
             .on("get", (callback) => {
                 callback(null, this.accessories.attributeStateTransform('water', accessory.context.deviceData.attributes.water));
-            })
-            .on("change", (obj) => {
-                this.log_change('water', 'LeakDetected', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("water", accessory.context.deviceData.deviceid, thisChar);
         if (accessory.hasCapability('Tamper Alert')) {
@@ -1068,9 +948,6 @@ module.exports = class DeviceTypes {
                 .getCharacteristic(Characteristic.StatusTampered)
                 .on("get", (callback) => {
                     callback(null, this.accessories.attributeStateTransform('tamper', accessory.context.deviceData.attributes.tamper));
-                })
-                .on("change", (obj) => {
-                    this.log_change('tamper', 'StatusTampered', accessory, obj);
                 });
             this.accessories.storeCharacteristicItem("tamper", accessory.context.deviceData.deviceid, thisChar);
         }
@@ -1093,9 +970,6 @@ module.exports = class DeviceTypes {
                         value1: value
                     });
                 }
-            })
-            .on("change", (obj) => {
-                this.log_change('level', 'TargetPosition', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("level", accessory.context.deviceData.deviceid, thisChar);
 
@@ -1104,9 +978,6 @@ module.exports = class DeviceTypes {
             .getCharacteristic(Characteristic.CurrentPosition)
             .on("get", (callback) => {
                 callback(null, parseInt(accessory.context.deviceData.attributes.level));
-            })
-            .on("change", (obj) => {
-                this.log_change('level', 'CurrentPosition', accessory, obj);
             });
         this.accessories.storeCharacteristicItem("level", accessory.context.deviceData.deviceid, thisChar);
         accessory

@@ -4,8 +4,8 @@
  *  Copyright 2018, 2019, 2020 Anthony Santilli
  */
 
-String appVersion()                     { return "2.0.1" }
-String appModified()                    { return "12-04-2019" }
+String appVersion()                     { return "2.0.2" }
+String appModified()                    { return "12-11-2019" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
@@ -128,6 +128,7 @@ def mainPage() {
         section("Plugin Options:") {
             paragraph "Turn off if you are having issues sending commands"
             input "allowLocalCmds", "bool", title: "Send HomeKit Commands Locally?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("command2")
+            input "temp_unit", "enum", title: "Temperature Unit?", required: true, defaultValue: location?.temperatureScale, options: ["F":"Fahrenheit", "C":"Celcius"], submitOnChange: true, image: getAppImg("command2")
         }
         section("Review Configuration:") {
             Integer devCnt = getDeviceCnt()
@@ -526,6 +527,7 @@ def renderConfig() {
                 app_url: apiServerUrl("/api/smartapps/installations/"),
                 app_id: app?.getId(),
                 access_token: state?.accessToken,
+                temperature_unit: settings?.temp_unit ?: location?.temperatureScale,
                 logConfig: [
                     debug: false,
                     showChanges: true,
@@ -564,7 +566,7 @@ def CommandReply(statusOut, messageOut) {
 
 def lanEventHandler(evt) {
     // log.trace "lanStreamEvtHandler..."
-    def msg = parseLanMessage(evt?.description)
+    def msg = parseLanMessage(evt?.description as String)
     Map headerMap = msg?.headers
     // log.trace "lanEventHandler... | headers: ${headerMap}"
     try {

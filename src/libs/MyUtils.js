@@ -15,7 +15,6 @@ module.exports = class MyUtils {
         this.client = platform.client;
         this.log = platform.log;
         this.homebridge = platform.homebridge;
-        this.temperature_unit = platform.temperature_unit;
     }
 
     cleanSpaces(str) {
@@ -43,9 +42,9 @@ module.exports = class MyUtils {
 
     thermostatTempConversion(temp, isSet = false) {
         if (isSet) {
-            return (this.temperature_unit === 'C') ? Math.round(temp) : Math.round(temp * 1.8 + 32);
+            return (this.platform.getTempUnit() === 'C') ? Math.round(temp) : Math.round(temp * 1.8 + 32);
         } else {
-            return (this.temperature_unit === 'C') ? Math.round(temp * 10) / 10 : Math.round((temp - 32) / 1.8 * 10) / 10;
+            return (this.platform.getTempUnit() === 'C') ? Math.round(temp * 10) / 10 : Math.round((temp - 32) / 1.8 * 10) / 10;
         }
     }
 
@@ -58,7 +57,7 @@ module.exports = class MyUtils {
     }
 
     tempConversion(temp, onlyC = false) {
-        if (this.temperature_unit === 'C' || onlyC) {
+        if (this.platform.getTempUnit() === 'C' || onlyC) {
             return (parseFloat(temp * 10) / 10);
         } else {
             return (parseFloat((temp - 32) / 1.8 * 10) / 10).toFixed(2);
