@@ -135,6 +135,14 @@ module.exports = class ST_Platform {
                         reject(err.message);
                     })
                     .then(resp => {
+                        if (resp && resp.location) {
+                            that.updateTempUnit(resp.location.temperature_scale);
+                            if (resp.location.hubIP) {
+                                that.local_hub_ip = resp.location.hubIP;
+                                that.local_commands = resp.location.local_commands === true;
+                                that.client.updateGlobals(that.local_hub_ip, that.local_commands);
+                            }
+                        }
                         if (resp && resp.deviceList && resp.deviceList instanceof Array) {
                             // that.log.debug("Received All Device Data");
                             const toCreate = this.SmartThingsAccessories.diffAdd(resp.deviceList);
@@ -147,14 +155,6 @@ module.exports = class ST_Platform {
                             toRemove.forEach(accessory => this.removeAccessory(accessory));
                             toUpdate.forEach(device => this.updateDevice(device));
                             toCreate.forEach(device => this.addDevice(device));
-                        }
-                        if (resp && resp.location) {
-                            that.updateTempUnit(resp.location.temperature_scale);
-                            if (resp.location.hubIP) {
-                                that.local_hub_ip = resp.location.hubIP;
-                                that.local_commands = resp.location.local_commands === true;
-                                that.client.updateGlobals(that.local_hub_ip, that.local_commands);
-                            }
                         }
                         that.log.alert(`Total Initialization Time: (${Math.round((new Date() - starttime) / 1000)} seconds)`);
                         that.log.notice(`Unknown Capabilities: ${JSON.stringify(that.unknownCapabilities)}`);
