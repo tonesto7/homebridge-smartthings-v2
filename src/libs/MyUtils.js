@@ -9,12 +9,15 @@ const {
     compareVersions = require("compare-versions"),
     os = require("os");
 
+var Characteristic;
+
 module.exports = class MyUtils {
     constructor(platform) {
         this.platform = platform;
         this.client = platform.client;
         this.log = platform.log;
         this.homebridge = platform.homebridge;
+        Characteristic = platform.Characteristic;
     }
 
     cleanSpaces(str) {
@@ -134,54 +137,31 @@ module.exports = class MyUtils {
         }
     }
 
-    convertAlarmState(value, valInt = false, Characteristic) {
+    convertAlarmState(value) {
         switch (value) {
             case "stay":
-            case "armHome":
-            case "armedHome":
-            case "armhome":
-            case "armedhome":
-            case 0:
-                return valInt ?
-                    Characteristic.SecuritySystemCurrentState.STAY_ARM :
-                    platformName === "Hubitat" ?
-                    "armHome" :
-                    "stay";
-            case "away":
-            case "armaway":
-            case "armAway":
-            case "armedaway":
-            case "armedAway":
-            case 1:
-                return valInt ?
-                    Characteristic.SecuritySystemCurrentState.AWAY_ARM :
-                    platformName === "Hubitat" ?
-                    "armAway" :
-                    "away";
             case "night":
-            case "armnight":
-            case "armNight":
-            case "armednight":
-            case 2:
-                return valInt ?
-                    Characteristic.SecuritySystemCurrentState.NIGHT_ARM :
-                    platformName === "Hubitat" ?
-                    "armNight" :
-                    "night";
+                return Characteristic.SecuritySystemCurrentState.STAY_ARM;
+            case "away":
+                return Characteristic.SecuritySystemCurrentState.AWAY_ARM;
             case "off":
-            case "disarm":
-            case "disarmed":
-            case 3:
-                return valInt ?
-                    Characteristic.SecuritySystemCurrentState.DISARMED :
-                    platformName === "Hubitat" ?
-                    "disarm" :
-                    "off";
+                return Characteristic.SecuritySystemCurrentState.DISARMED;
             case "alarm_active":
+                return Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
+        }
+    }
+
+    convertAlarmCmd(value) {
+        switch (value) {
+            case 0:
+            case 2:
+                return "stay";
+            case 1:
+                return "away";
+            case 3:
+                return "off";
             case 4:
-                return valInt ?
-                    Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED :
-                    "alarm_active";
+                return "alarm_active";
         }
     }
 
@@ -202,6 +182,7 @@ module.exports = class MyUtils {
         }
         return "0.0.0.0";
     }
+
     updateConfig(newConfig) {
         const configPath = this.homebridge.user.configPath();
         const file = fs.readFileSync(configPath);
