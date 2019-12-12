@@ -312,8 +312,8 @@ module.exports = class DeviceCharacteristics {
         if (_accessory.hasDeviceFlag('fan_3_spd')) spdSteps = 33;
         if (_accessory.hasDeviceFlag('fan_4_spd')) spdSteps = 25;
         let spdAttr = (_accessory.hasAttribute('level')) ? "level" : (_accessory.hasAttribute('fanSpeed') && _accessory.hasCommand('setFanSpeed')) ? 'fanSpeed' : undefined;
-        _accessory.manageGetSetCharacteristic(_service, Characteristic.RotationSpeed, spdAttr, { cmdHasVal: true, props: { minSteps: spdSteps } });
-
+        if (_accessory.hasAttribute('level') || _accessory.hasAttribute('fanSpeed'))
+            _accessory.manageGetSetCharacteristic(_service, Characteristic.RotationSpeed, spdAttr, { cmdHasVal: true, props: { minSteps: spdSteps } });
         _accessory.context.deviceGroups.push("fan");
         return _accessory;
     }
