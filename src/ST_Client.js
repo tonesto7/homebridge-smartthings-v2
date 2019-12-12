@@ -117,7 +117,7 @@ module.exports = class ST_Client {
 
     sendUpdateStatus(hasUpdate, newVersion = null) {
         return new Promise((resolve, reject) => {
-            this.log.notice(`Sending Plugin Status to SmartThings | UpdateAvailable: ${hasUpdate} | newVersion: ${newVersion}`);
+            this.log.notice(`Sending Plugin Status to SmartThings | UpdateAvailable: ${hasUpdate}${newVersion ?  ' | newVersion: ' + newVersion : ''}`);
             rp({
                     method: 'POST',
                     uri: `${this.configItems.app_url}${this.configItems.app_id}/pluginStatus`,

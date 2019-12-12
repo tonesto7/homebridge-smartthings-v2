@@ -1,12 +1,13 @@
 const knownCapabilities = require("./libs/Constants").knownCapabilities,
     _ = require("lodash"),
-    DeviceTypes = require('./ST_DeviceTypes'),
-    ServiceTypes = require('./ST_ServiceTypes');
+    ServiceTypes = require('./ST_ServiceTypes'),
+    Transforms = require('./ST_Transforms'),
+    DeviceTypes = require('./ST_DeviceCharacteristics');
 var Service, Characteristic;
 
 module.exports = class ST_Accessories {
     constructor(platform) {
-        this.platform = platform;
+        this.mainPlatform = platform;
         this.logConfig = platform.logConfig;
         this.configItems = platform.getConfigItems();
         this.myUtils = platform.myUtils;
@@ -18,10 +19,10 @@ module.exports = class ST_Accessories {
         this.CommunityTypes = require("./libs/CommunityTypes")(Service, Characteristic);
         this.client = platform.client;
         this.comparator = this.comparator.bind(this);
+        this.transforms = new Transforms(this, Characteristic);
         this.serviceTypes = new ServiceTypes(this, Service);
-        this.device_types = new DeviceTypes(this, Service, Characteristic);
+        this.device_types = new DeviceTypes(this, Characteristic);
         this._accessories = {};
-        this._ignored = {};
         this._attributeLookup = {};
     }
 
@@ -55,8 +56,8 @@ module.exports = class ST_Accessories {
             accessory.hasCharacteristic = this.hasCharacteristic.bind(accessory);
             accessory.updateDeviceAttr = this.updateDeviceAttr.bind(accessory);
             accessory.updateCharacteristicVal = this.updateCharacteristicVal.bind(accessory);
-            // accessory.manageGetCharacteristic = this.manageGetCharacteristic.bind(accessory);
-            // accessory.manageGetSetCharacteristic = this.manageGetSetCharacteristic.bind(accessory);
+            accessory.manageGetCharacteristic = this.device_types.manageGetCharacteristic.bind(accessory);
+            accessory.manageGetSetCharacteristic = this.device_types.manageGetSetCharacteristic.bind(accessory);
             return this.configureCharacteristics(accessory);
         } catch (err) {
             this.log.error(`initializeAccessory (fromCache: ${fromCache}) Error: ${err}`);
@@ -67,7 +68,7 @@ module.exports = class ST_Accessories {
 
     configureCharacteristics(accessory) {
         for (let index in accessory.context.deviceData.capabilities) {
-            if (knownCapabilities.indexOf(index) === -1 && this.platform.unknownCapabilities.indexOf(index) === -1) this.platform.unknownCapabilities.push(index);
+            if (knownCapabilities.indexOf(index) === -1 && this.mainPlatform.unknownCapabilities.indexOf(index) === -1) this.mainPlatform.unknownCapabilities.push(index);
         }
 
         accessory.context.deviceGroups = [];
@@ -94,7 +95,7 @@ module.exports = class ST_Accessories {
         let svcTypes = this.serviceTypes.getServiceTypes(accessory);
         if (svcTypes) {
             svcTypes.forEach((svc) => {
-                console.log(accessory.name, ' | ', svc.name);
+                this.log.debug(accessory.name, ' | ', svc.name);
                 accessory.servicesToKeep.push(svc.type.UUID);
                 this.device_types[svc.name](accessory, svc.type);
             });
@@ -115,302 +116,13 @@ module.exports = class ST_Accessories {
                 characteristics.forEach(char => {
                     accessory.context.deviceData.attributes[change.attribute] = change.value;
                     accessory.context.lastUpdate = new Date().toLocaleString();
-                    char.updateValue(that.transformAttributeState(change.attribute, change.value, char.displayName));
+                    char.updateValue(that.transforms.transformAttributeState(change.attribute, change.value, char.displayName));
                     // char.getValue();
                 });
                 resolve(that.addAccessoryToCache(accessory));
             }
             resolve(false);
         });
-    }
-
-    transformAttributeState(attr, val, charName) {
-        switch (attr) {
-            case "switch":
-                return (val === 'on');
-            case "door":
-                switch (val) {
-                    case "open":
-                        return Characteristic.TargetDoorState.OPEN;
-                    case "opening":
-                        return charName && charName === "Target Door State" ? Characteristic.TargetDoorState.OPEN : Characteristic.TargetDoorState.OPENING;
-                    case "closed":
-                        return Characteristic.TargetDoorState.CLOSED;
-                    case "closing":
-                        return charName && charName === "Target Door State" ? Characteristic.TargetDoorState.CLOSED : Characteristic.TargetDoorState.CLOSING;
-                    default:
-                        return charName && charName === "Target Door State" ? Characteristic.TargetDoorState.OPEN : Characteristic.TargetDoorState.STOPPED;
-                }
-
-            case "lock":
-                switch (val) {
-                    case "locked":
-                        return Characteristic.LockCurrentState.SECURED;
-                    case "unlocked":
-                        return Characteristic.LockCurrentState.UNSECURED;
-                    default:
-                        return Characteristic.LockCurrentState.UNKNOWN;
-                }
-
-            case "button":
-                // case "supportButtonValues":
-                switch (val) {
-                    case "pushed":
-                        return Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS;
-                    case "held":
-                        return Characteristic.ProgrammableSwitchEvent.LONG_PRESS;
-                    case "double":
-                        return Characteristic.ProgrammableSwitchEvent.DOUBLE_PRESS;
-                    default:
-                        return undefined;
-                }
-            case "supportButtonValues":
-                {
-                    let validValues = [];
-                    if (typeof val === "string") {
-                        for (const v of JSON.parse(val)) {
-                            switch (v) {
-                                case "pushed":
-                                    validValues.push(Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS);
-                                    continue;
-                                case "held":
-                                    validValues.push(Characteristic.ProgrammableSwitchEvent.LONG_PRESS);
-                                    continue;
-                                case "double":
-                                    validValues.push(Characteristic.ProgrammableSwitchEvent.DOUBLE_PRESS);
-                                    continue;
-                            }
-                        }
-                    }
-                    return validValues;
-                }
-            case "fanState":
-                return (val === "off") ? Characteristic.CurrentFanState.IDLE : Characteristic.CurrentFanState.BLOWING_AIR;
-            case "valve":
-                return (val === "open") ? Characteristic.InUse.IN_USE : Characteristic.InUse.NOT_IN_USE;
-            case "mute":
-                return (val === 'muted');
-            case "smoke":
-                return (val === "clear") ? Characteristic.SmokeDetected.SMOKE_NOT_DETECTED : Characteristic.SmokeDetected.SMOKE_DETECTED;
-            case "carbonMonoxide":
-                return (val === "clear") ? Characteristic.CarbonMonoxideDetected.CO_LEVELS_NORMAL : Characteristic.CarbonMonoxideDetected.CO_LEVELS_ABNORMAL;
-            case "carbonDioxideMeasurement":
-                switch (charName) {
-                    case "Carbon Dioxide Detected":
-                        return (val < 2000) ? Characteristic.CarbonMonoxideDetected.CO_LEVELS_NORMAL : Characteristic.CarbonMonoxideDetected.CO_LEVELS_ABNORMAL;
-                    default:
-                        return parseInt(val);
-                }
-            case "tamper":
-                return (val === "detected") ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED;
-            case "motion":
-                return (val === "active");
-            case "water":
-                return (val === "dry") ? Characteristic.LeakDetected.LEAK_NOT_DETECTED : Characteristic.LeakDetected.LEAK_DETECTED;
-            case "contact":
-                return (val === "closed") ? Characteristic.ContactSensorState.CONTACT_DETECTED : Characteristic.ContactSensorState.CONTACT_NOT_DETECTED;
-            case "presence":
-                return (val === "present");
-            case "battery":
-                if (charName === "Status Low Battery") {
-                    return (val < 20) ? Characteristic.StatusLowBattery.BATTERY_LEVEL_LOW : Characteristic.StatusLowBattery.BATTERY_LEVEL_NORMAL;
-                } else {
-                    return Math.round(val);
-                }
-            case "batteryStatus":
-                return (val === "USB Cable") ? Characteristic.ChargingState.CHARGING : Characteristic.ChargingState.NOT_CHARGING;
-            case "hue":
-                return Math.round(val * 3.6);
-            case "colorTemperature":
-                return this.myUtils.colorTempFromK(val);
-            case "temperature":
-                return this.myUtils.tempConversion(val);
-            case "heatingSetpoint":
-            case "coolingSetpoint":
-            case "thermostatSetpoint":
-                return this.myUtils.thermostatTempConversion(val);
-            case "fanSpeed":
-                return this.myUtils.fanSpeedIntToLevel(val);
-            case "level":
-            case "saturation":
-            case "volume":
-                return parseInt(val) || 0;
-            case "illuminance":
-                return Math.round(Math.ceil(parseFloat(val)), 0);
-
-            case "energy":
-            case "humidity":
-            case "power":
-                return Math.round(val);
-            case "thermostatOperatingState":
-                switch (val) {
-                    case "pending cool":
-                    case "cooling":
-                        return Characteristic.CurrentHeatingCoolingState.COOL;
-                    case "pending heat":
-                    case "heating":
-                        return Characteristic.CurrentHeatingCoolingState.HEAT;
-                    default:
-                        // The above list should be inclusive, but we need to return something if they change stuff.
-                        // TODO: Double check if Smartthings can send "auto" as operatingstate. I don't think it can.
-                        return Characteristic.CurrentHeatingCoolingState.OFF;
-                }
-            case "thermostatMode":
-                switch (val) {
-                    case "cool":
-                        return Characteristic.TargetHeatingCoolingState.COOL;
-                    case "emergency heat":
-                    case "heat":
-                        return Characteristic.TargetHeatingCoolingState.HEAT;
-                    case "auto":
-                        return Characteristic.TargetHeatingCoolingState.AUTO;
-                    default:
-                        return Characteristic.TargetHeatingCoolingState.OFF;
-                }
-            case "supportedThermostatModes":
-                {
-                    let validModes = [];
-                    if (typeof val === "string") {
-                        if (val.includes("off"))
-                            validModes.push(Characteristic.TargetHeatingCoolingState.OFF);
-
-                        if (val.includes("heat") || val.includes("emergency heat"))
-                            validModes.push(Characteristic.TargetHeatingCoolingState.HEAT);
-
-                        if (val.includes("cool"))
-                            validModes.push(Characteristic.TargetHeatingCoolingState.COOL);
-
-                        if (val.includes("auto"))
-                            validModes.push(Characteristic.TargetHeatingCoolingState.AUTO);
-                    }
-                    return validModes;
-                }
-            case "alarmSystemStatus":
-                return this.myUtils.convertAlarmState(val);
-
-            default:
-                return val;
-        }
-    }
-
-    transformCommandName(attr, val) {
-        switch (val) {
-            case "valve":
-                return (val === true) ? "open" : "close";
-            case "switch":
-                return (val === true) ? "on" : "off";
-            case "door":
-                if (val === Characteristic.TargetDoorState.OPEN || val === 0) {
-                    return "open";
-                } else {
-                    return "close";
-                }
-            case "hue":
-                return "setHue";
-            case "colorTemperature":
-                return "setColorTemperature";
-            case "lock":
-                return (val === 1 || val === true) ? "lock" : "unlock";
-            case "mute":
-                return (val === "muted") ? "mute" : "unmute";
-            case "fanSpeed":
-                return "setFanSpeed";
-            case "level":
-                return "setLevel";
-            case "volume":
-                return "setVolume";
-            case "thermostatMode":
-                return "setThermostatMode";
-            default:
-                return val;
-        }
-    }
-
-    transformCommandValue(attr, val) {
-        switch (val) {
-            case "valve":
-                return (val === true) ? "open" : "close";
-            case "switch":
-                return (val === true) ? "on" : "off";
-            case "door":
-                if (val === Characteristic.TargetDoorState.OPEN || val === 0) {
-                    return "open";
-                } else if (val === Characteristic.TargetDoorState.CLOSED || val === 1) {
-                    return "close";
-                }
-                return 'closing';
-            case "hue":
-                return Math.round(val / 3.6);
-            case "colorTemperature":
-                return this.myUtils.colorTempToK(val);
-            case "lock":
-                return (val === 1 || val === true) ? "lock" : "unlock";
-            case "mute":
-                return (val === "muted") ? "mute" : "unmute";
-            case "alarmSystemStatus":
-                return this.myUtils.convertAlarmCmd(val, false, Characteristic);
-            case "fanSpeed":
-                if (val === 0) {
-                    return 0;
-                } else if (val < 34) {
-                    return 1;
-                } else if (val < 67) {
-                    return 2;
-                } else {
-                    return 3;
-                }
-            case "thermostatMode":
-                switch (val) {
-                    case Characteristic.TargetHeatingCoolingState.COOL:
-                        return "cool";
-                    case Characteristic.TargetHeatingCoolingState.HEAT:
-                        return "heat";
-                    case Characteristic.TargetHeatingCoolingState.AUTO:
-                        return "auto";
-                    case Characteristic.TargetHeatingCoolingState.OFF:
-                        return "off";
-                    default:
-                        return undefined;
-                }
-            default:
-                return val;
-        }
-    }
-
-    loadAccessoryData(accessory, deviceData) {
-        let that = this;
-        // return new Promise((resolve, reject) => {
-        if (deviceData !== undefined) {
-            this.log.debug("Setting device data from existing data");
-            accessory.context.deviceData = deviceData;
-            for (let i = 0; i < accessory.services.length; i++) {
-                for (let j = 0; j < accessory.services[i].characteristics.length; j++) {
-                    accessory.services[i].characteristics[j].getValue();
-                }
-            }
-            return accessory;
-        } else {
-            this.log.debug("Fetching Device Data");
-            this.client
-                .getDevice(accessory.deviceid)
-                .then(data => {
-                    if (data === undefined) {
-                        return accessory;
-                    }
-                    accessory.context.deviceData = data;
-                    for (let i = 0; i < accessory.services.length; i++) {
-                        for (let j = 0; j < accessory.services[i].characteristics.length; j++) {
-                            accessory.services[i].characteristics[j].getValue();
-                        }
-                    }
-                    return accessory;
-                })
-                .catch(err => {
-                    that.log.error(`Failed to get Device Data for ${accessory.deviceid}: `, err);
-                    return accessory;
-                });
-        }
-        // });
     }
 
     hasCapability(obj) {
@@ -571,39 +283,4 @@ module.exports = class ST_Accessories {
         if (timeoutReference) clearTimeout(timeoutReference);
         return setTimeout(fn, timeoutMs);
     }
-
-    // loadAccessoryData(accessory, deviceData) {
-    //     //TODO: scan the results returned by detection and add remove services and characteristics using the devicetypes
-    //     let that = this;
-    //     if (deviceData !== undefined) {
-    //         this.log.debug("Setting device data from existing data");
-    //         accessory.context.deviceData = deviceData;
-    //         for (let i = 0; i < accessory.services.length; i++) {
-    //             for (let j = 0; j < accessory.services[i].characteristics.length; j++) {
-    //                 accessory.services[i].characteristics[j].getValue();
-    //             }
-    //         }
-    //         return accessory;
-    //     } else {
-    //         this.log.debug("Fetching Device Data");
-    //         this.client
-    //             .getDevice(accessory.deviceid)
-    //             .then(data => {
-    //                 if (data === undefined) {
-    //                     return accessory;
-    //                 }
-    //                 accessory.context.deviceData = data;
-    //                 for (let i = 0; i < accessory.services.length; i++) {
-    //                     for (let j = 0; j < accessory.services[i].characteristics.length; j++) {
-    //                         accessory.services[i].characteristics[j].getValue();
-    //                     }
-    //                 }
-    //                 return accessory;
-    //             })
-    //             .catch(err => {
-    //                 that.log.error(`Failed to get Device Data for ${accessory.deviceid}: `, err);
-    //                 return accessory;
-    //             });
-    //     }
-    // }
 };
