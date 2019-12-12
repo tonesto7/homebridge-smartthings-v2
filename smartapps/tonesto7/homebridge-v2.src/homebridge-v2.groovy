@@ -4,7 +4,7 @@
  *  Copyright 2018, 2019, 2020 Anthony Santilli
  */
 
-String appVersion()                     { return "2.0.2" }
+String appVersion()                     { return "2.0.3" }
 String appModified()                    { return "12-12-2019" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
@@ -13,7 +13,6 @@ String appIconUrl()                     { return "https://raw.githubusercontent.
 String getAppImg(imgName, ext=".png")   { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/${branch()}/images/${imgName}${ext}" }
 Map minVersions()                       { return [plugin: 201] }
 
-// TODO: Add device exporter function for troubleshooting whether a device is supported by homekit
 definition(
     name: "Homebridge v2",
     namespace: "tonesto7",
@@ -39,6 +38,7 @@ preferences {
     page(name: "virtDevicePage")
     page(name: "developmentPage")
     page(name: "donationPage")
+    page(name: "deviceDebugPage")
     page(name: "settingsPage")
     page(name: "confirmPage")
 }
@@ -130,6 +130,7 @@ def mainPage() {
             paragraph "Turn off if you are having issues sending commands"
             input "allowLocalCmds", "bool", title: "Send HomeKit Commands Locally?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("command2")
             input "temp_unit", "enum", title: "Temperature Unit?", required: true, defaultValue: location?.temperatureScale, options: ["F":"Fahrenheit", "C":"Celcius"], submitOnChange: true, image: getAppImg("command2")
+            href "deviceDebugPage", title: "Device Data Viewer", image: getAppImg("debug")
         }
         section("Review Configuration:") {
             Integer devCnt = getDeviceCnt()
@@ -259,6 +260,56 @@ def confirmPage() {
             paragraph "Restarting the service is no longer required to apply any device changes under homekit.\n\nThe service will refresh your devices shortly after Pressing Done/Save.", state: "complete", image: getAppImg("info")
         }
     }
+}
+
+def deviceDebugPage() {
+    return dynamicPage(name: "deviceDebugPage", title: "", install: false, uninstall: false) {
+        section("All Other Devices:") {
+            paragraph "Have a device that's not working under homekit like you want?\nSelect a device from one of the inputs below and it will show you all data about the device.", state: "complete", image: getAppImg("info")
+            if(!debug_switch && !debug_other)
+                input "debug_sensor", "capability.sensor", title: "Sensors: ", multiple: false, submitOnChange: true, required: false, image: getAppImg("sensors")
+            if(!debug_sensor && !debug_other)
+                input "debug_switch", "capability.switch", title: "Switches: ", multiple: false, submitOnChange: true, required: false, image: getAppImg("switch")
+            if(!debug_switch && !debug_sensor)
+                input "debug_other", "capability.refresh", title: "Others Devices: ", multiple: false, submitOnChange: true, required: false, image: getAppImg("devices2")
+            if(debug_other || debug_sensor || debug_switch) {
+                href url: getAppEndpointUrl("deviceDebug"), style: "embedded", required: false, title: "View the device Data here", description: "", state: "complete", image: getAppImg("info")
+            }
+        }
+    }
+}
+
+def viewDeviceDebug() {
+    def sDev = null;
+    if(debug_other) sDev = debug_other
+    if(debug_sensor) sDev = debug_sensor
+    if(debug_switch) sDev = debug_switch
+    def json = new groovy.json.JsonOutput().toJson(getDeviceDebugMap(sDev))
+    def jsonStr = new groovy.json.JsonOutput().prettyPrint(json)
+    render contentType: "application/json", data: jsonStr
+}
+
+def getDeviceDebugMap(dev) {
+    def r = "No Data Returned"
+    if(dev) {
+        r = [
+            name: dev?.displayName?.toString()?.replaceAll("[#\$()!%&@^']", ""),
+            basename: dev?.getName(),
+            deviceid: dev?.getId(),
+            status: dev?.getStatus(),
+            manufacturer: dev?.getManufacturerName() ?: "Unknown",
+            model: dev?.getModelName() ?: dev?.getTypeName(),
+            deviceNetworkId: dev?.getDeviceNetworkId(),
+            lastActivity: dev?.getLastActivity() ?: null,
+            capabilities: dev?.capabilities?.collect { it?.name as String }?.unique() ?: [],
+            commands: dev?.supportedCommands?.collect { it?.name as String }?.unique() ?: [],
+            customflags: getDeviceFlags(dev) ?: [],
+            attributes: [:],
+            eventHistory: dev?.eventsSince(new Date() - 1, [max: 20])?.collect { "${it?.date} | [${it?.name}] | (${it?.value}${it?.unit ? " ${it?.unit}" : ""})" }
+        ]
+        dev?.supportedAttributes?.collect { it?.name as String }?.unique()?.each { r?.attributes[it] = dev?.currentValue(it as String); }
+    }
+    return r
 }
 
 def getDeviceCnt() {
@@ -1103,6 +1154,7 @@ mappings {
     } else {
         path("/devices")					{ action: [GET: "getAllData"] }
         path("/config")						{ action: [GET: "renderConfig"]  }
+        path("/deviceDebug")			    { action: [GET: "viewDeviceDebug"]  }
         path("/location")					{ action: [GET: "renderLocation"] }
         path("/pluginStatus")			    { action: [POST: "pluginStatus"] }
         path("/:id/command/:command")		{ action: [POST: "deviceCommand"] }
