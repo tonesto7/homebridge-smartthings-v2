@@ -42,8 +42,6 @@ module.exports = class ST_Platform {
         this.local_hub_ip = undefined;
         this.myUtils = new myUtils(this);
         this.configItems = this.getConfigItems();
-
-        this.deviceCache = {};
         this.attributeLookup = {};
         this.knownCapabilities = knownCapabilities;
         this.unknownCapabilities = [];
@@ -89,21 +87,6 @@ module.exports = class ST_Platform {
 
     getTempUnit() {
         return this.temperature_unit;
-    }
-
-    getDeviceCache() {
-        return this.deviceCache || {};
-    }
-    getDeviceCacheItem(devid) {
-        return this.deviceCache[devid] || undefined;
-    }
-
-    updDeviceCacheItem(devid, data) {
-        this.deviceCache[devid] = data;
-    }
-
-    remDeviceCacheItem(devid) {
-        delete this.deviceCache[devid];
     }
 
     didFinishLaunching() {
@@ -204,8 +187,8 @@ module.exports = class ST_Platform {
 
     configureAccessory(accessory) {
         this.log.info(`Configure Cached Accessory: ${accessory.displayName}, UUID: ${accessory.UUID}`);
-        let cachedAccessory = this.SmartThingsAccessories.CreateAccessoryFromHomebridgeCache(accessory, this);
-        this.SmartThingsAccessories.addAccessoryToCache(cachedAccessory);
+        // let cachedAccessory = this.SmartThingsAccessories.CreateAccessoryFromCache(accessory);
+        this.SmartThingsAccessories.addAccessoryToCache(this.SmartThingsAccessories.CreateAccessoryFromCache(accessory));
     }
 
     processIncrementalUpdate(data, that) {

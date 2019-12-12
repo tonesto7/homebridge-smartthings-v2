@@ -1,5 +1,5 @@
 const {
-    platformName,
+    // platformName,
     // platformDesc,
     packageFile
 } = require("./Constants"),
