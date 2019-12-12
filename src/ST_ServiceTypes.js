@@ -28,7 +28,7 @@ module.exports = class ServiceTypes {
             lock: Service.LockMechanism,
             motion_sensor: Service.MotionSensor,
             power_meter: Service.Outlet,
-            presence_sensor: Service.OccupencySensor,
+            presence_sensor: Service.OccupancySensor,
             smoke_detector: Service.SmokeSensor,
             speaker: Service.Speaker,
             switch_device: Service.Switch,
