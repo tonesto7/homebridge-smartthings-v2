@@ -30,28 +30,115 @@ module.exports = class DeviceTypes {
             this.log.warn(`[CHARACTERISTIC (${char}) SET] ${attr} (${acc.displayName}) | LastUpdate: (${acc.context.lastUpdate}) | Value: (${val})`);
     }
 
-    alarm_system(accessory, service) {
-        let thisChar = accessory
-            .getOrAddService(service)
-            .getCharacteristic(Characteristic.SecuritySystemCurrentState)
-            .on("get", (callback) => {
-                this.log_get('alarmSystemStatus', 'SecuritySystemCurrentState', accessory, accessory.context.deviceData.attributes.alarmSystemStatus);
-                callback(null, this.accessories.transformAttributeState('alarmSystemStatus', accessory.context.deviceData.attributes.alarmSystemStatus));
-            });
-        this.accessories.storeCharacteristicItem("alarmSystemStatus", accessory.context.deviceData.deviceid, thisChar);
+    manageGetCharacteristic(acc, svc, char, attr, opts = {}) {
+        // console.log('svc:', svc, ' | char: ', char, ' | attr: ', attr, ' | opts: ', opts);
+        if (!acc.hasCharacteristic(svc, char)) {
+            let c = this
+                .getOrAddService(svc)
+                .getCharacteristic(char)
+                .on("get", (callback) => {
+                    if (attr === 'status' && char === Characteristic.StatusActive) {
+                        callback(null, acc.context.deviceData.status === 'Online');
+                    } else {
+                        callback(null, this.accessories.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], opts.charName || undefined));
+                    }
+                });
+            if (opts.props && Object.keys(opts.props).length) c.setProps(opts.props);
+            if (opts.evtOnly !== undefined) c.eventOnlyCharacteristic = opts.evtOnly;
+            c.getValue();
+            this.accessories.storeCharacteristicItem(attr, acc.context.deviceData.deviceid, c);
+        } else {
+            if (attr === 'status' && char === Characteristic.StatusActive) {
+                acc
+                    .getOrAddService(svc)
+                    .getCharacteristic(char)
+                    .updateValue(acc.context.deviceData.status === 'Online');
+            } else {
+                acc
+                    .getOrAddService(svc)
+                    .getCharacteristic(char)
+                    .updateValue(this.accessories.transformAttributeState(opts.get_altAttr || attr, acc.context.deviceData.attributes[opts.get_altValAttr || attr], opts.charName || undefined));
+            }
+        }
+        return acc;
+    }
 
-        thisChar = accessory
-            .getOrAddService(service)
-            .getCharacteristic(Characteristic.SecuritySystemTargetState)
-            .on("get", (callback) => {
-                this.log_get('alarmSystemStatus', 'SecuritySystemTargetState', accessory, accessory.context.deviceData.attributes.alarmSystemStatus);
-                callback(null, this.accessories.transformAttributeState('alarmSystemStatus', accessory.context.deviceData.attributes.alarmSystemStatus));
-            })
-            .on("set", (value, callback) => {
-                this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, this.myUtils.convertAlarmCmd(value));
-                this.log_set('alarmSystemStatus', 'SecuritySystemTargetState', accessory, this.myUtils.convertAlarmCmd(value));
-            });
-        this.accessories.storeCharacteristicItem("alarmSystemStatus", accessory.context.deviceData.deviceid, thisChar);
+    manageGetSetCharacteristic(acc, svc, char, attr, opts = {}) {
+        console.dir(svc);
+
+        if (!acc.hasCharacteristic(svc, char)) {
+            let c = acc
+                .getOrAddService(svc)
+                .getCharacteristic(char)
+                .on("get", (callback) => {
+                    callback(null, this.accessories.transformAttributeState(opts.get_altAttr || attr, acc.context.deviceData.attributes[opts.get_altValAttr || attr], opts.charName || undefined));
+                })
+                .on("set", (value, callback) => {
+                    let cmdName = this.accessories.transformCommandName(opts.set_altAttr || attr, value);
+                    if (opts.cmdHasVal === true) {
+                        let cVal = this.accessories.transformCommandValue(opts.set_altAttr || attr, value);
+                        this.client.sendDeviceCommand(callback, acc.context.deviceData.deviceid, cmdName, {
+                            value1: cVal
+                        });
+                    } else {
+                        this.client.sendDeviceCommand(callback, acc.context.deviceData.deviceid, cmdName);
+                    }
+                    if (opts.updAttrVal) acc.context.deviceData.attributes[attr] = this.accessories.transformAttributeState(opts.set_altAttr || attr, acc.context.deviceData.attributes[opts.set_altValAttr || attr], opts.charName || undefined);
+                });
+            if (opts.props && Object.keys(opts.props).length) c.setProps(opts.props);
+            if (opts.evtOnly !== undefined) c.eventOnlyCharacteristic = opts.evtOnly;
+            c.getValue();
+            this.accessories.storeCharacteristicItem(attr, acc.context.deviceData.deviceid, c);
+        } else {
+            acc
+                .getOrAddService(svc)
+                .getCharacteristic(char)
+                .updateValue(this.accessories.transformAttributeState(opts.get_altAttr || attr, acc.context.deviceData.attributes[opts.get_altValAttr || attr], opts.charName || undefined));
+        }
+        return acc;
+    }
+
+    // alarm_system(accessory, service) {
+    //     if (!accessory.hasCharacteristic(service, Characteristic.SecuritySystemCurrentState)) {
+    //         let c = accessory
+    //             .getOrAddService(service)
+    //             .getCharacteristic(Characteristic.SecuritySystemCurrentState)
+    //             .on("get", (callback) => {
+    //                 this.log_get('alarmSystemStatus', 'SecuritySystemCurrentState', accessory, accessory.context.deviceData.attributes.alarmSystemStatus);
+    //                 callback(null, this.accessories.transformAttributeState('alarmSystemStatus', accessory.context.deviceData.attributes.alarmSystemStatus));
+    //             });
+    //         this.accessories.storeCharacteristicItem("alarmSystemStatus", accessory.context.deviceData.deviceid, c);
+    //     } else {
+    //         accessory
+    //             .getOrAddService(service)
+    //             .getCharacteristic(Characteristic.SecuritySystemCurrentState)
+    //             .updateValue(this.accessories.transformAttributeState("alarmSystemStatus", accessory.context.deviceData.attributes.alarmSystemStatus, 'Security System Current State'));
+    //     }
+
+    //     if (!accessory.hasCharacteristic(service, Characteristic.SecuritySystemCurrentState)) {
+    //         let c = accessory
+    //             .getOrAddService(service)
+    //             .getCharacteristic(Characteristic.SecuritySystemTargetState)
+    //             .on("get", (callback) => {
+    //                 this.log_get('alarmSystemStatus', 'SecuritySystemTargetState', accessory, accessory.context.deviceData.attributes.alarmSystemStatus);
+    //                 callback(null, this.accessories.transformAttributeState('alarmSystemStatus', accessory.context.deviceData.attributes.alarmSystemStatus));
+    //             })
+    //             .on("set", (value, callback) => {
+    //                 this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, this.myUtils.convertAlarmCmd(value));
+    //                 this.log_set('alarmSystemStatus', 'SecuritySystemTargetState', accessory, this.myUtils.convertAlarmCmd(value));
+    //             });
+    //         this.accessories.storeCharacteristicItem("alarmSystemStatus", accessory.context.deviceData.deviceid, c);
+    //     } else {
+    //         accessory.getOrAddService(service).getCharacteristic(Characteristic.SecuritySystemCurrentState).updateValue(this.accessories.transformAttributeState("alarmSystemStatus", accessory.context.deviceData.attributes.alarmSystemStatus, 'Security System Target State'));
+    //     }
+
+    //     accessory.context.deviceGroups.push("alarm_system");
+    //     return accessory;
+    // }
+
+    alarm_system(accessory, service) {
+        accessory = this.manageGetCharacteristic(accessory, service, Characteristic.SecuritySystemCurrentState, 'alarmSystemStatus');
+        accessory = this.manageGetSetCharacteristic(accessory, service, Characteristic.SecuritySystemTargetState, 'alarmSystemStatus');
 
         accessory.context.deviceGroups.push("alarm_system");
         return accessory;
@@ -347,7 +434,7 @@ module.exports = class DeviceTypes {
         return accessory;
     }
 
-    light_bulb(accessory, service) {
+    light(accessory, service) {
         let thisChar = accessory
             .getOrAddService(service)
             .getCharacteristic(Characteristic.On)
@@ -655,18 +742,25 @@ module.exports = class DeviceTypes {
     //     return accessory;
     // }
 
-    switch_device(accessory, service) {
-        let char = accessory
-            .getOrAddService(service)
-            .getCharacteristic(Characteristic.On)
-            .on("get", (callback) => {
-                callback(null, this.accessories.transformAttributeState('switch', accessory.context.deviceData.attributes.switch));
-            })
-            .on("set", (value, callback) => {
-                this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, (value ? "on" : "off"));
-            });
-        this.accessories.storeCharacteristicItem("switch", accessory.context.deviceData.deviceid, char);
+    // switch_device(accessory, service) {
+    //     let char = accessory
+    //         .getOrAddService(service)
+    //         .getCharacteristic(Characteristic.On)
+    //         .on("get", (callback) => {
+    //             callback(null, this.accessories.transformAttributeState('switch', accessory.context.deviceData.attributes.switch));
+    //         })
+    //         .on("set", (value, callback) => {
+    //             this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, (value ? "on" : "off"));
+    //         });
+    //     this.accessories.storeCharacteristicItem("switch", accessory.context.deviceData.deviceid, char);
 
+    //     accessory.context.deviceGroups.push("switch");
+    //     return accessory;
+    // }
+
+    switch_device(accessory, service) {
+        console.log('switch_device');
+        accessory = this.manageGetSetCharacteristic(accessory, service, Characteristic.On, 'switch');
         accessory.context.deviceGroups.push("switch");
         return accessory;
     }

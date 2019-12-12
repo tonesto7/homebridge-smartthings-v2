@@ -15,9 +15,9 @@ module.exports = class MyUtils {
     constructor(platform) {
         this.platform = platform;
         this.client = platform.client;
+        Characteristic = platform.Characteristic;
         this.log = platform.log;
         this.homebridge = platform.homebridge;
-        Characteristic = platform.Characteristic;
     }
 
     cleanSpaces(str) {
@@ -114,6 +114,8 @@ module.exports = class MyUtils {
 
     fanSpeedIntToLevel(speedVal) {
         switch (speedVal) {
+            case 0:
+                return 0;
             case 1:
                 return 32;
             case 2:

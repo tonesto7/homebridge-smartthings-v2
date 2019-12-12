@@ -1,5 +1,4 @@
 const {
-    knownCapabilities,
     pluginName,
     platformName,
     platformDesc,
@@ -42,8 +41,6 @@ module.exports = class ST_Platform {
         this.local_hub_ip = undefined;
         this.myUtils = new myUtils(this);
         this.configItems = this.getConfigItems();
-        this.attributeLookup = {};
-        this.knownCapabilities = knownCapabilities;
         this.unknownCapabilities = [];
         this.client = new SmartThingsClient(this);
         this.SmartThingsAccessories = new SmartThingsAccessories(this);
@@ -154,7 +151,8 @@ module.exports = class ST_Platform {
 
     getNewAccessory(device, UUID) {
         let accessory = new PlatformAccessory(device.name, UUID);
-        this.SmartThingsAccessories.PopulateAccessory(accessory, device);
+        accessory.context.deviceData = device;
+        this.SmartThingsAccessories.initializeAccessory(accessory);
         return accessory;
     }
 
@@ -170,12 +168,12 @@ module.exports = class ST_Platform {
     }
 
     updateDevice(device) {
-        let cacheDevice = this.SmartThingsAccessories.getAccessoryFromCache(device);
-        let accessory;
+        let cachedAccessory = this.SmartThingsAccessories.getAccessoryFromCache(device);
         device.excludedCapabilities = this.excludedCapabilities[device.deviceid] || ["None"];
+        cachedAccessory.context.deviceData = device;
         this.log.info(`Loading Existing Device (${device.name}) | (${device.deviceid})`);
-        accessory = this.SmartThingsAccessories.loadAccessoryData(cacheDevice, device);
-        this.SmartThingsAccessories.addAccessoryToCache(accessory);
+        cachedAccessory = this.SmartThingsAccessories.initializeAccessory(cachedAccessory);
+        this.SmartThingsAccessories.addAccessoryToCache(cachedAccessory);
     }
 
     removeAccessory(accessory) {
@@ -187,8 +185,8 @@ module.exports = class ST_Platform {
 
     configureAccessory(accessory) {
         this.log.info(`Configure Cached Accessory: ${accessory.displayName}, UUID: ${accessory.UUID}`);
-        // let cachedAccessory = this.SmartThingsAccessories.CreateAccessoryFromCache(accessory);
-        this.SmartThingsAccessories.addAccessoryToCache(this.SmartThingsAccessories.CreateAccessoryFromCache(accessory));
+        let cachedAccessory = this.SmartThingsAccessories.initializeAccessory(accessory, true);
+        this.SmartThingsAccessories.addAccessoryToCache(cachedAccessory);
     }
 
     processIncrementalUpdate(data, that) {
@@ -201,8 +199,6 @@ module.exports = class ST_Platform {
     }
 
     isValidRequestor(access_token, app_id, src) {
-        // this.log.alert(`app_id: (${app_id}) | config app_id: (${this.getConfigItems().app_id})`);
-        // this.log.alert(`access_token: (${access_token}) | config access_token: (${this.getConfigItems().access_token})`);
         if (app_id && access_token && (access_token === this.getConfigItems().access_token) && (app_id === this.getConfigItems().app_id)) return true;
         this.log.error(`(${src}) | We received a request from a client that didn't provide a valid access_token and app_id`);
         return false;

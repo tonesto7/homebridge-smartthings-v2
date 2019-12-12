@@ -12,7 +12,6 @@ module.exports = class ServiceTypes {
         this.CommunityTypes = accessories.CommunityTypes;
         Service = srvc;
         this.homebridge = accessories.homebridge;
-
         this.serviceMap = {
             alarm_system: Service.SecuritySystem,
             battery: Service.BatteryService,
@@ -27,31 +26,20 @@ module.exports = class ServiceTypes {
             illuminance_sensor: Service.LightSensor,
             light: Service.Lightbulb,
             lock: Service.LockMechanism,
-            virtual_mode: Service.Switch,
             motion_sensor: Service.MotionSensor,
             power_meter: Service.Outlet,
             presence_sensor: Service.OccupencySensor,
-            virtual_routine: Service.Switch,
             smoke_detector: Service.SmokeSensor,
             speaker: Service.Speaker,
-            switch_device: Service.On,
+            switch_device: Service.Switch,
             temperature_sensor: Service.TemperatureSensor,
             thermostat: Service.Thermostat,
             valve: Service.Valve,
+            virtual_mode: Service.Switch,
+            virtual_routine: Service.Switch,
             water_sensor: Service.LeakSensor,
             window_shade: Service.WindowCovering
         };
-    }
-
-    determineServiceType(accessory) {
-        for (let i = 0; i < serviceTests.length; i++) {
-            const serviceTest = serviceTests[i];
-            if (serviceTest.ImplementsService(accessory)) {
-                this.log.info("Service type of '" + serviceTest.Name + "' detected.");
-                return this.lookupServiceType(serviceTest.Name);
-            }
-        }
-        return null;
     }
 
     getServiceTypes(accessory) {
