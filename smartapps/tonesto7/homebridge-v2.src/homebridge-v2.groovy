@@ -5,14 +5,15 @@
  */
 
 String appVersion()                     { return "2.0.2" }
-String appModified()                    { return "12-11-2019" }
+String appModified()                    { return "12-12-2019" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
 String appIconUrl()                     { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/${branch()}/images/hb_tonesto7@2x.png" }
 String getAppImg(imgName, ext=".png")   { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/${branch()}/images/${imgName}${ext}" }
-Map minVersions()                       { return [plugin: 201] } //These values define the minimum versions of code this app will work with.
+Map minVersions()                       { return [plugin: 201] }
 
+// TODO: Add device exporter function for troubleshooting whether a device is supported by homekit
 definition(
     name: "Homebridge v2",
     namespace: "tonesto7",
@@ -551,7 +552,7 @@ def renderLocation() {
         longitude: location?.longitude,
         mode: location?.mode,
         name: location?.name,
-        temperature_scale: location?.temperatureScale,
+        temperature_scale: settings?.temp_unit ?: location?.temperatureScale,
         zip_code: location?.zipCode,
         hubIP: location?.hubs[0]?.localIP,
         local_commands: (settings?.allowLocalCmds == true),
