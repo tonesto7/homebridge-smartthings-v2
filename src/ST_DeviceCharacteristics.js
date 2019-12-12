@@ -1166,7 +1166,7 @@ module.exports = class DeviceCharacteristics {
                 });
             this.accessories.storeCharacteristicItem("switch", _accessory.context.deviceData.deviceid, c);
         } else {
-            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.On).updateValue(this.accessories.transformAttributeState('switch', this.context.deviceData.attributes.switch));
+            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.On).updateValue(this.accessories.transformAttributeState('switch', _accessory.context.deviceData.attributes.switch));
         }
 
         _accessory.context.deviceGroups.push("virtual_mode");
@@ -1196,7 +1196,7 @@ module.exports = class DeviceCharacteristics {
                 });
             this.accessories.storeCharacteristicItem("switch", _accessory.context.deviceData.deviceid, c);
         } else {
-            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.On).updateValue(this.accessories.transformAttributeState('switch', this.context.deviceData.attributes.switch));
+            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.On).updateValue(this.accessories.transformAttributeState('switch', _accessory.context.deviceData.attributes.switch));
         }
         _accessory.context.deviceGroups.push("virtual_routine");
         return _accessory;
@@ -1234,7 +1234,7 @@ module.exports = class DeviceCharacteristics {
                 });
             this.accessories.storeCharacteristicItem("level", _accessory.context.deviceData.deviceid, thisChar);
         } else {
-            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetPosition).updateValue(this.accessories.transformAttributeState('level', this.context.deviceData.attributes.level, 'Target Position'));
+            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetPosition).updateValue(this.accessories.transformAttributeState('level', _accessory.context.deviceData.attributes.level, 'Target Position'));
         }
         _accessory.getOrAddService(_service).setCharacteristic(Characteristic.PositionState, Characteristic.PositionState.STOPPED);
 
