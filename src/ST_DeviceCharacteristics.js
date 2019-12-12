@@ -750,7 +750,7 @@ module.exports = class DeviceCharacteristics {
     speaker(_accessory, _service) {
         let isSonos = (_accessory.context.deviceData.manufacturerName === "Sonos");
         let lvlAttr = (isSonos || _accessory.hasAttribute('volume')) ? 'volume' : _accessory.hasAttribute('level') ? 'level' : undefined;
-        if (!this.hasCharacteristic(_service, Characteristic.Volume)) {
+        if (!_accessory.hasCharacteristic(_service, Characteristic.Volume)) {
             let sonosVolumeTimeout = null;
             let lastVolumeWriteValue = null;
             let c = _accessory
@@ -791,7 +791,7 @@ module.exports = class DeviceCharacteristics {
     // speaker(_accessory, _service) {
     //     let isSonos = (_accessory.context.deviceData.manufacturerName === "Sonos");
     //     let lvlAttr = (isSonos || _accessory.hasAttribute('volume')) ? 'volume' : _accessory.hasAttribute('level') ? 'level' : undefined;
-    //     if (!this.hasCharacteristic(_service, Characteristic.Volume)) {
+    //     if (!_accessory.hasCharacteristic(_service, Characteristic.Volume)) {
     //         let sonosVolumeTimeout = null;
     //         let lastVolumeWriteValue = null;
     //         let c = _accessory
@@ -1066,7 +1066,7 @@ module.exports = class DeviceCharacteristics {
     valve(_accessory, _service) {
         _accessory.manageGetCharacteristic(_service, Characteristic.InUse, 'valve');
         _accessory.manageGetSetCharacteristic(_service, Characteristic.Active, 'valve');
-        if (!this.hasCharacteristic(_service, Characteristic.ValveType))
+        if (!_accessory.hasCharacteristic(_service, Characteristic.ValveType))
             _accessory.getOrAddService(_service).setCharacteristic(Characteristic.ValveType, 0);
 
         _accessory.context.deviceGroups.push("valve");
@@ -1152,7 +1152,7 @@ module.exports = class DeviceCharacteristics {
     // }
 
     virtual_mode(_accessory, _service) {
-        if (!this.hasCharacteristic(_service, Characteristic.On)) {
+        if (!_accessory.hasCharacteristic(_service, Characteristic.On)) {
             let c = _accessory
                 .getOrAddService(_service)
                 .getCharacteristic(Characteristic.On)
@@ -1174,7 +1174,7 @@ module.exports = class DeviceCharacteristics {
     }
 
     virtual_routine(_accessory, _service) {
-        if (!this.hasCharacteristic(_service, Characteristic.On)) {
+        if (!_accessory.hasCharacteristic(_service, Characteristic.On)) {
             let c = _accessory
                 .getOrAddService(_service)
                 .getCharacteristic(Characteristic.On)
@@ -1214,7 +1214,7 @@ module.exports = class DeviceCharacteristics {
     window_shade(_accessory, _service) {
         _accessory.manageGetCharacteristic(_service, Characteristic.CurrentPosition, 'level');
 
-        if (!this.hasCharacteristic(_service, Characteristic.TargetPosition)) {
+        if (!_accessory.hasCharacteristic(_service, Characteristic.TargetPosition)) {
             let thisChar;
             thisChar = _accessory
                 .getOrAddService(_service)
