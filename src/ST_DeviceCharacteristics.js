@@ -757,7 +757,7 @@ module.exports = class DeviceCharacteristics {
                 .getOrAddService(_service)
                 .getCharacteristic(Characteristic.Volume)
                 .on("get", (callback) => {
-                    callback(null, this.accessories.transformAttributeState(lvlAttr, _accessory.context.deviceData.attributes[lvlAttr]) || 0);
+                    callback(null, this.transforms.transformAttributeState(lvlAttr, _accessory.context.deviceData.attributes[lvlAttr]) || 0);
                 })
                 .on("set", (value, callback) => {
                     if (isSonos) {
@@ -773,13 +773,13 @@ module.exports = class DeviceCharacteristics {
                     }
                     if (value > 0) {
                         this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, this.accessories.transformCommandName(lvlAttr, value), {
-                            value1: this.accessories.transformAttributeState(lvlAttr, value)
+                            value1: this.transforms.transformAttributeState(lvlAttr, value)
                         });
                     }
                 });
             this.accessories.storeCharacteristicItem("volume", _accessory.context.deviceData.deviceid, c);
         } else {
-            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.Volume).updateValue(this.accessories.transformAttributeState(lvlAttr, _accessory.context.deviceData.attributes[lvlAttr]) || 0);
+            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.Volume).updateValue(this.transforms.transformAttributeState(lvlAttr, _accessory.context.deviceData.attributes[lvlAttr]) || 0);
         }
         if (_accessory.hasCapability('Audio Mute'))
             _accessory.manageGetSetCharacteristic(_service, Characteristic.Mute, 'mute');
@@ -916,12 +916,12 @@ module.exports = class DeviceCharacteristics {
                 .getOrAddService(_service)
                 .getCharacteristic(Characteristic.CurrentTemperature)
                 .setProps({
-                    minValue: this.myUtils.thermostatTempConversion(40),
-                    maxValue: this.myUtils.thermostatTempConversion(90),
+                    minValue: this.transforms.thermostatTempConversion(40),
+                    maxValue: this.transforms.thermostatTempConversion(90),
                     minSteps: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5
                 })
                 .on("get", (callback) => {
-                    callback(null, this.myUtils.thermostatTempConversion(_accessory.context.deviceData.attributes.temperature));
+                    callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.temperature));
                 });
             this.accessories.storeCharacteristicItem("temperature", _accessory.context.deviceData.deviceid, c);
         } else {
@@ -957,16 +957,16 @@ module.exports = class DeviceCharacteristics {
                 .getOrAddService(_service)
                 .getCharacteristic(Characteristic.TargetTemperature)
                 .setProps({
-                    minValue: this.myUtils.thermostatTempConversion(40),
-                    maxValue: this.myUtils.thermostatTempConversion(90),
+                    minValue: this.transforms.thermostatTempConversion(40),
+                    maxValue: this.transforms.thermostatTempConversion(90),
                     minSteps: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5
                 })
                 .on("get", (callback) => {
-                    callback(null, targetTemp ? this.myUtils.thermostatTempConversion(targetTemp) : "Unknown");
+                    callback(null, targetTemp ? this.transforms.thermostatTempConversion(targetTemp) : "Unknown");
                 })
                 .on("set", (value, callback) => {
                     // Convert the Celsius value to the appropriate unit for Smartthings
-                    let temp = this.myUtils.thermostatTempConversion(value, true);
+                    let temp = this.transforms.thermostatTempConversion(value, true);
                     switch (_accessory.context.deviceData.attributes.thermostatMode) {
                         case "cool":
                             this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "setCoolingSetpoint", {
@@ -996,7 +996,7 @@ module.exports = class DeviceCharacteristics {
             this.accessories.storeCharacteristicItem("thermostatSetpoint", _accessory.context.deviceData.deviceid, c);
             this.accessories.storeCharacteristicItem("temperature", _accessory.context.deviceData.deviceid, c);
         } else {
-            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetTemperature).updateValue(targetTemp ? this.myUtils.thermostatTempConversion(targetTemp) : "Unknown");
+            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetTemperature).updateValue(targetTemp ? this.transforms.thermostatTempConversion(targetTemp) : "Unknown");
         }
 
         if (!_accessory.hasCharacteristic(_service, Characteristic.TemperatureDisplayUnits)) {
@@ -1016,16 +1016,16 @@ module.exports = class DeviceCharacteristics {
                 .getOrAddService(_service)
                 .getCharacteristic(Characteristic.HeatingThresholdTemperature)
                 .setProps({
-                    minValue: this.myUtils.thermostatTempConversion(40),
-                    maxValue: this.myUtils.thermostatTempConversion(90),
+                    minValue: this.transforms.thermostatTempConversion(40),
+                    maxValue: this.transforms.thermostatTempConversion(90),
                     minSteps: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5
                 })
                 .on("get", (callback) => {
-                    callback(null, this.myUtils.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
+                    callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
                 })
                 .on("set", (value, callback) => {
                     // Convert the Celsius value to the appropriate unit for Smartthings
-                    let temp = this.myUtils.thermostatTempConversion(value, true);
+                    let temp = this.transforms.thermostatTempConversion(value, true);
                     this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "setHeatingSetpoint", {
                         value1: temp
                     });
@@ -1033,23 +1033,23 @@ module.exports = class DeviceCharacteristics {
                 });
             this.accessories.storeCharacteristicItem("heatingSetpoint", _accessory.context.deviceData.deviceid, c);
         } else {
-            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.HeatingThresholdTemperature).updateValue(this.myUtils.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
+            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.HeatingThresholdTemperature).updateValue(this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
         }
         if (!_accessory.hasCharacteristic(_service, Characteristic.CoolingThresholdTemperature)) {
             let c = _accessory
                 .getOrAddService(_service)
                 .getCharacteristic(Characteristic.CoolingThresholdTemperature)
                 .setProps({
-                    minValue: this.myUtils.thermostatTempConversion(40),
-                    maxValue: this.myUtils.thermostatTempConversion(90),
+                    minValue: this.transforms.thermostatTempConversion(40),
+                    maxValue: this.transforms.thermostatTempConversion(90),
                     minSteps: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5
                 })
                 .on("get", (callback) => {
-                    callback(null, this.myUtils.thermostatTempConversion(_accessory.context.deviceData.attributes.coolingSetpoint));
+                    callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.coolingSetpoint));
                 })
                 .on("set", (value, callback) => {
                     // Convert the Celsius value to the appropriate unit for Smartthings
-                    let temp = this.myUtils.thermostatTempConversion(value, true);
+                    let temp = this.transforms.thermostatTempConversion(value, true);
                     this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "setCoolingSetpoint", {
                         value1: temp
                     });
@@ -1057,7 +1057,7 @@ module.exports = class DeviceCharacteristics {
                 });
             this.accessories.storeCharacteristicItem("coolingSetpoint", _accessory.context.deviceData.deviceid, c);
         } else {
-            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CoolingThresholdTemperature).updateValue(this.myUtils.thermostatTempConversion(_accessory.context.deviceData.attributes.coolingSetpoint));
+            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CoolingThresholdTemperature).updateValue(this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.coolingSetpoint));
         }
 
         _accessory.context.deviceGroups.push("thermostat");
@@ -1157,7 +1157,7 @@ module.exports = class DeviceCharacteristics {
                 .getOrAddService(_service)
                 .getCharacteristic(Characteristic.On)
                 .on("get", (callback) => {
-                    callback(null, this.accessories.transformAttributeState('switch', _accessory.context.deviceData.attributes.switch));
+                    callback(null, this.transforms.transformAttributeState('switch', _accessory.context.deviceData.attributes.switch));
                 })
                 .on("set", (value, callback) => {
                     if (value && (_accessory.context.deviceData.attributes.switch === "off")) {
@@ -1166,7 +1166,7 @@ module.exports = class DeviceCharacteristics {
                 });
             this.accessories.storeCharacteristicItem("switch", _accessory.context.deviceData.deviceid, c);
         } else {
-            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.On).updateValue(this.accessories.transformAttributeState('switch', _accessory.context.deviceData.attributes.switch));
+            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.On).updateValue(this.transforms.transformAttributeState('switch', _accessory.context.deviceData.attributes.switch));
         }
 
         _accessory.context.deviceGroups.push("virtual_mode");
@@ -1179,7 +1179,7 @@ module.exports = class DeviceCharacteristics {
                 .getOrAddService(_service)
                 .getCharacteristic(Characteristic.On)
                 .on("get", (callback) => {
-                    callback(null, this.accessories.transformAttributeState('switch', _accessory.context.deviceData.attributes.switch));
+                    callback(null, this.transforms.transformAttributeState('switch', _accessory.context.deviceData.attributes.switch));
                 })
                 .on("set", (value, callback) => {
                     if (value) {
@@ -1196,7 +1196,7 @@ module.exports = class DeviceCharacteristics {
                 });
             this.accessories.storeCharacteristicItem("switch", _accessory.context.deviceData.deviceid, c);
         } else {
-            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.On).updateValue(this.accessories.transformAttributeState('switch', _accessory.context.deviceData.attributes.switch));
+            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.On).updateValue(this.transforms.transformAttributeState('switch', _accessory.context.deviceData.attributes.switch));
         }
         _accessory.context.deviceGroups.push("virtual_routine");
         return _accessory;
@@ -1234,7 +1234,7 @@ module.exports = class DeviceCharacteristics {
                 });
             this.accessories.storeCharacteristicItem("level", _accessory.context.deviceData.deviceid, thisChar);
         } else {
-            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetPosition).updateValue(this.accessories.transformAttributeState('level', _accessory.context.deviceData.attributes.level, 'Target Position'));
+            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetPosition).updateValue(this.transforms.transformAttributeState('level', _accessory.context.deviceData.attributes.level, 'Target Position'));
         }
         _accessory.getOrAddService(_service).setCharacteristic(Characteristic.PositionState, Characteristic.PositionState.STOPPED);
 
