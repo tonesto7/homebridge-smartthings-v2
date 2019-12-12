@@ -1207,7 +1207,7 @@ module.exports = class DeviceCharacteristics {
         _accessory.manageGetCharacteristic(_service, Characteristic.StatusActive, 'status');
         if (_accessory.hasCapability('Tamper Alert'))
             _accessory.manageGetCharacteristic(_service, Characteristic.StatusTampered, 'tamper');
-        _accessory.deviceGroups.push("window_shade");
+        _accessory.context.deviceGroups.push("window_shade");
         return _accessory;
     }
 
@@ -1238,7 +1238,7 @@ module.exports = class DeviceCharacteristics {
         }
         _accessory.getOrAddService(_service).setCharacteristic(Characteristic.PositionState, Characteristic.PositionState.STOPPED);
 
-        _accessory.deviceGroups.push("window_shade");
+        _accessory.context.deviceGroups.push("window_shade");
         return _accessory;
     }
 };

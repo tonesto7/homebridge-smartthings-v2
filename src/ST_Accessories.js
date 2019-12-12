@@ -70,7 +70,6 @@ module.exports = class ST_Accessories {
         for (let index in accessory.context.deviceData.capabilities) {
             if (knownCapabilities.indexOf(index) === -1 && this.mainPlatform.unknownCapabilities.indexOf(index) === -1) this.mainPlatform.unknownCapabilities.push(index);
         }
-
         accessory.context.deviceGroups = [];
         accessory.servicesToKeep = [];
         accessory.reachable = true;
