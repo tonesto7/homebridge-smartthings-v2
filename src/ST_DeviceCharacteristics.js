@@ -33,12 +33,13 @@ module.exports = class DeviceCharacteristics {
 
     manageGetCharacteristic(svc, char, attr, opts = {}) {
         let c = this.getOrAddService(svc).getCharacteristic(char);
+        console.log(c.displayName);
         if (!c._events.get) {
             c.on("get", (callback) => {
                 if (attr === 'status' && char === Characteristic.StatusActive) {
                     callback(null, this.context.deviceData.status === 'Online');
                 } else {
-                    callback(null, accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], opts.charName || undefined));
+                    callback(null, accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
                 }
             });
             if (opts.props && Object.keys(opts.props).length) c.setProps(opts.props);
@@ -49,7 +50,7 @@ module.exports = class DeviceCharacteristics {
             if (attr === 'status' && char === Characteristic.StatusActive) {
                 c.updateValue(this.context.deviceData.status === 'Online');
             } else {
-                c.updateValue(accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], opts.charName || undefined));
+                c.updateValue(accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
             }
         }
     }
@@ -59,7 +60,7 @@ module.exports = class DeviceCharacteristics {
         if (!c._events.get || !c._events.set) {
             if (!c._events.get) {
                 c.on("get", (callback) => {
-                    callback(null, accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], opts.charName || undefined));
+                    callback(null, accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
                 });
             }
             if (!c._events.set) {
@@ -71,7 +72,7 @@ module.exports = class DeviceCharacteristics {
                     } else {
                         accClass.sendDeviceCommand(callback, this.context.deviceData.deviceid, cmdName);
                     }
-                    if (opts.updAttrVal) this.context.deviceData.attributes[attr] = accClass.transforms.transformAttributeState(opts.set_altAttr || attr, this.context.deviceData.attributes[opts.set_altValAttr || attr], opts.charName || undefined);
+                    if (opts.updAttrVal) this.context.deviceData.attributes[attr] = accClass.transforms.transformAttributeState(opts.set_altAttr || attr, this.context.deviceData.attributes[opts.set_altValAttr || attr], c.displayName);
                 });
                 if (opts.props && Object.keys(opts.props).length) c.setProps(opts.props);
                 if (opts.evtOnly !== undefined) c.eventOnlyCharacteristic = opts.evtOnly;
@@ -80,7 +81,7 @@ module.exports = class DeviceCharacteristics {
             c.getValue();
             accClass.storeCharacteristicItem(attr, this.context.deviceData.deviceid, c);
         } else {
-            c.updateValue(accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], opts.charName || undefined));
+            c.updateValue(accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
         }
     }
 
@@ -136,7 +137,7 @@ module.exports = class DeviceCharacteristics {
     }
 
     carbon_dioxide(_accessory, _service) {
-        _accessory.manageGetCharacteristic(_service, Characteristic.CarbonDioxideDetected, 'carbonDioxideMeasurement', { charName: 'Carbon Dioxide Detected' });
+        _accessory.manageGetCharacteristic(_service, Characteristic.CarbonDioxideDetected, 'carbonDioxideMeasurement');
         _accessory.manageGetCharacteristic(_service, Characteristic.CarbonDioxideLevel, 'carbonDioxideMeasurement');
         _accessory.manageGetCharacteristic(_service, Characteristic.StatusActive, 'status');
         if (_accessory.hasCapability('Tamper Alert')) {
@@ -147,7 +148,7 @@ module.exports = class DeviceCharacteristics {
     }
 
     carbon_monoxide(_accessory, _service) {
-        _accessory.manageGetCharacteristic(_service, Characteristic.CarbonMonoxideDetected, 'carbonMonoxide', { charName: 'Carbon Monoxide Detected' });
+        _accessory.manageGetCharacteristic(_service, Characteristic.CarbonMonoxideDetected, 'carbonMonoxide');
         _accessory.manageGetCharacteristic(_service, Characteristic.StatusActive, 'status');
         if (_accessory.hasCapability('Tamper Alert')) {
             _accessory.manageGetCharacteristic(_service, Characteristic.StatusTampered, 'tamper');
@@ -174,10 +175,13 @@ module.exports = class DeviceCharacteristics {
     }
 
     fan(_accessory, _service) {
-        _accessory.manageGetSetCharacteristic(_service, Characteristic.Active, 'switch');
         if (_accessory.hasAttribute('switch')) {
+            _accessory.manageGetSetCharacteristic(_service, Characteristic.Active, 'switch');
             _accessory.manageGetCharacteristic(_service, Characteristic.CurrentFanState, 'switch', { get: { altAttr: "fanState" } });
-        } else { _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.CurrentFanState); }
+        } else {
+            _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.CurrentFanState);
+            _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.Active);
+        }
         let spdSteps = 1;
         if (_accessory.hasDeviceFlag('fan_3_spd')) spdSteps = 33;
         if (_accessory.hasDeviceFlag('fan_4_spd')) spdSteps = 25;
@@ -274,8 +278,8 @@ module.exports = class DeviceCharacteristics {
     // }
 
     garage_door(_accessory, _service) {
-        _accessory.manageGetCharacteristic(_service, Characteristic.CurrentDoorState, 'door', { charName: 'Current Door State' });
-        _accessory.manageGetSetCharacteristic(_service, Characteristic.TargetDoorState, 'door', { charName: 'Target Door State' });
+        _accessory.manageGetCharacteristic(_service, Characteristic.CurrentDoorState, 'door');
+        _accessory.manageGetSetCharacteristic(_service, Characteristic.TargetDoorState, 'door');
         if (!_accessory.hasCharacteristic(_service, Characteristic.ObstructionDetected)) {
             _accessory.getOrAddService(_service).setCharacteristic(Characteristic.ObstructionDetected, false);
         }
@@ -668,7 +672,6 @@ module.exports = class DeviceCharacteristics {
     }
 
     virtual_routine(_accessory, _service) {
-
         let c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.On);
         if (!c._events.get || !c._events.set) {
             if (!c._events.get)

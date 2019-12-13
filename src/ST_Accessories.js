@@ -109,7 +109,7 @@ module.exports = class ST_Accessories {
         return new Promise((resolve) => {
             let characteristics = this.getAttributeStoreItem(change.attribute, change.deviceid);
             let accessory = this.getAccessoryFromCache(change);
-            console.log(characteristics);
+            // console.log(characteristics);
             if (!characteristics || !accessory) return;
             if (characteristics instanceof Array) {
                 characteristics.forEach(char => {
