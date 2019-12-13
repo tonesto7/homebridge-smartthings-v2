@@ -628,7 +628,7 @@ def lanEventHandler(evt) {
                 if (msg?.body != null) {
                     def slurper = new groovy.json.JsonSlurper()
                     msgData = slurper?.parseText(msg?.body as String)
-                    log.debug "msgData: $msgData"
+                    // log.debug "msgData: $msgData"
                     if(headerMap?.evtType) {
                         switch(headerMap?.evtType) {
                             case "hkCommand":
@@ -682,19 +682,19 @@ private processCmd(devId, cmd, value1, value2, local=false) {
         if (!device) {
             log.error("Device Not Found")
             CommandReply("Failure", "Device Not Found")
-        } else if (!device.hasCommand(command)) {
+        } else if (!device?.hasCommand(command as String)) {
             log.error("Device ${device.displayName} does not have the command $command")
             CommandReply("Failure", "Device ${device.displayName} does not have the command $command")
         } else {
             try {
                 if (value2 != null) {
-                    device."$command"(value1,value2)
+                    device?."$command"(value1,value2)
                     log.info("Command Successful for Device ${device.displayName} | Command ${command}($value1, $value2)")
                 } else if (value1 != null) {
-                    device."$command"(value1)
+                    device?."$command"(value1)
                     log.info("Command Successful for Device ${device.displayName} | Command ${command}($value1)")
                 } else {
-                    device."$command"()
+                    device?."$command"()
                     log.info("Command Successful for Device ${device.displayName} | Command ${command}()")
                 }
                 CommandReply("Success", "Device ${device.displayName} | Command ${command}()")

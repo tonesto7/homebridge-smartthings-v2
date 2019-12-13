@@ -33,7 +33,6 @@ module.exports = class DeviceCharacteristics {
 
     manageGetCharacteristic(svc, char, attr, opts = {}) {
         let c = this.getOrAddService(svc).getCharacteristic(char);
-        console.log(c.displayName);
         if (!c._events.get) {
             c.on("get", (callback) => {
                 if (attr === 'status' && char === Characteristic.StatusActive) {
@@ -66,11 +65,11 @@ module.exports = class DeviceCharacteristics {
             if (!c._events.set) {
                 c.on("set", (value, callback) => {
                     let cmdName = accClass.transforms.transformCommandName(opts.set_altAttr || attr, value);
+                    let cmdVal = accClass.transforms.transformCommandValue(opts.set_altAttr || attr, value);
                     if (opts.cmdHasVal === true) {
-                        let cVal = accClass.transforms.transformCommandValue(opts.set_altAttr || attr, value);
-                        accClass.sendDeviceCommand(callback, this.context.deviceData.deviceid, cmdName, { value1: cVal });
+                        accClass.client.sendDeviceCommand(callback, this.context.deviceData.deviceid, cmdName, { value1: cmdVal });
                     } else {
-                        accClass.sendDeviceCommand(callback, this.context.deviceData.deviceid, cmdName);
+                        accClass.client.sendDeviceCommand(callback, this.context.deviceData.deviceid, cmdVal);
                     }
                     if (opts.updAttrVal) this.context.deviceData.attributes[attr] = accClass.transforms.transformAttributeState(opts.set_altAttr || attr, this.context.deviceData.attributes[opts.set_altValAttr || attr], c.displayName);
                 });

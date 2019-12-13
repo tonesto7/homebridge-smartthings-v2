@@ -179,7 +179,7 @@ module.exports = class Transforms {
     }
 
     transformCommandName(attr, val) {
-        switch (val) {
+        switch (attr) {
             case "valve":
                 return (val === true) ? "open" : "close";
             case "switch":
@@ -190,29 +190,26 @@ module.exports = class Transforms {
                 } else {
                     return "close";
                 }
-            case "hue":
-                return "setHue";
-            case "colorTemperature":
-                return "setColorTemperature";
+
             case "lock":
                 return (val === 1 || val === true) ? "lock" : "unlock";
             case "mute":
                 return (val === "muted") ? "mute" : "unmute";
             case "fanSpeed":
-                return "setFanSpeed";
             case "level":
-                return "setLevel";
             case "volume":
-                return "setVolume";
             case "thermostatMode":
-                return "setThermostatMode";
+            case "saturation":
+            case "hue":
+            case "colorTemperature":
+                return `set${attr.charAt(0).toUpperCase() + attr.slice(1)}`;
             default:
                 return val;
         }
     }
 
     transformCommandValue(attr, val) {
-        switch (val) {
+        switch (attr) {
             case "valve":
                 return (val === true) ? "open" : "close";
             case "switch":
