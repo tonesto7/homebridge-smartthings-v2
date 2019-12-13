@@ -174,6 +174,12 @@ module.exports = class DeviceCharacteristics {
     }
 
     fan(_accessory, _service) {
+        if (_accessory.name === 'First Floor Bathroom Fan') {
+            _accessory.services.forEach((srv) => {
+                console.dir(srv.characteristics);
+            });
+        }
+
         if (_accessory.hasAttribute('switch')) {
             _accessory.manageGetSetCharacteristic(_service, Characteristic.Active, 'switch');
             _accessory.manageGetCharacteristic(_service, Characteristic.CurrentFanState, 'switch', { get: { altAttr: "fanState" } });

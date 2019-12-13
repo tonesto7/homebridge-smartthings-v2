@@ -47,6 +47,7 @@ module.exports = class ServiceTypes {
         for (let i = 0; i < serviceTests.length; i++) {
             const svcTest = serviceTests[i];
             if (svcTest.ImplementsService(accessory)) {
+                if (svcTest.onNoGrpsOnly && svcs.length) { return; }
                 if (this.serviceMap[svcTest.Name]) {
                     svcs.push({
                         name: svcTest.Name,
@@ -67,26 +68,27 @@ module.exports = class ServiceTypes {
 };
 
 class ServiceTest {
-    constructor(name, testfn) {
+    constructor(name, testfn, onNoGrpsOnly = false) {
         this.ImplementsService = testfn;
         this.Name = name;
+        this.onNoGrpsOnly = onNoGrpsOnly;
     }
 }
 
 // NOTE: These Tests are executed in order which is important
 const serviceTests = [
-    new ServiceTest("window_shade", accessory => (accessory.hasCapability('Switch Level') && !accessory.hasCapability('Speaker') && !(accessory.hasCapability('Fan') || accessory.hasCapability('Fan Light') || accessory.hasCapability('Fan Speed') || accessory.hasCapability('Fan Control') || accessory.hasCommand('setFanSpeed') || accessory.hasCommand('lowSpeed') || accessory.hasAttribute('fanSpeed')) && accessory.hasCapability('Window Shade') && (accessory.hasCommand('levelOpenClose') || accessory.hasCommand('presetPosition')) && accessory.context.deviceGroups.length < 1)),
-    new ServiceTest("light", accessory => (accessory.hasCapability('Switch Level') && (accessory.hasCapability('LightBulb') || accessory.hasCapability('Fan Light') || accessory.hasCapability('Bulb') || accessory.context.deviceData.name.includes('light') || accessory.hasAttribute('saturation') || accessory.hasAttribute('hue') || accessory.hasAttribute('colorTemperature') || accessory.hasCapability("Color Control")) && accessory.context.deviceGroups.length < 1)),
+    new ServiceTest("window_shade", accessory => (accessory.hasCapability('Switch Level') && !accessory.hasCapability('Speaker') && !(accessory.hasCapability('Fan') || accessory.hasCapability('Fan Light') || accessory.hasCapability('Fan Speed') || accessory.hasCapability('Fan Control') || accessory.hasCommand('setFanSpeed') || accessory.hasCommand('lowSpeed') || accessory.hasAttribute('fanSpeed')) && accessory.hasCapability('Window Shade') && (accessory.hasCommand('levelOpenClose') || accessory.hasCommand('presetPosition'))), true),
+    new ServiceTest("light", accessory => (accessory.hasCapability('Switch Level') && (accessory.hasCapability('LightBulb') || accessory.hasCapability('Fan Light') || accessory.hasCapability('Bulb') || accessory.context.deviceData.name.includes('light') || accessory.hasAttribute('saturation') || accessory.hasAttribute('hue') || accessory.hasAttribute('colorTemperature') || accessory.hasCapability("Color Control"))), true),
     new ServiceTest("garage_door", accessory => accessory.hasCapability("Garage Door Control")),
     new ServiceTest("lock", accessory => accessory.hasCapability("Lock")),
     new ServiceTest("valve", accessory => accessory.hasCapability("Valve")),
     new ServiceTest("speaker", accessory => accessory.hasCapability('Speaker')),
-    new ServiceTest("fan", accessory => ((accessory.hasCapability('Fan') || accessory.hasCapability('Fan Light') || accessory.hasCapability('Fan Speed') || accessory.hasCapability('Fan Control') || accessory.hasCommand('setFanSpeed') || accessory.hasCommand('lowSpeed') || accessory.hasAttribute('fanSpeed')) && accessory.context.deviceGroups.length < 1)),
+    new ServiceTest("fan", accessory => ((accessory.hasCapability('Fan') || accessory.hasCapability('Fan Light') || accessory.hasCapability('Fan Speed') || accessory.hasCapability('Fan Control') || accessory.hasCommand('setFanSpeed') || accessory.hasCommand('lowSpeed') || accessory.hasAttribute('fanSpeed'))), true),
     new ServiceTest("virtual_mode", accessory => accessory.hasCapability("Mode")),
     new ServiceTest("virtual_routine", accessory => accessory.hasCapability("Routine")),
     new ServiceTest("button", accessory => accessory.hasCapability("Button")),
-    new ServiceTest("light", accessory => (accessory.hasCapability('Switch') && (accessory.hasCapability('LightBulb') || accessory.hasCapability('Fan Light') || accessory.hasCapability('Bulb') || accessory.context.deviceData.name.toLowerCase().includes('light')) && accessory.context.deviceGroups.length < 1)),
-    new ServiceTest("switch_device", accessory => (accessory.hasCapability('Switch') && !(accessory.hasCapability('LightBulb') || accessory.hasCapability('Fan Light') || accessory.hasCapability('Bulb') || accessory.context.deviceData.name.toLowerCase().includes('light')) && accessory.context.deviceGroups.length < 1)),
+    new ServiceTest("light", accessory => (accessory.hasCapability('Switch') && (accessory.hasCapability('LightBulb') || accessory.hasCapability('Fan Light') || accessory.hasCapability('Bulb') || accessory.context.deviceData.name.toLowerCase().includes('light'))), true),
+    new ServiceTest("switch_device", accessory => (accessory.hasCapability('Switch') && !(accessory.hasCapability('LightBulb') || accessory.hasCapability('Fan Light') || accessory.hasCapability('Bulb') || accessory.context.deviceData.name.toLowerCase().includes('light'))), true),
     new ServiceTest("smoke_detector", accessory => accessory.hasCapability("Smoke Detector") && accessory.hasAttribute('smoke')),
     new ServiceTest("carbon_monoxide", accessory => accessory.hasCapability("Carbon Monoxide Detector") && accessory.hasAttribute('carbonMonoxide')),
     new ServiceTest("carbon_dioxide", accessory => accessory.hasCapability("Carbon Dioxide Measurement") && accessory.hasAttribute('carbonDioxideMeasurement')),
@@ -98,8 +100,8 @@ const serviceTests = [
     new ServiceTest("illuminance_sensor", accessory => (accessory.hasCapability("Illuminance Measurement"))),
     new ServiceTest("contact_sensor", accessory => (accessory.hasCapability('Contact Sensor') && !accessory.hasCapability('Garage Door Control'))),
     new ServiceTest("battery", accessory => (accessory.hasCapability('Battery'))),
-    new ServiceTest("energy_meter", accessory => (accessory.hasCapability('Energy Meter') && !accessory.hasCapability('Switch') && accessory.context.deviceGroups.length < 1)),
-    new ServiceTest("power_meter", accessory => (accessory.hasCapability('Power Meter') && !accessory.hasCapability('Switch') && accessory.context.deviceGroups.length < 1)),
+    new ServiceTest("energy_meter", accessory => (accessory.hasCapability('Energy Meter') && !accessory.hasCapability('Switch')), true),
+    new ServiceTest("power_meter", accessory => (accessory.hasCapability('Power Meter') && !accessory.hasCapability('Switch')), true),
     new ServiceTest("thermostat", accessory => (accessory.hasCapability('Thermostat') || accessory.hasCapability('Thermostat Operating State') || accessory.hasAttribute('thermostatOperatingState'))),
     new ServiceTest("alarm_system", accessory => (accessory.hasAttribute("alarmSystemStatus")))
 ];

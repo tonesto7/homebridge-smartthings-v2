@@ -66,7 +66,7 @@ module.exports = class ST_Accessories {
         }
     }
 
-    configureCharacteristics(accessory, fromCache = false) {
+    configureCharacteristics(accessory) {
         for (let index in accessory.context.deviceData.capabilities) {
             if (knownCapabilities.indexOf(index) === -1 && this.mainPlatform.unknownCapabilities.indexOf(index) === -1) this.mainPlatform.unknownCapabilities.push(index);
         }
@@ -188,9 +188,11 @@ module.exports = class ST_Accessories {
         let newSvcUuids = acc.servicesToKeep || [];
         let svcs2rmv = acc.services.filter(s => !newSvcUuids.includes(s.UUID));
         if (Object.keys(svcs2rmv).length) {
-            this.log.info('removeServices:', JSON.stringify(svcs2rmv));
+            svcs2rmv.forEach(s => {
+                acc.removeService(s);
+                this.log.info('Removing Unused Service:', s.UUID);
+            });
         }
-        // svcs2rmv.forEach(s => acc.removeService(s));
         return acc;
     }
 
