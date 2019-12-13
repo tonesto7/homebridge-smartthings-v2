@@ -296,7 +296,7 @@ module.exports = class DeviceCharacteristics {
     }
 
     illuminance_sensor(_accessory, _service) {
-        _accessory.manageGetCharacteristic(_service, Characteristic.CurrentAmbientLightLevel, 'illuminance');
+        _accessory.manageGetCharacteristic(_service, Characteristic.CurrentAmbientLightLevel, 'illuminance', { props: { minValue: 0, maxValue: 100000 } });
         _accessory.manageGetCharacteristic(_service, Characteristic.StatusActive, 'status');
         if (_accessory.hasCapability('Tamper Alert')) {
             _accessory.manageGetCharacteristic(_service, Characteristic.StatusTampered, 'tamper');
