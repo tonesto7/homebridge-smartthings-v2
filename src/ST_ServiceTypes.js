@@ -47,8 +47,12 @@ module.exports = class ServiceTypes {
         for (let i = 0; i < serviceTests.length; i++) {
             const svcTest = serviceTests[i];
             if (svcTest.ImplementsService(accessory)) {
-                if (svcTest.onNoGrpsOnly && svcs.length) { return; }
-                if (this.serviceMap[svcTest.Name]) {
+                // console.log(svcTest.Name);
+                const blockSvc = (svcTest.onlyOnNoGrps === true && svcs.length > 0);
+                if (blockSvc) {
+                    console.log(`(${accessory.name}) | Service BLOCKED | name: ${svcTest.Name} | Cnt: ${svcs.length} | svcs: ${JSON.stringify(svcs)}`);
+                }
+                if (!blockSvc && this.serviceMap[svcTest.Name]) {
                     svcs.push({
                         name: svcTest.Name,
                         type: this.serviceMap[svcTest.Name]
@@ -68,10 +72,10 @@ module.exports = class ServiceTypes {
 };
 
 class ServiceTest {
-    constructor(name, testfn, onNoGrpsOnly = false) {
+    constructor(name, testfn, onlyOnNoGrps = false) {
         this.ImplementsService = testfn;
         this.Name = name;
-        this.onNoGrpsOnly = onNoGrpsOnly;
+        this.onlyOnNoGrps = (onlyOnNoGrps !== false);
     }
 }
 
