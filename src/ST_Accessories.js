@@ -195,7 +195,7 @@ module.exports = class ST_Accessories {
     }
 
     storeCharacteristicItem(attr, devid, char) {
-        console.log('storeCharacteristicItem: ', attr, devid, char);
+        // console.log('storeCharacteristicItem: ', attr, devid, char);
         if (!this._attributeLookup[attr]) {
             this._attributeLookup[attr] = {};
         }
