@@ -66,7 +66,7 @@ module.exports = class ST_Accessories {
         }
     }
 
-    configureCharacteristics(accessory) {
+    configureCharacteristics(accessory, fromCache = false) {
         for (let index in accessory.context.deviceData.capabilities) {
             if (knownCapabilities.indexOf(index) === -1 && this.mainPlatform.unknownCapabilities.indexOf(index) === -1) this.mainPlatform.unknownCapabilities.push(index);
         }
@@ -101,15 +101,15 @@ module.exports = class ST_Accessories {
         } else {
             throw "Unable to determine the service type of " + accessory.deviceid;
         }
-
         return this.removeUnusedServices(accessory);
     }
 
     processDeviceAttributeUpdate(change) {
         let that = this;
         return new Promise((resolve) => {
-            let characteristics = that.getAttributeStoreItem(change.attribute, change.deviceid);
-            let accessory = that.getAccessoryFromCache(change);
+            let characteristics = this.getAttributeStoreItem(change.attribute, change.deviceid);
+            let accessory = this.getAccessoryFromCache(change);
+            console.log(characteristics);
             if (!characteristics || !accessory) return;
             if (characteristics instanceof Array) {
                 characteristics.forEach(char => {
@@ -195,6 +195,7 @@ module.exports = class ST_Accessories {
     }
 
     storeCharacteristicItem(attr, devid, char) {
+        console.log('storeCharacteristicItem: ', attr, devid, char);
         if (!this._attributeLookup[attr]) {
             this._attributeLookup[attr] = {};
         }

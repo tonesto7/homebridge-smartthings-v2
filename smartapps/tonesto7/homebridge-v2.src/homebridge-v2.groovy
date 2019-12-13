@@ -128,7 +128,7 @@ def mainPage() {
         }
         section("Plugin Options:") {
             paragraph "Turn off if you are having issues sending commands"
-            input "allowLocalCmds", "bool", title: "Send HomeKit Commands Locally?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("command2")
+            input "sendCmdViaHubaction", "bool", title: "Send HomeKit Commands Locally?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("command2")
             input "temp_unit", "enum", title: "Temperature Unit?", required: true, defaultValue: location?.temperatureScale, options: ["F":"Fahrenheit", "C":"Celcius"], submitOnChange: true, image: getAppImg("command2")
             href "deviceDebugPage", title: "Device Data Viewer", image: getAppImg("debug")
         }
@@ -369,7 +369,7 @@ private subscribeToEvts() {
     }
     state?.subscriptionRenewed = 0
     subscribe(app, onAppTouch)
-    if(settings?.allowLocalCmds != false) { subscribe(location, null, lanEventHandler, [filterEvents:false]) }
+    if(settings?.sendCmdViaHubaction != false) { subscribe(location, null, lanEventHandler, [filterEvents:false]) }
     if(settings?.routineList) {
         if(showDebugLogs) log.debug "Registering (${settings?.routineList?.size() ?: 0}) Virtual Routine Devices"
         subscribe(location, "routineExecuted", changeHandler)
@@ -606,7 +606,7 @@ def renderLocation() {
         temperature_scale: settings?.temp_unit ?: location?.temperatureScale,
         zip_code: location?.zipCode,
         hubIP: location?.hubs[0]?.localIP,
-        local_commands: (settings?.allowLocalCmds == true),
+        local_commands: (settings?.sendCmdViaHubaction != false),
         app_version: appVersion()
     ]
 }
@@ -1115,7 +1115,7 @@ private updateServicePrefs(isLocal=false) {
     sendHttpPost("updateprefs", [
         app_id: app?.getId(),
         access_token: state?.accessToken,
-        local_commands: (settings?.allowLocalCmds != false),
+        local_commands: (settings?.sendCmdViaHubaction != false),
         local_hub_ip: location?.hubs[0]?.localIP
     ])
 }
