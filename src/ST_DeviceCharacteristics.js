@@ -708,7 +708,7 @@ module.exports = class DeviceCharacteristics {
         return _accessory;
     }
 
-    window_shade(_accessory, _service) {
+    window_covering(_accessory, _service) {
         _accessory.manageGetCharacteristic(_service, Characteristic.CurrentPosition, 'level');
         _accessory.getOrAddService(_service).setCharacteristic(Characteristic.PositionState, Characteristic.PositionState.STOPPED);
 

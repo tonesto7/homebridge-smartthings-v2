@@ -94,6 +94,10 @@ module.exports = class ST_Accessories {
         let svcTypes = this.serviceTypes.getServiceTypes(accessory);
         if (svcTypes) {
             svcTypes.forEach((svc) => {
+                // if (svcTypes.category !== undefined) {
+                //     console.log(svcTypes.category);
+                //     accessory.category = svcTypes.category;
+                // }
                 this.log.debug(accessory.name, ' | ', svc.name);
                 accessory.servicesToKeep.push(svc.type.UUID);
                 this.device_types[svc.name](accessory, svc.type);

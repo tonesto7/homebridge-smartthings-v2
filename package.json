@@ -39,6 +39,7 @@
     "scripts": {
         "test": "eslint .",
         "prettier": "prettier --write src/**/*.js",
+        "freeport": "npx kill-port 8000",
         "start": "homebridge -D -P . -U ."
     },
     "main": "/src/index.js",
