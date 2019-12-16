@@ -97,3 +97,5 @@ website/
 config.json
 accessories
 persist
+
+.uix-secrets
