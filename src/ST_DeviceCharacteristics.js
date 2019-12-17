@@ -4,6 +4,7 @@ var Characteristic, accClass;
 module.exports = class DeviceCharacteristics {
     constructor(accessories, char) {
         this.platform = accessories;
+        this.platform = accessories.mainPlatform;
         Characteristic = char;
         accClass = accessories;
         this.log = accessories.log;
@@ -438,7 +439,6 @@ module.exports = class DeviceCharacteristics {
 
     thermostat(_accessory, _service) {
         //TODO:  Still seeing an issue when setting mode from OFF to HEAT.  It's setting the temp to 40 but if I change to cool then back to heat it sets the correct value.
-
         // CURRENT HEATING/COOLING STATE
         let c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CurrentHeatingCoolingState);
         if (!c._events.get) {
@@ -462,8 +462,8 @@ module.exports = class DeviceCharacteristics {
             }
             if (!c._events.set) {
                 c.on("set", (value, callback) => {
-                    let state = this.accessories.transformCommandValue('thermostatMode', value);
-                    this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, this.accessories.transformCommandName('thermostatMode', value), {
+                    let state = this.transforms.transformCommandValue('thermostatMode', value);
+                    this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, this.transforms.transformCommandName('thermostatMode', value), {
                         value1: state
                     });
                     _accessory.context.deviceData.attributes.thermostatMode = state;

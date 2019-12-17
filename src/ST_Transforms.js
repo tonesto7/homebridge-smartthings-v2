@@ -181,9 +181,9 @@ module.exports = class Transforms {
     transformCommandName(attr, val) {
         switch (attr) {
             case "valve":
-                return (val === true) ? "open" : "close";
+                return (val === 1 || val === true) ? "open" : "close";
             case "switch":
-                return (val === true) ? "on" : "off";
+                return (val === 1 || val === true) ? "on" : "off";
             case "door":
                 if (val === Characteristic.TargetDoorState.OPEN || val === 0) {
                     return "open";
@@ -211,9 +211,11 @@ module.exports = class Transforms {
     transformCommandValue(attr, val) {
         switch (attr) {
             case "valve":
-                return (val === true) ? "open" : "close";
+                return (val === 1 || val === true) ? "open" : "close";
             case "switch":
-                return (val === true) ? "on" : "off";
+                return (val === 1 || val === true) ? "on" : "off";
+            case "lock":
+                return (val === 1 || val === true) ? "lock" : "unlock";
             case "door":
                 if (val === Characteristic.TargetDoorState.OPEN || val === 0) {
                     return "open";
@@ -225,8 +227,6 @@ module.exports = class Transforms {
                 return Math.round(val / 3.6);
             case "colorTemperature":
                 return this.colorTempToK(val);
-            case "lock":
-                return (val === 1 || val === true) ? "lock" : "unlock";
             case "mute":
                 return (val === "muted") ? "mute" : "unmute";
             case "alarmSystemStatus":

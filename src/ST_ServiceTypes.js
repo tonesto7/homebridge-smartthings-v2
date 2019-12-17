@@ -140,12 +140,10 @@ module.exports = class ServiceTypes {
                 if (blockSvc) {
                     console.log(`(${accessory.name}) | Service BLOCKED | name: ${svcTest.Name} | Cnt: ${svcs.length} | svcs: ${JSON.stringify(svcs)}`);
                 }
-                // let category = (svcs.length === 0) ? this.AccessoryCategory(svcTest.Name) : undefined;
                 if (!blockSvc && this.serviceMap[svcTest.Name]) {
                     svcs.push({
                         name: svcTest.Name,
-                        type: this.serviceMap[svcTest.Name],
-                        // category: category
+                        type: this.serviceMap[svcTest.Name]
                     });
                 }
             }
