@@ -580,6 +580,7 @@ def renderConfig() {
                 app_id: app?.getId(),
                 access_token: state?.accessToken,
                 temperature_unit: settings?.temp_unit ?: location?.temperatureScale,
+                validateTokenId: false,
                 logConfig: [
                     debug: false,
                     showChanges: true,

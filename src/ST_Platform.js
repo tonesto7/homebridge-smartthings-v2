@@ -14,7 +14,7 @@ const {
     webApp = express();
 
 var PlatformAccessory;
-// TODO: Verify/fix the removal of unused services from accessories where there Capabilities change.
+
 module.exports = class ST_Platform {
     constructor(log, config, api) {
         this.config = config;
@@ -73,7 +73,8 @@ module.exports = class ST_Platform {
             update_seconds: this.config.update_seconds || 30,
             direct_port: this.config.direct_port || 8000,
             direct_ip: this.config.direct_ip || this.myUtils.getIPAddress(),
-            debug: (this.config.debug === true)
+            debug: (this.config.debug === true),
+            validateTokenId: (this.config.validateTokenId === true)
         };
     }
 
@@ -199,6 +200,7 @@ module.exports = class ST_Platform {
     }
 
     isValidRequestor(access_token, app_id, src) {
+        if (this.configItems.validateTokenId !== true) { return true; }
         if (app_id && access_token && (access_token === this.getConfigItems().access_token) && (app_id === this.getConfigItems().app_id)) return true;
         this.log.error(`(${src}) | We received a request from a client that didn't provide a valid access_token and app_id`);
         return false;
