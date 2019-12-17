@@ -40,7 +40,7 @@
             "required": true
         },
         "temperature_unit": {
-            "title": "Define Temperature Unit (Enter C or F )",
+            "title": "Define Temperature Unit (Enter C or F)",
             "type": "string",
             "default": "F",
             "required": true
