@@ -1,6 +1,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.1.0
+- [UPDATE] Refactored the device service and characteristic so it's more modular now and easier to maintain.
+- [FIX] Other minor bugfixes and tweaks.
+
+## v2.0.5 - v2.0.10
+- [FIX] Fixed thermostat temp unit error.
+- [FIX] removed token/id validation by default to prevent error with mismatched access_token | app_id.
+- [FIX] Other minor bugfixes and tweaks.
+
 ## v2.0.4
 - [FIX] Fixed AlarmStatus updates not being shown in the Home app when changed from ST side.
 - [FIX] Fixed issues with local_commands option.
