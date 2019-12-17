@@ -5,7 +5,7 @@
  */
 
 String appVersion()                     { return "2.0.3" }
-String appModified()                    { return "12-12-2019" }
+String appModified()                    { return "12-17-2019" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
