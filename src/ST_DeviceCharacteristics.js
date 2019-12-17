@@ -170,12 +170,6 @@ module.exports = class DeviceCharacteristics {
     }
 
     fan(_accessory, _service) {
-        if (_accessory.name === 'First Floor Bathroom Fan') {
-            _accessory.services.forEach((srv) => {
-                console.dir(srv.characteristics);
-            });
-        }
-
         if (_accessory.hasAttribute('switch')) {
             _accessory.manageGetSetCharacteristic(_service, Characteristic.Active, 'switch');
             _accessory.manageGetCharacteristic(_service, Characteristic.CurrentFanState, 'switch', { get: { altAttr: "fanState" } });
@@ -193,90 +187,6 @@ module.exports = class DeviceCharacteristics {
         _accessory.context.deviceGroups.push("fan");
         return _accessory;
     }
-
-    // fan(_accessory, _service) {
-    //     let thisChar = _accessory
-    //         .getOrAddService(_service)
-    //         .getCharacteristic(Characteristic.Active)
-    //         .on("get", (callback) => {
-    //             callback(null, this.transforms.transformAttributeState('switch', _accessory.context.deviceData.attributes.switch));
-    //         })
-    //         .on("set", (value, callback) => {
-    //             this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, (value ? "on" : "off"));
-    //         });
-    //     this.accessories.storeCharacteristicItem("switch", _accessory.context.deviceData.deviceid, thisChar);
-
-    //     thisChar = _accessory
-    //         .getOrAddService(_service)
-    //         .getCharacteristic(Characteristic.CurrentFanState)
-    //         .on("get", (callback) => {
-    //             let curState = (_accessory.context.deviceData.attributes.switch === "off") ? Characteristic.CurrentFanState.IDLE : Characteristic.CurrentFanState.BLOWING_AIR;
-    //             callback(null, curState);
-    //         });
-    //     this.accessories.storeCharacteristicItem("switch", _accessory.context.deviceData.deviceid, thisChar);
-
-    //     let spdSteps = 1;
-    //     if (_accessory.hasDeviceFlag('fan_3_spd')) spdSteps = 33;
-    //     if (_accessory.hasDeviceFlag('fan_4_spd')) spdSteps = 25;
-    //     if (_accessory.hasAttribute('fanSpeed') && _accessory.hasCommand('setFanSpeed')) {
-    //         //Uses the fanSpeed Attribute and Command instead of level when avail
-    //         thisChar = _accessory
-    //             .getOrAddService(_service)
-    //             .getCharacteristic(Characteristic.RotationSpeed)
-    //             .setProps({
-    //                 minSteps: spdSteps
-    //             })
-    //             .on("get", (callback) => {
-    //                 switch (parseInt(_accessory.context.deviceData.attributes.fanSpeed)) {
-    //                     case 0:
-    //                         callback(null, 0);
-    //                         break;
-    //                     case 1:
-    //                         callback(null, 33);
-    //                         break;
-    //                     case 2:
-    //                         callback(null, 66);
-    //                         break;
-    //                     case 3:
-    //                         callback(null, 100);
-    //                         break;
-    //                 }
-    //             })
-    //             .on("set", (value, callback) => {
-    //                 let spd = this.accessories.transformCommandValue("fanSpeed", _accessory.context.deviceData.attributes.fanSpeed);
-    //                 if (value >= 0 && value <= 100) {
-    //                     this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "setFanSpeed", {
-    //                         value1: spd
-    //                     });
-    //                     _accessory.context.deviceData.attributes.fanSpeed = spd;
-    //                 }
-    //             });
-    //         this.accessories.storeCharacteristicItem('fanSpeed', _accessory.context.deviceData.deviceid, thisChar);
-    //     } else if (_accessory.hasAttribute('level')) {
-
-    //         thisChar = _accessory
-    //             .getOrAddService(_service)
-    //             .getCharacteristic(Characteristic.RotationSpeed)
-    //             .setProps({
-    //                 minSteps: spdSteps
-    //             })
-    //             .on("get", (callback) => {
-    //                 callback(null, this.transforms.transformAttributeState("level", _accessory.context.deviceData.attributes.level));
-    //             })
-    //             .on("set", (value, callback) => {
-    //                 if (value >= 0 && value <= 100) {
-    //                     this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "setLevel", {
-    //                         value1: parseInt(value)
-    //                     });
-    //                     _accessory.context.deviceData.attributes.level = value;
-    //                 }
-    //             });
-    //         this.accessories.storeCharacteristicItem("level", _accessory.context.deviceData.deviceid, thisChar);
-    //     }
-
-    //     _accessory.context.deviceGroups.push("fan");
-    //     return _accessory;
-    // }
 
     garage_door(_accessory, _service) {
         _accessory.manageGetCharacteristic(_service, Characteristic.CurrentDoorState, 'door');
