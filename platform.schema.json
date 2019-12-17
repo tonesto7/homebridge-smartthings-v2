@@ -6,10 +6,9 @@
     "schema": {
         "name": {
             "title": "Name",
-            "description": "This should default to SmartThings-v2",
             "type": "string",
-            "default": "SmartThings-v2",
-            "required": true
+            "const": "SmartThings-v2",
+            "readOnly": true
         },
         "app_url": {
             "title": "App Url",
