@@ -96,6 +96,7 @@ website/
 
 config.json
 accessories
+auth.json
 persist
 
 .uix-secrets
