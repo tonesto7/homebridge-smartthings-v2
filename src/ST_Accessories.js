@@ -5,7 +5,7 @@ var Service, Characteristic;
 
 module.exports = class ST_Accessories {
     constructor(platform) {
-        this.platform = platform;
+        this.mainPlatform = platform;
         this.logConfig = platform.logConfig;
         this.configItems = platform.getConfigItems();
         this.myUtils = platform.myUtils;
@@ -98,7 +98,7 @@ module.exports = class ST_Accessories {
     initializeDeviceCharacteristics(accessory) {
         let prevAccessory = accessory;
         for (let index in accessory.context.deviceData.capabilities) {
-            if (knownCapabilities.indexOf(index) === -1 && this.platform.unknownCapabilities.indexOf(index) === -1) this.platform.unknownCapabilities.push(index);
+            if (knownCapabilities.indexOf(index) === -1 && this.mainPlatform.unknownCapabilities.indexOf(index) === -1) this.mainPlatform.unknownCapabilities.push(index);
         }
 
         let that = this;

@@ -1322,7 +1322,7 @@ Integer getDaysSinceUpdated() {
     }
 }
 
-String changeLogData() { return getWebData([uri: "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/master/changes.md", contentType: "text/plain; charset=UTF-8"], "changelog") }
+String changeLogData() { return getWebData([uri: "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/master/CHANGELOG-app.md", contentType: "text/plain; charset=UTF-8"], "changelog") }
 Boolean showChgLogOk() { return (state?.isInstalled && (state?.curAppVer != appVersion() || state?.installData?.shownChgLog != true)) }
 def changeLogPage() {
     def execTime = now()

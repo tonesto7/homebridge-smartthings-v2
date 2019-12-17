@@ -3,7 +3,7 @@ var Service, Characteristic;
 
 module.exports = class DeviceTypes {
     constructor(accessories, srvc, char) {
-        this.platform = accessories;
+        this.mainPlatform = accessories.mainPlatform;
         this.log = accessories.log;
         this.logConfig = accessories.logConfig;
         this.accessories = accessories;
@@ -736,7 +736,7 @@ module.exports = class DeviceTypes {
             .setProps({
                 minValue: this.myUtils.thermostatTempConversion(40),
                 maxValue: this.myUtils.thermostatTempConversion(90),
-                minSteps: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5
+                minSteps: (this.mainPlatform.getTempUnit() === 'F') ? 1.0 : 0.5
             })
             .on("get", (callback) => {
                 callback(null, this.myUtils.thermostatTempConversion(accessory.context.deviceData.attributes.temperature));
@@ -749,7 +749,7 @@ module.exports = class DeviceTypes {
             .setProps({
                 minValue: this.myUtils.thermostatTempConversion(40),
                 maxValue: this.myUtils.thermostatTempConversion(90),
-                minSteps: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5
+                minSteps: (this.mainPlatform.getTempUnit() === 'F') ? 1.0 : 0.5
             })
             .on("get", (callback) => {
                 let temp;
@@ -813,7 +813,7 @@ module.exports = class DeviceTypes {
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.TemperatureDisplayUnits)
             .on("get", (callback) => {
-                callback(null, (this.platform.getTempUnit() === 'F') ? Characteristic.TemperatureDisplayUnits.FAHRENHEIT : Characteristic.TemperatureDisplayUnits.CELSIUS);
+                callback(null, (this.mainPlatform.getTempUnit() === 'F') ? Characteristic.TemperatureDisplayUnits.FAHRENHEIT : Characteristic.TemperatureDisplayUnits.CELSIUS);
             });
         this.accessories.storeCharacteristicItem("temperature_unit", "platform", thisChar);
 
@@ -823,7 +823,7 @@ module.exports = class DeviceTypes {
             .setProps({
                 minValue: this.myUtils.thermostatTempConversion(40),
                 maxValue: this.myUtils.thermostatTempConversion(90),
-                minSteps: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5
+                minSteps: (this.mainPlatform.getTempUnit() === 'F') ? 1.0 : 0.5
             })
             .on("get", (callback) => {
                 callback(null, this.myUtils.thermostatTempConversion(accessory.context.deviceData.attributes.heatingSetpoint));
@@ -844,7 +844,7 @@ module.exports = class DeviceTypes {
             .setProps({
                 minValue: this.myUtils.thermostatTempConversion(40),
                 maxValue: this.myUtils.thermostatTempConversion(90),
-                minSteps: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5
+                minSteps: (this.mainPlatform.getTempUnit() === 'F') ? 1.0 : 0.5
             })
             .on("get", (callback) => {
                 callback(null, this.myUtils.thermostatTempConversion(accessory.context.deviceData.attributes.coolingSetpoint));
