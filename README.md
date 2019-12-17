@@ -42,11 +42,11 @@ I also wanted to mention the following projects I referenced for inspiration for
 
 ### SmartThing App:
 
-- See [CHANGELOG](https://github.com/tonesto7/homebridge-smartthings-v2/master/CHANGELOG-app.md)
+- See [CHANGELOG](https://github.com/tonesto7/homebridge-smartthings-v2/blob/master/CHANGELOG-app.md)
 
 ### Homebridge Plugin:
 
-- See [CHANGELOG](https://github.com/tonesto7/homebridge-smartthings-v2/master/CHANGELOG.md)
+- See [CHANGELOG](https://github.com/tonesto7/homebridge-smartthings-v2/blob/master/CHANGELOG.md)
 
 
 #### Direct Updates from SmartThings
