@@ -42,113 +42,30 @@ module.exports = class ServiceTypes {
         };
     }
 
-    AccessoryCategory(type) {
-        switch (type.toUpperCase()) {
-            case "OTHER":
-                return 1;
-            case "BRIDGE":
-                return 2;
-            case "FAN":
-                return 3;
-            case "GARAGE_DOOR_OPENER":
-            case "GARAGE_DOOR":
-                return 4;
-            case "LIGHT":
-                return 5;
-            case "LOCK":
-                return 6;
-            case "OUTLET":
-                return 7;
-            case "SWITCH_DEVICE":
-                return 8;
-            case "THERMOSTAT":
-                return 9;
-            case "CARBON_DIOXIDE":
-            case "CARBON_MONOXIDE":
-            case "CONTACT_SENSOR":
-            case "HUMIDITY_SENSOR":
-            case "ILLUMINANCE_SENSOR":
-            case "MOTION_SENSOR":
-            case "PRESENCE_SENSOR":
-            case "TEMPERATURE_SENSOR":
-            case "WATER_SENSOR":
-            case "SENSOR":
-                return 10;
-            case "ALARM_SYSTEM":
-                return 11;
-            case "SECURITY_SYSTEM":
-                return 11;
-            case "DOOR":
-                return 12;
-            case "WINDOW":
-                return 13;
-            case "WINDOW_COVERING":
-                return 14;
-            case "BUTTON":
-            case "PROGRAMMABLE_SWITCH":
-                return 15;
-            case "RANGE_EXTENDER":
-                return 16;
-            case "CAMERA":
-                return 17;
-            case "IP_CAMERA":
-                return 17;
-            case "VIDEO_DOORBELL":
-                return 18;
-            case "AIR_PURIFIER":
-                return 19;
-            case "AIR_HEATER":
-                return 20;
-            case "AIR_CONDITIONER":
-                return 21;
-            case "AIR_HUMIDIFIER":
-                return 22;
-            case "AIR_DEHUMIDIFIER":
-                return 23;
-            case "APPLE_TV":
-                return 24;
-            case "HOMEPOD":
-                return 25;
-            case "SPEAKER":
-                return 26;
-            case "AIRPORT":
-                return 27;
-            case "SPRINKLER":
-                return 28;
-            case "FAUCET":
-                return 29;
-            case "SHOWER_HEAD":
-                return 30;
-            case "TELEVISION":
-                return 31;
-            case "TARGET_CONTROLLER":
-                return 32;
-            case "ROUTER":
-                return 33;
-            default:
-                return 1;
-        }
-    };
-
     getServiceTypes(accessory) {
-        let svcs = [];
+        let servicesFound = [];
+        let servicesBlocked = [];
         for (let i = 0; i < serviceTests.length; i++) {
             const svcTest = serviceTests[i];
             if (svcTest.ImplementsService(accessory)) {
                 // console.log(svcTest.Name);
-                const blockSvc = (svcTest.onlyOnNoGrps === true && svcs.length > 0);
+                const blockSvc = (svcTest.onlyOnNoGrps === true && servicesFound.length > 0);
                 if (blockSvc) {
-                    console.log(`(${accessory.name}) | Service BLOCKED | name: ${svcTest.Name} | Cnt: ${svcs.length} | svcs: ${JSON.stringify(svcs)}`);
+                    servicesBlocked.push(svcTest.Name);
+                    this.log.debug(`(${accessory.name}) | Service BLOCKED | name: ${svcTest.Name} | Cnt: ${servicesFound.length} | svcs: ${JSON.stringify(servicesFound)}`);
                 }
                 if (!blockSvc && this.serviceMap[svcTest.Name]) {
-                    svcs.push({
+                    servicesFound.push({
                         name: svcTest.Name,
                         type: this.serviceMap[svcTest.Name]
                     });
                 }
             }
         }
-        return svcs;
+        if (servicesBlocked.length) {
+            this.log.debug(`(${accessory.name}) | Services BLOCKED | ${servicesBlocked}`);
+        }
+        return servicesFound;
     }
 
     lookupServiceType(name) {
