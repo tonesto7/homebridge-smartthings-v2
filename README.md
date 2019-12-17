@@ -5,9 +5,9 @@ V2 of this plugin is a complete rewrite of the homebridge-smartthings-tonesto7 p
 
 [![npm version](https://badge.fury.io/js/homebridge-smartthings-v2.svg)](https://badge.fury.io/js/homebridge-smartthings-v2)
 
-**```Latest SmartApp Version: 2.0.2```**
+**```Latest SmartApp Version: 2.0.3```**
 
-### What's New for 2.0:
+### What's New for 2.x.x:
 
 
 #### Plugin
@@ -42,15 +42,11 @@ I also wanted to mention the following projects I referenced for inspiration for
 
 ### SmartThing App:
 
-***v2.0.2*** - Added support for setting the temperature unit in the smartapp;
-
-***v2.0.0*** - Updated to support v2.0 of the plugin, cleaner layout, tons of optimizations, and many bugfixes;
+- See [CHANGELOG](https://github.com/tonesto7/homebridge-smartthings-v2/master/CHANGELOG-app.md)
 
 ### Homebridge Plugin:
 
-***v2.0.2*** - Support for Temp unit setting in config/or smartapp, also fixes using Celcius under ST.
-
-***v2.0.1*** - Update to v2.0.0 to support Homebridge dynamic plugin api (Thanks @areson).  So devices can be loaded from cache.
+- See [CHANGELOG](https://github.com/tonesto7/homebridge-smartthings-v2/master/CHANGELOG.md)
 
 
 #### Direct Updates from SmartThings
