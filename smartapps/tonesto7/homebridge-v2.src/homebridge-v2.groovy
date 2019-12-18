@@ -5,13 +5,13 @@
  */
 
 String appVersion()                     { return "2.0.3" }
-String appModified()                    { return "12-17-2019" }
+String appModified()                    { return "12-18-2019" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
 String appIconUrl()                     { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/${branch()}/images/hb_tonesto7@2x.png" }
 String getAppImg(imgName, ext=".png")   { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/${branch()}/images/${imgName}${ext}" }
-Map minVersions()                       { return [plugin: 201] } //These values define the minimum versions of code this app will work with.
+Map minVersions()                       { return [plugin: 201] }
 
 definition(
     name: "Homebridge v2",
@@ -38,6 +38,7 @@ preferences {
     page(name: "virtDevicePage")
     page(name: "developmentPage")
     page(name: "donationPage")
+    page(name: "deviceDebugPage")
     page(name: "settingsPage")
     page(name: "confirmPage")
 }
@@ -127,8 +128,9 @@ def mainPage() {
         }
         section("Plugin Options:") {
             paragraph "Turn off if you are having issues sending commands"
-            input "allowLocalCmds", "bool", title: "Send HomeKit Commands Locally?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("command2")
+            input "sendCmdViaHubaction", "bool", title: "Send HomeKit Commands Locally?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("command2")
             input "temp_unit", "enum", title: "Temperature Unit?", required: true, defaultValue: location?.temperatureScale, options: ["F":"Fahrenheit", "C":"Celcius"], submitOnChange: true, image: getAppImg("command2")
+            href "deviceDebugPage", title: "Device Data Viewer", image: getAppImg("debug")
         }
         section("Review Configuration:") {
             Integer devCnt = getDeviceCnt()
@@ -260,6 +262,56 @@ def confirmPage() {
     }
 }
 
+def deviceDebugPage() {
+    return dynamicPage(name: "deviceDebugPage", title: "", install: false, uninstall: false) {
+        section("All Other Devices:") {
+            paragraph "Have a device that's not working under homekit like you want?\nSelect a device from one of the inputs below and it will show you all data about the device.", state: "complete", image: getAppImg("info")
+            if(!debug_switch && !debug_other)
+                input "debug_sensor", "capability.sensor", title: "Sensors: ", multiple: false, submitOnChange: true, required: false, image: getAppImg("sensors")
+            if(!debug_sensor && !debug_other)
+                input "debug_switch", "capability.switch", title: "Switches: ", multiple: false, submitOnChange: true, required: false, image: getAppImg("switch")
+            if(!debug_switch && !debug_sensor)
+                input "debug_other", "capability.refresh", title: "Others Devices: ", multiple: false, submitOnChange: true, required: false, image: getAppImg("devices2")
+            if(debug_other || debug_sensor || debug_switch) {
+                href url: getAppEndpointUrl("deviceDebug"), style: "embedded", required: false, title: "View the device Data here", description: "", state: "complete", image: getAppImg("info")
+            }
+        }
+    }
+}
+
+def viewDeviceDebug() {
+    def sDev = null;
+    if(debug_other) sDev = debug_other
+    if(debug_sensor) sDev = debug_sensor
+    if(debug_switch) sDev = debug_switch
+    def json = new groovy.json.JsonOutput().toJson(getDeviceDebugMap(sDev))
+    def jsonStr = new groovy.json.JsonOutput().prettyPrint(json)
+    render contentType: "application/json", data: jsonStr
+}
+
+def getDeviceDebugMap(dev) {
+    def r = "No Data Returned"
+    if(dev) {
+        r = [
+            name: dev?.displayName?.toString()?.replaceAll("[#\$()!%&@^']", ""),
+            basename: dev?.getName(),
+            deviceid: dev?.getId(),
+            status: dev?.getStatus(),
+            manufacturer: dev?.getManufacturerName() ?: "Unknown",
+            model: dev?.getModelName() ?: dev?.getTypeName(),
+            deviceNetworkId: dev?.getDeviceNetworkId(),
+            lastActivity: dev?.getLastActivity() ?: null,
+            capabilities: dev?.capabilities?.collect { it?.name as String }?.unique() ?: [],
+            commands: dev?.supportedCommands?.collect { it?.name as String }?.unique() ?: [],
+            customflags: getDeviceFlags(dev) ?: [],
+            attributes: [:],
+            eventHistory: dev?.eventsSince(new Date() - 1, [max: 20])?.collect { "${it?.date} | [${it?.name}] | (${it?.value}${it?.unit ? " ${it?.unit}" : ""})" }
+        ]
+        dev?.supportedAttributes?.collect { it?.name as String }?.unique()?.each { r?.attributes[it] = dev?.currentValue(it as String); }
+    }
+    return r
+}
+
 def getDeviceCnt() {
     def devices = []
     def items = ["deviceList", "sensorList", "switchList", "lightList", "buttonList", "fanList", "fan3SpdList", "fan4SpdList", "speakerList", "shadesList", "modeList", "routineList"]
@@ -317,7 +369,7 @@ private subscribeToEvts() {
     }
     state?.subscriptionRenewed = 0
     subscribe(app, onAppTouch)
-    if(settings?.allowLocalCmds != false) { subscribe(location, null, lanEventHandler, [filterEvents:false]) }
+    if(settings?.sendCmdViaHubaction != false) { subscribe(location, null, lanEventHandler, [filterEvents:false]) }
     if(settings?.routineList) {
         if(showDebugLogs) log.debug "Registering (${settings?.routineList?.size() ?: 0}) Virtual Routine Devices"
         subscribe(location, "routineExecuted", changeHandler)
@@ -552,10 +604,10 @@ def renderLocation() {
         longitude: location?.longitude,
         mode: location?.mode,
         name: location?.name,
-        temperature_scale: location?.temperatureScale,
+        temperature_scale: settings?.temp_unit ?: location?.temperatureScale,
         zip_code: location?.zipCode,
         hubIP: location?.hubs[0]?.localIP,
-        local_commands: (settings?.allowLocalCmds == true),
+        local_commands: (settings?.sendCmdViaHubaction != false),
         app_version: appVersion()
     ]
 }
@@ -577,7 +629,7 @@ def lanEventHandler(evt) {
                 if (msg?.body != null) {
                     def slurper = new groovy.json.JsonSlurper()
                     msgData = slurper?.parseText(msg?.body as String)
-                    log.debug "msgData: $msgData"
+                    // log.debug "msgData: $msgData"
                     if(headerMap?.evtType) {
                         switch(headerMap?.evtType) {
                             case "hkCommand":
@@ -631,19 +683,19 @@ private processCmd(devId, cmd, value1, value2, local=false) {
         if (!device) {
             log.error("Device Not Found")
             CommandReply("Failure", "Device Not Found")
-        } else if (!device.hasCommand(command)) {
+        } else if (!device?.hasCommand(command as String)) {
             log.error("Device ${device.displayName} does not have the command $command")
             CommandReply("Failure", "Device ${device.displayName} does not have the command $command")
         } else {
             try {
                 if (value2 != null) {
-                    device."$command"(value1,value2)
+                    device?."$command"(value1,value2)
                     log.info("Command Successful for Device ${device.displayName} | Command ${command}($value1, $value2)")
                 } else if (value1 != null) {
-                    device."$command"(value1)
+                    device?."$command"(value1)
                     log.info("Command Successful for Device ${device.displayName} | Command ${command}($value1)")
                 } else {
-                    device."$command"()
+                    device?."$command"()
                     log.info("Command Successful for Device ${device.displayName} | Command ${command}()")
                 }
                 CommandReply("Success", "Device ${device.displayName} | Command ${command}()")
@@ -1064,7 +1116,7 @@ private updateServicePrefs(isLocal=false) {
     sendHttpPost("updateprefs", [
         app_id: app?.getId(),
         access_token: state?.accessToken,
-        local_commands: (settings?.allowLocalCmds != false),
+        local_commands: (settings?.sendCmdViaHubaction != false),
         local_hub_ip: location?.hubs[0]?.localIP
     ])
 }
@@ -1103,6 +1155,7 @@ mappings {
     } else {
         path("/devices")					{ action: [GET: "getAllData"] }
         path("/config")						{ action: [GET: "renderConfig"]  }
+        path("/deviceDebug")			    { action: [GET: "viewDeviceDebug"]  }
         path("/location")					{ action: [GET: "renderLocation"] }
         path("/pluginStatus")			    { action: [POST: "pluginStatus"] }
         path("/:id/command/:command")		{ action: [POST: "deviceCommand"] }
