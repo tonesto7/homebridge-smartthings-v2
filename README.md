@@ -168,49 +168,49 @@ _Note to users updating from homebridge-smartthings-tonesto7: You can continue t
 ```
 
 
- * <p><u>platform</u> & <u>name</u>  <small style="color: orange; font-weight: 600;"><i>Required</i></small><br>
+ * <p><code>platform</code> & <code>name</code>  <small style="color: orange; font-weight: 600;"><i>Required</i></small><br>
     This information is used by homebridge to identify the plugin and should be the settings above.</p>
 
- * <p><u>app_url</u> & <u>app_id</u> & <u>access_token</u>  <small style="color: orange; font-weight: 600;"><i>Required</i></small><br>
+ * <p><code>app_url</code> & <code>app_id</code> & <code>access_token</code>  <small style="color: orange; font-weight: 600;"><i>Required</i></small><br>
     To get this information, open Homebridge (SmartThings) SmartApp in your SmartThings Classic Mobile App, and tap on "View Configuration Data for Homebridge"<br><small style="color: yellow;"><b>Notice:</b> The app_url in the example will be different for you.</small></p>
 
- * <p><u>direct_ip</u>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `First available IP on your computer`</i></small><br>
+ * <p><code>direct_ip</code>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `First available IP on your computer`</i></small><br>
     Most installations won't need this, but if for any reason it can't identify your ip address correctly, use this setting to force the IP presented to SmartThings for the hub to send to.</p>
 
  * <p>
-   <u>direct_port</u>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `8000`</i></small><br>
+   <code>direct_port</code>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `8000`</i></small><br>
    This is the port that homebridge-smartthings plugin will listen on for traffic from your hub. Make sure your firewall allows incoming traffic on this port from your hub's IP address.
    </p>
 
- * <p><u>local_commands</u>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `false`</i></small><br>
+ * <p><code>local_commands</code>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `false`</i></small><br>
     This will allow the service to send homekit commands to hub locally.</p>
 
- * <p><u>temperature_unit</u>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `F`</i></small><br>
+ * <p><code>temperature_unit</code>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `F`</i></small><br>
     This will allow you to define the temp unit to use.  This can also be set in the SmartApp</p>
 
- * <p><u>excluded_capabilities</u><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `{}` (None)</i></small><br>
+ * <p><code>excluded_capabilities</code><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `{}` (None)</i></small><br>
    NOTICE: The smartapp offers many inputs to help filter out device capabilities. Only use this if the available inputs don't meet your needs.
    Specify the SmartThings device by ID and the associated capabilities you want the plugin to ignore<br>This prevents a SmartThings device creating unwanted or redundant HomeKit accessories.</p>
 
  * <p>
-   <u>logConfig</u><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small><br>
+   <code>logConfig</code><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small><br>
    Define log output format options as well as enable the log file output
 
-   - <u>debug</u><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `false`</i></small><br>Enables Debug log output
+   - <code>debug</code><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `false`</i></small><br>Enables Debug log output
 
-   - <u>showChanges</u><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `true`</i></small><br>Logs device event changes received from SmartThings
+   - <code>showChanges</code><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `true`</i></small><br>Logs device event changes received from SmartThings
 
-   - <u>hideTimestamp</u><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `false`</i></small><br>Hides timestamp prefix from console log output
+   - <code>hideTimestamp</code><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `false`</i></small><br>Hides timestamp prefix from console log output
 
-   - <u>hideNamePrefix</u><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `false`</i></small><br>Hides pluglin name prefix `[SmartThings-v2]` from console log output
+   - <code>hideNamePrefix</code><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `false`</i></small><br>Hides pluglin name prefix `[SmartThings-v2]` from console log output
 
-   - <u>file</u><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small><br>
+   - <code>file</code><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small><br>
       Enable log file output and configure options
 
-     - <u>enabled</u><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `false`</i></small><br>
+     - <code>enabled</code><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `false`</i></small><br>
       Activates logging to file (homebridge-smartthings-v2.log) stored in the same folder as the homebridge config.json
 
-     - <u>level</u><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `good`</i></small><br>
+     - <code>level</code><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `good`</i></small><br>
      Defines the log entry levels that are written to the file. `good`(recommended) is the default which will write all necessary entries.
    </p>
 
