@@ -183,7 +183,7 @@ _Note to users updating from homebridge-smartthings-tonesto7: You can continue t
    </p>
 
  * <p><code>local_commands</code>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `false`</i></small><br>
-    This will allow the service to send homekit commands to hub locally.</p>
+    This will allow the service to send homekit commands to hub locally, this is also available under the SmartApp settings.</p>
 
  * <p><code>temperature_unit</code>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `F`</i></small><br>
     This will allow you to define the temp unit to use.  This can also be set in the SmartApp</p>
