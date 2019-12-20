@@ -4,8 +4,8 @@
  *  Copyright 2018, 2019, 2020 Anthony Santilli
  */
 
-String appVersion()                     { return "2.0.3" }
-String appModified()                    { return "12-18-2019" }
+String appVersion()                     { return "2.0.4" }
+String appModified()                    { return "12-20-2019" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
@@ -153,6 +153,7 @@ def mainPage() {
                 input "restartService", "bool", title: "Restart Homebridge plugin when you press Save?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("reset2")
             }
         }
+        clearTestDeviceItems()
     }
 }
 
@@ -273,10 +274,16 @@ def deviceDebugPage() {
             if(!debug_switch && !debug_sensor)
                 input "debug_other", "capability.refresh", title: "Others Devices: ", multiple: false, submitOnChange: true, required: false, image: getAppImg("devices2")
             if(debug_other || debug_sensor || debug_switch) {
-                href url: getAppEndpointUrl("deviceDebug"), style: "embedded", required: false, title: "View the device Data here", description: "", state: "complete", image: getAppImg("info")
+                href url: getAppEndpointUrl("deviceDebug"), style: "embedded", required: false, title: "Tap here to view Device Data...", description: "", state: "complete", image: getAppImg("info")
             }
         }
     }
+}
+
+public clearTestDeviceItems() {
+    settingRemove("debug_sensor")
+    settingRemove("debug_switch")
+    settingRemove("debug_other")
 }
 
 def viewDeviceDebug() {
@@ -292,22 +299,25 @@ def viewDeviceDebug() {
 def getDeviceDebugMap(dev) {
     def r = "No Data Returned"
     if(dev) {
-        r = [
-            name: dev?.displayName?.toString()?.replaceAll("[#\$()!%&@^']", ""),
-            basename: dev?.getName(),
-            deviceid: dev?.getId(),
-            status: dev?.getStatus(),
-            manufacturer: dev?.getManufacturerName() ?: "Unknown",
-            model: dev?.getModelName() ?: dev?.getTypeName(),
-            deviceNetworkId: dev?.getDeviceNetworkId(),
-            lastActivity: dev?.getLastActivity() ?: null,
-            capabilities: dev?.capabilities?.collect { it?.name as String }?.unique() ?: [],
-            commands: dev?.supportedCommands?.collect { it?.name as String }?.unique() ?: [],
-            customflags: getDeviceFlags(dev) ?: [],
-            attributes: [:],
-            eventHistory: dev?.eventsSince(new Date() - 1, [max: 20])?.collect { "${it?.date} | [${it?.name}] | (${it?.value}${it?.unit ? " ${it?.unit}" : ""})" }
-        ]
-        dev?.supportedAttributes?.collect { it?.name as String }?.unique()?.each { r?.attributes[it] = dev?.currentValue(it as String); }
+        try {
+            r = [:]
+            r?.name = dev?.displayName?.toString()?.replaceAll("[#\$()!%&@^']", "");
+            r?.basename = dev?.getName();
+            r?.deviceid = dev?.getId();
+            r?.status = dev?.getStatus();
+            r?.manufacturer = dev?.getManufacturerName() ?: "Unknown";
+            r?.model = dev?.getModelName() ?: dev?.getTypeName();
+            r?.deviceNetworkId = dev?.getDeviceNetworkId();
+            r?.lastActivity = dev?.getLastActivity() ?: null;
+            r?.capabilities = dev?.capabilities?.collect { it?.name as String }?.unique()?.sort() ?: [];
+            r?.commands = dev?.supportedCommands?.collect { it?.name as String }?.unique()?.sort() ?: [];
+            r?.customflags = getDeviceFlags(dev) ?: [];
+            r?.attributes = [:];
+            r?.eventHistory = dev?.eventsSince(new Date() - 1, [max: 20])?.collect { "${it?.date} | [${it?.name}] | (${it?.value}${it?.unit ? " ${it?.unit}" : ""})" };
+            dev?.supportedAttributes?.collect { it?.name as String }?.unique()?.sort()?.each { r?.attributes[it] = dev?.currentValue(it as String); };
+        } catch(ex) {
+            log.error("Error while generating device data: ", ex);
+        }
     }
     return r
 }
@@ -1081,6 +1091,10 @@ void settingUpdate(name, value, type=null) {
         app?.updateSetting("$name", [type: "$type", value: value])
     }
     else if (name && type == null){ app?.updateSetting(name.toString(), value) }
+}
+
+void settingRemove(String name) {
+    if(name && settings?.containsKey(name as String)) { app?.deleteSetting(name as String) }
 }
 
 Boolean devMode() {
