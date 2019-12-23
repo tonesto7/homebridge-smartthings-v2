@@ -1,0 +1,12 @@
+{
+	"pages.mainPage.name": "pages.mainPage.name",
+	"pages.mainPage.sections.When there is activity here.name": "pages.mainPage.sections.When there is activity here.name",
+	"Select motion sensors": "Select motion sensors",
+	"Tap to set": "Tap to set",
+	"pages.mainPage.sections.Turn on these lights.name": "pages.mainPage.sections.Turn on these lights.name",
+	"Select lights": "Select lights",
+	"pages.mainPage.sections.Options.name": "pages.mainPage.sections.Options.name",
+	"Turn off when motion stops": "Turn off when motion stops",
+	"pages.mainPage.settings.turnOff.description": "pages.mainPage.settings.turnOff.description",
+	"After this number of seconds": "After this number of seconds"
+}

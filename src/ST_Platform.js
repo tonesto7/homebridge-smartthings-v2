@@ -49,6 +49,9 @@ module.exports = class ST_Platform {
             .then((res) => {
                 this.client.sendUpdateStatus(res);
             });
+        if (config.useCloudSmartApp === true) {
+            require('./ST_CloudSmartApp');
+        }
     }
 
     getLogConfig() {
