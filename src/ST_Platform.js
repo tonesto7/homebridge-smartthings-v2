@@ -249,7 +249,7 @@ module.exports = class ST_Platform {
                 });
 
                 webApp.get("/debugOpts", (req, res) => {
-                    that.log.info(`${platformName} Debug Option Request(${req.query[0]})...`);
+                    that.log.info(`${platformName} Debug Option Request(${req.query.option})...`);
                     if (req.query && req.query.option) {
                         let accs = this.SmartThingsAccessories.getAllAccessoriesFromCache();
                         let accsKeys = Object.keys(accs);
