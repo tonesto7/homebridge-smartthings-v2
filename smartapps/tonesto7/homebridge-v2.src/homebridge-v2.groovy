@@ -5,13 +5,13 @@
  */
 
 String appVersion()                     { return "2.0.4" }
-String appModified()                    { return "12-20-2019" }
+String appModified()                    { return "12-23-2019" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
 String appIconUrl()                     { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/${branch()}/images/hb_tonesto7@2x.png" }
 String getAppImg(imgName, ext=".png")   { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/${branch()}/images/${imgName}${ext}" }
-Map minVersions()                       { return [plugin: 201] }
+Map minVersions()                       { return [plugin: 209] }
 
 definition(
     name: "Homebridge v2",
@@ -38,6 +38,7 @@ preferences {
     page(name: "virtDevicePage")
     page(name: "developmentPage")
     page(name: "donationPage")
+    page(name: "historyPage")
     page(name: "deviceDebugPage")
     page(name: "settingsPage")
     page(name: "confirmPage")
@@ -130,7 +131,6 @@ def mainPage() {
             paragraph "Turn off if you are having issues sending commands"
             input "sendCmdViaHubaction", "bool", title: "Send HomeKit Commands Locally?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("command2")
             input "temp_unit", "enum", title: "Temperature Unit?", required: true, defaultValue: location?.temperatureScale, options: ["F":"Fahrenheit", "C":"Celcius"], submitOnChange: true, image: getAppImg("command2")
-            href "deviceDebugPage", title: "Device Data Viewer", image: getAppImg("debug")
         }
         section("Review Configuration:") {
             Integer devCnt = getDeviceCnt()
@@ -139,6 +139,10 @@ def mainPage() {
                 paragraph "Notice:\nHomebridge Allows for 149 Devices per Bridge!!!", image: getAppImg("error"), state: null, required: true
             }
             paragraph "Devices Selected: (${devCnt})", image: getAppImg("info"), state: "complete"
+        }
+        section("History and Device Data:") {
+            href "historyPage", title: "View Command and Event History", image: getAppImg("backup")
+            href "deviceDebugPage", title: "Device Data Viewer", image: getAppImg("debug")
         }
         section("App Preferences:") {
             href "settingsPage", title: "App Settings", required: false, image: getAppImg("settings")
@@ -189,6 +193,23 @@ def settingsPage() {
         section("Logging:") {
             input "showEventLogs", "bool", title: "Show Events in Live Logs?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("debug")
             input "showDebugLogs", "bool", title: "Debug Logging?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("debug")
+        }
+    }
+}
+
+def historyPage() {
+    return dynamicPage(name: "historyPage", title: "", install: false, uninstall: false) {
+        List cHist = getCmdHistory()?.sort {it?.dt}?.reverse()
+        List eHist = getEvtHistory()?.sort {it?.dt}?.reverse()
+        section("Last (${cHist?.size()}) Commands:") {
+            if(cHist?.size()) {
+                cHist?.each { c-> paragraph title: c?.dt, "Device: ${c?.data?.device}\nCommand: (${c?.data?.cmd})${c?.data?.value1 ? "\nValue1: (${c?.data?.value1})" : ""}${c?.data?.value2 ? "\nValue2: (${c?.data?.value2})" : ""}", state: "complete" }
+            } else {paragraph "No Command History Found..." }
+        }
+        section("Last (${eHist?.size()}) Events:") {
+            if(eHist?.size()) {
+                eHist?.each { h-> paragraph title: h?.dt, "Device: ${h?.data?.device}\nEvent: (${h?.data?.name})${h?.data?.value ? "\nValue: (${h?.data?.value})" : ""}", state: "complete" }
+            } else {paragraph "No Event History Found..." }
         }
     }
 }
@@ -709,6 +730,7 @@ private processCmd(devId, cmd, value1, value2, local=false) {
                     log.info("Command Successful for Device ${device.displayName} | Command ${command}()")
                 }
                 CommandReply("Success", "Device ${device.displayName} | Command ${command}()")
+                logCmd([cmd: command, device: device?.displayName, value1: value1, value2: value2])
             } catch (e) {
                 log.error("Error Occurred for Device ${device.displayName} | Command ${command}()")
                 CommandReply("Failure", "Error Occurred For Device ${device.displayName} | Command ${command}()")
@@ -1024,6 +1046,7 @@ def changeHandler(evt) {
                 app_id: app?.getId(),
                 access_token: state?.accessToken
             ])
+            logEvt([name: send?.evtAttr, value: send?.evtValue, device: send?.evtDeviceName])
         }
     }
 }
@@ -1402,3 +1425,24 @@ def changeLogPage() {
         updInstData("shownChgLog", true)
     }
 }
+
+Integer stateSize() { def j = new groovy.json.JsonOutput().toJson(state); return j?.toString().length(); }
+Integer stateSizePerc() { return (int) ((stateSize() / 100000)*100).toDouble().round(0); }
+private addToHistory(String logKey, data, Integer max=10) {
+    Boolean ssOk = (stateSizePerc() > 70)
+    List eData = atomicState[logKey as String] ?: []
+    if(eData?.find { it?.data == data }) { return; }
+    eData?.push([dt: getDtNow(), data: data])
+    if(!ssOk || eData?.size() > max) { eData = eData?.drop( (eData?.size()-max) ) }
+    atomicState[logKey as String] = eData
+}
+
+List getCmdHistory() { return atomicState?.cmdHistory ?: [] }
+List getEvtHistory() { return atomicState?.evtHistory ?: [] }
+void clearHistory() {
+    atomicState?.cmdHistory = []
+    atomicState?.evtHistory = []
+}
+
+private logEvt(evtData) { addToHistory("evtHistory", evtData, 15) }
+private logCmd(cmdData) { addToHistory("cmdHistory", cmdData, 15) }
