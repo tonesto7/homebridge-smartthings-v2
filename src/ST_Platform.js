@@ -248,6 +248,11 @@ module.exports = class ST_Platform {
                     }
                 });
 
+                webApp.get("/getAllAccessoryDebug", (req, res) => {
+                    that.log.info(`${platformName} Requested Device Debug Data...`);
+                    res.send(JSON.stringify(this.SmartThingsAccessories.getAllAccessoriesFromCache()));
+                });
+
                 webApp.post("/restartService", (req, res) => {
                     let body = JSON.parse(JSON.stringify(req.body));
                     if (body && that.isValidRequestor(body.access_token, body.app_id, 'restartService')) {
