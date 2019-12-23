@@ -526,7 +526,7 @@ def getDeviceData(type, sItem) {
             firmwareVersion: firmware ?: "1.0.0",
             lastTime: !isVirtual ? (sItem?.getLastActivity() ?: null) : now(),
             capabilities: !isVirtual ? deviceCapabilityList(sItem) : ["${curType}": 1],
-            commands: !isVirtual ? deviceCommandList(sItem) : [on:[]],
+            commands: !isVirtual ? deviceCommandList(sItem) : [on: 1],
             deviceflags: !isVirtual ? getDeviceFlags(sItem) : optFlags,
             attributes: !isVirtual ? deviceAttributeList(sItem) : ["switch": attrVal]
         ]
@@ -798,7 +798,7 @@ def deviceQuery() {
                     name: name,
                     deviceid: params?.id,
                     capabilities: ["${type}": 1],
-                    commands: [on:[]],
+                    commands: [on:1],
                     attributes: ["switch": attrVal]
                 ])
             } catch (e) {
@@ -865,7 +865,7 @@ def deviceCapabilityList(device) {
 }
 
 def deviceCommandList(device) {
-    return device?.supportedCommands?.findAll { !(it?.name in ignoreLists()?.commands) }?.collectEntries { command-> [ (command?.name): (command?.arguments) ] }
+    return device?.supportedCommands?.findAll { !(it?.name in ignoreLists()?.commands) }?.collectEntries { command-> [ (command?.name): 1 ] }
 }
 
 def deviceAttributeList(device) {

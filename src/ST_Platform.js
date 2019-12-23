@@ -248,9 +248,34 @@ module.exports = class ST_Platform {
                     }
                 });
 
-                webApp.get("/getAllAccessoryDebug", (req, res) => {
-                    that.log.info(`${platformName} Requested Device Debug Data...`);
-                    res.send(JSON.stringify(this.SmartThingsAccessories.getAllAccessoriesFromCache()));
+                webApp.get("/debugOpts", (req, res) => {
+                    that.log.info(`${platformName} Debug Option Request(${req.query[0]})...`);
+                    if (req.query && req.query.option) {
+                        let accs = this.SmartThingsAccessories.getAllAccessoriesFromCache();
+                        let accsKeys = Object.keys(accs);
+                        // console.log(accsKeys);
+                        switch (req.query.option) {
+                            case 'allAccData':
+                                res.send(JSON.stringify(accs));
+                                break;
+                                // case 'accServices':
+                                //     {
+                                //         let o = accsKeys.forEach(s => s.services.forEach(s1 => s1.UUID));
+                                //         res.send(JSON.stringify(o));
+                                //         break;
+                                //     }
+                                // case 'accCharacteristics':
+                                //     {
+                                //         let o = accsKeys.forEach(s => s.services.forEach(s1 => s1.characteristics.forEach(c => c.displayName)));
+                                //         res.send(JSON.stringify(o));
+                                //         break;
+                                //     }
+                                // case 'accContext':
+                                //     res.send(JSON.stringify(this.SmartThingsAccessories.getAllAccessoriesFromCache()));
+                                //     break;
+                        }
+
+                    } else { res.send('Error: Missing Valid Debug Query Parameter'); }
                 });
 
                 webApp.post("/restartService", (req, res) => {
