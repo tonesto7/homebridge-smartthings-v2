@@ -733,11 +733,6 @@ module.exports = class DeviceTypes {
         thisChar = accessory
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.CurrentTemperature)
-            .setProps({
-                minValue: this.myUtils.thermostatTempConversion(40),
-                maxValue: this.myUtils.thermostatTempConversion(90),
-                minSteps: (this.mainPlatform.getTempUnit() === 'F') ? 1.0 : 0.5
-            })
             .on("get", (callback) => {
                 callback(null, this.myUtils.thermostatTempConversion(accessory.context.deviceData.attributes.temperature));
             });
@@ -746,11 +741,6 @@ module.exports = class DeviceTypes {
         thisChar = accessory
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.TargetTemperature)
-            .setProps({
-                minValue: this.myUtils.thermostatTempConversion(40),
-                maxValue: this.myUtils.thermostatTempConversion(90),
-                minSteps: (this.mainPlatform.getTempUnit() === 'F') ? 1.0 : 0.5
-            })
             .on("get", (callback) => {
                 let temp;
                 switch (accessory.context.deviceData.attributes.thermostatMode) {
@@ -820,11 +810,6 @@ module.exports = class DeviceTypes {
         thisChar = accessory
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.HeatingThresholdTemperature)
-            .setProps({
-                minValue: this.myUtils.thermostatTempConversion(40),
-                maxValue: this.myUtils.thermostatTempConversion(90),
-                minSteps: (this.mainPlatform.getTempUnit() === 'F') ? 1.0 : 0.5
-            })
             .on("get", (callback) => {
                 callback(null, this.myUtils.thermostatTempConversion(accessory.context.deviceData.attributes.heatingSetpoint));
             })
@@ -841,11 +826,6 @@ module.exports = class DeviceTypes {
         thisChar = accessory
             .getOrAddService(Service.Thermostat)
             .getCharacteristic(Characteristic.CoolingThresholdTemperature)
-            .setProps({
-                minValue: this.myUtils.thermostatTempConversion(40),
-                maxValue: this.myUtils.thermostatTempConversion(90),
-                minSteps: (this.mainPlatform.getTempUnit() === 'F') ? 1.0 : 0.5
-            })
             .on("get", (callback) => {
                 callback(null, this.myUtils.thermostatTempConversion(accessory.context.deviceData.attributes.coolingSetpoint));
             })
