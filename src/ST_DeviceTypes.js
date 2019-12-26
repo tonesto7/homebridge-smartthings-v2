@@ -817,47 +817,49 @@ module.exports = class DeviceTypes {
             });
         this.accessories.storeCharacteristicItem("temperature_unit", "platform", thisChar);
 
-        thisChar = accessory
-            .getOrAddService(Service.Thermostat)
-            .getCharacteristic(Characteristic.HeatingThresholdTemperature)
-            .setProps({
-                minValue: this.myUtils.thermostatTempConversion(40),
-                maxValue: this.myUtils.thermostatTempConversion(90),
-                minSteps: (this.mainPlatform.getTempUnit() === 'F') ? 1.0 : 0.5
-            })
-            .on("get", (callback) => {
-                callback(null, this.myUtils.thermostatTempConversion(accessory.context.deviceData.attributes.heatingSetpoint));
-            })
-            .on("set", (value, callback) => {
-                // Convert the Celsius value to the appropriate unit for Smartthings
-                let temp = this.myUtils.thermostatTempConversion(value, true);
-                this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setHeatingSetpoint", {
-                    value1: temp
+        if (accessory.getOrAddService(Service.Thermostat).getCharacteristic(Characteristic.TargetHeatingCoolingState).props.validValues.includes(3)) {
+            thisChar = accessory
+                .getOrAddService(Service.Thermostat)
+                .getCharacteristic(Characteristic.HeatingThresholdTemperature)
+                .setProps({
+                    minValue: this.myUtils.thermostatTempConversion(40),
+                    maxValue: this.myUtils.thermostatTempConversion(90),
+                    minSteps: (this.mainPlatform.getTempUnit() === 'F') ? 1.0 : 0.5
+                })
+                .on("get", (callback) => {
+                    callback(null, this.myUtils.thermostatTempConversion(accessory.context.deviceData.attributes.heatingSetpoint));
+                })
+                .on("set", (value, callback) => {
+                    // Convert the Celsius value to the appropriate unit for Smartthings
+                    let temp = this.myUtils.thermostatTempConversion(value, true);
+                    this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setHeatingSetpoint", {
+                        value1: temp
+                    });
+                    accessory.context.deviceData.attributes.heatingSetpoint = temp;
                 });
-                accessory.context.deviceData.attributes.heatingSetpoint = temp;
-            });
-        this.accessories.storeCharacteristicItem("heatingSetpoint", accessory.context.deviceData.deviceid, thisChar);
+            this.accessories.storeCharacteristicItem("heatingSetpoint", accessory.context.deviceData.deviceid, thisChar);
 
-        thisChar = accessory
-            .getOrAddService(Service.Thermostat)
-            .getCharacteristic(Characteristic.CoolingThresholdTemperature)
-            .setProps({
-                minValue: this.myUtils.thermostatTempConversion(40),
-                maxValue: this.myUtils.thermostatTempConversion(90),
-                minSteps: (this.mainPlatform.getTempUnit() === 'F') ? 1.0 : 0.5
-            })
-            .on("get", (callback) => {
-                callback(null, this.myUtils.thermostatTempConversion(accessory.context.deviceData.attributes.coolingSetpoint));
-            })
-            .on("set", (value, callback) => {
-                // Convert the Celsius value to the appropriate unit for Smartthings
-                let temp = this.myUtils.thermostatTempConversion(value, true);
-                this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setCoolingSetpoint", {
-                    value1: temp
+            thisChar = accessory
+                .getOrAddService(Service.Thermostat)
+                .getCharacteristic(Characteristic.CoolingThresholdTemperature)
+                .setProps({
+                    minValue: this.myUtils.thermostatTempConversion(40),
+                    maxValue: this.myUtils.thermostatTempConversion(90),
+                    minSteps: (this.mainPlatform.getTempUnit() === 'F') ? 1.0 : 0.5
+                })
+                .on("get", (callback) => {
+                    callback(null, this.myUtils.thermostatTempConversion(accessory.context.deviceData.attributes.coolingSetpoint));
+                })
+                .on("set", (value, callback) => {
+                    // Convert the Celsius value to the appropriate unit for Smartthings
+                    let temp = this.myUtils.thermostatTempConversion(value, true);
+                    this.client.sendDeviceCommand(callback, accessory.context.deviceData.deviceid, "setCoolingSetpoint", {
+                        value1: temp
+                    });
+                    accessory.context.deviceData.attributes.coolingSetpoint = temp;
                 });
-                accessory.context.deviceData.attributes.coolingSetpoint = temp;
-            });
-        this.accessories.storeCharacteristicItem("coolingSetpoint", accessory.context.deviceData.deviceid, thisChar);
+            this.accessories.storeCharacteristicItem("coolingSetpoint", accessory.context.deviceData.deviceid, thisChar);
+        }
         return accessory;
     }
 
