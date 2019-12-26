@@ -32,7 +32,10 @@
         "homebridge-plugin",
         "smartthings",
         "homekit",
-        "homebridge"
+        "homebridge",
+        "category_climate",
+        "category_hubs",
+        "category_lighting"
     ],
     "scripts": {
         "test": "eslint .",
