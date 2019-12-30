@@ -13,6 +13,7 @@ String appIconUrl()                     { return "https://raw.githubusercontent.
 String getAppImg(imgName, ext=".png")   { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/${branch()}/images/${imgName}${ext}" }
 Map minVersions()                       { return [plugin: 209] }
 
+//TODO: Finish Virtual Buttons
 definition(
     name: "Homebridge v2",
     namespace: "tonesto7",
@@ -113,12 +114,13 @@ def mainPage() {
         }
 
         section("Virtual Devices:") {
-            Boolean conf = (modeList || routineList)
-            String desc = "Create virtual mode or routines devices\n\nTap to Configure..."
+            Boolean conf = (modeList || routineList || prgButtonsList)
+            String desc = "Create virtual (mode, routine, button) devices\n\nTap to Configure..."
             if(conf) {
                 desc = ""
                 desc += modeList ? "(${modeList?.size()}) Mode Devices\n" : ""
                 desc += routineList ? "(${routineList?.size()}) Routine Devices\n" : ""
+                desc += prgButtonsList ? "(${prgButtonsList?.size()}) Programable Button Devices\n" : ""
                 desc += "\nTap to modify..."
             }
             href "virtDevicePage", title: "Configure Virtual Devices", required: false, image: getAppImg("devices"), state: (conf ? "complete" : null), description: desc
@@ -254,6 +256,11 @@ def virtDevicePage() {
             paragraph title: "What are these?", "A virtual device will be created for each routine in HomeKit.\nThese are very useful for use in Home Kit scenes", state: "complete", image: getAppImg("info")
             def routines = location.helloHome?.getPhrases()?.sort { it?.label }?.collect { [(it?.id):it?.label] }
             input "routineList", "enum", title: "Create Devices for these Routines", required: false, multiple: true, options: routines, submitOnChange: true, image: getAppImg("routine")
+        }
+
+        section("Create Programable Buttons for Use in HomeKit?") {
+            paragraph title: "What are these?", "A virtual programable button device will be created in HomeKit.\nThese are very useful because you can use them to execute actions using homekit accessorys.  Each button supports single-pressed, double pressed, long pressed events", state: "complete", image: getAppImg("info")
+            input "prgButtonsList", "enum", title: "Create Devices for these Routines", required: false, multiple: true, submitOnChange: true, image: getAppImg("button")
         }
     }
 }
@@ -1418,7 +1425,7 @@ def changeLogPage() {
     def execTime = now()
     return dynamicPage(name: "changeLogPage", title: "", nextPage: "mainPage", install: false) {
         section() {
-            paragraph title: "Release Notes", "", state: "complete", image: getAppImg("whats_new")
+            paragraph title: "Release Notes", "", state: "complete", image: getAppImg("change_log")
             paragraph changeLogData()
         }
         state?.curAppVer = appVersion()

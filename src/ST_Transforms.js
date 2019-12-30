@@ -38,7 +38,6 @@ module.exports = class Transforms {
                 }
 
             case "button":
-                // case "supportButtonValues":
                 switch (val) {
                     case "pushed":
                         return Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS;
@@ -47,7 +46,7 @@ module.exports = class Transforms {
                     case "double":
                         return Characteristic.ProgrammableSwitchEvent.DOUBLE_PRESS;
                     default:
-                        return undefined;
+                        return null;
                 }
             case "supportButtonValues":
                 {
@@ -64,9 +63,17 @@ module.exports = class Transforms {
                                 case "double":
                                     validValues.push(Characteristic.ProgrammableSwitchEvent.DOUBLE_PRESS);
                                     continue;
+                                default:
+                                    validValues.push(Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS);
+                                    validValues.push(Characteristic.ProgrammableSwitchEvent.LONG_PRESS);
+                                    continue;
                             }
                         }
+                    } else {
+                        validValues.push(Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS);
+                        validValues.push(Characteristic.ProgrammableSwitchEvent.LONG_PRESS);
                     }
+                    // console.log('validValues: ', validValues);
                     return validValues;
                 }
             case "fanState":

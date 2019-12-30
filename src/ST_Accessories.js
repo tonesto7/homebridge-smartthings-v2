@@ -1,4 +1,5 @@
 const knownCapabilities = require("./libs/Constants").knownCapabilities,
+    pluginVersion = require('./libs/Constants').pluginVersion,
     _ = require("lodash"),
     ServiceTypes = require('./ST_ServiceTypes'),
     Transforms = require('./ST_Transforms'),
@@ -80,7 +81,8 @@ module.exports = class ST_Accessories {
             .setCharacteristic(Characteristic.FirmwareRevision, accessory.context.deviceData.firmwareVersion)
             .setCharacteristic(Characteristic.Manufacturer, accessory.context.deviceData.manufacturerName)
             .setCharacteristic(Characteristic.Model, `${this.myUtils.toTitleCase(accessory.context.deviceData.modelName)}`)
-            .setCharacteristic(Characteristic.Name, accessory.context.deviceData.name);
+            .setCharacteristic(Characteristic.Name, accessory.context.deviceData.name)
+            .setCharacteristic(Characteristic.HardwareRevision, pluginVersion);
         accessory.servicesToKeep.push(Service.AccessoryInformation.UUID);
 
         if (!accessoryInformation.listeners("identify")) {
@@ -105,20 +107,20 @@ module.exports = class ST_Accessories {
     }
 
     processDeviceAttributeUpdate(change) {
-        let that = this;
+        // let that = this;
         return new Promise((resolve) => {
             let characteristics = this.getAttributeStoreItem(change.attribute, change.deviceid);
             let accessory = this.getAccessoryFromCache(change);
             // console.log(characteristics);
-            if (!characteristics || !accessory) return;
+            if (!characteristics || !accessory) resolve(false);
             if (characteristics instanceof Array) {
                 characteristics.forEach(char => {
                     accessory.context.deviceData.attributes[change.attribute] = change.value;
                     accessory.context.lastUpdate = new Date().toLocaleString();
-                    char.updateValue(that.transforms.transformAttributeState(change.attribute, change.value, char.displayName));
+                    char.updateValue(this.transforms.transformAttributeState(change.attribute, change.value, char.displayName));
                     // char.getValue();
                 });
-                resolve(that.addAccessoryToCache(accessory));
+                resolve(this.addAccessoryToCache(accessory));
             }
             resolve(false);
         });

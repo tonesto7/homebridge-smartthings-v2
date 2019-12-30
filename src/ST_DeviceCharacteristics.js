@@ -43,7 +43,7 @@ module.exports = class DeviceCharacteristics {
                 }
             });
             if (opts.props && Object.keys(opts.props).length) c.setProps(opts.props);
-            if (opts.evtOnly !== undefined) c.eventOnlyCharacteristic = opts.evtOnly;
+            if (opts.evtOnly && opts.evtOnly === true) c.eventOnlyCharacteristic = opts.evtOnly;
             c.getValue();
             accClass.storeCharacteristicItem(attr, this.context.deviceData.deviceid, c);
         } else {
@@ -75,7 +75,7 @@ module.exports = class DeviceCharacteristics {
                     if (opts.updAttrVal) this.context.deviceData.attributes[attr] = accClass.transforms.transformAttributeState(opts.set_altAttr || attr, this.context.deviceData.attributes[opts.set_altValAttr || attr], c.displayName);
                 });
                 if (opts.props && Object.keys(opts.props).length) c.setProps(opts.props);
-                if (opts.evtOnly !== undefined) c.eventOnlyCharacteristic = opts.evtOnly;
+                if (opts.evtOnly && opts.evtOnly === true) c.eventOnlyCharacteristic = opts.evtOnly;
                 c.getValue();
             }
             c.getValue();
@@ -100,33 +100,50 @@ module.exports = class DeviceCharacteristics {
         return _accessory;
     }
 
-    // button(_accessory, _service) {
-    //     _accessory.manageGetCharacteristic(_service, Characteristic.ProgrammableSwitchEvent, 'button', {
-    //         evtOnly: false,
-    //         props: {
-    //             validValues: this.transforms.transformAttributeState('supportedButtonValues', _accessory.context.deviceData.attributes.supportedButtonValues)
-    //         }
-    //     });
-    //     _accessory.context.deviceGroups.push("button");
-    //     return _accessory;
-    // }
-
     button(_accessory, _service) {
+        let validValues = this.transforms.transformAttributeState('supportedButtonValues', _accessory.context.deviceData.attributes.supportedButtonValues) || [0, 2];
         let c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.ProgrammableSwitchEvent);
         if (!c._events.get) {
-            c.setProps({
-                validValues: this.transforms.transformAttributeState('supportedButtonValues', _accessory.context.deviceData.attributes.supportedButtonValues)
-            });
             c.on("get", (callback) => {
-                this.value = -1;
+                console.log(this);
                 callback(null, this.transforms.transformAttributeState('button', _accessory.context.deviceData.attributes.button));
             });
-
-            // Turned on by default for Characteristic.ProgrammableSwitchEvent, required to emit `change`
-            c.eventOnlyCharacteristic = false;
         }
+        c.setProps({
+            validValues: validValues,
+            minValue: Math.min(validValues),
+            maxValue: Math.max(validValues)
+        });
+        c.eventOnlyCharacteristic = false;
+        console.log('validValues', validValues, ' | min: ', Math.min(validValues), ' | max: ', Math.max(validValues));
         this.accessories.storeCharacteristicItem("button", _accessory.context.deviceData.deviceid, c);
-        c.updateValue(this.transforms.transformAttributeState('button', _accessory.context.deviceData.attributes.button));
+
+        //This Creates a switch device for each button type (pushed, held, double) and immediately set the value to off.
+        validValues.forEach((btn) => {
+            let s = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.On);
+            if (!s._events.get || !s._events.set) {
+                if (!s._events.get)
+                    s.on("get", (callback) => {
+                        callback(null, false);
+                    });
+                if (!s._events.set)
+                    s.on("set", (value, callback) => {
+                        if (value) {
+                            this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "routine");
+                            setTimeout(() => {
+                                console.log("routineOff...");
+                                _accessory.context.deviceData.attributes.switch = "off";
+                                _accessory
+                                    .getOrAddService(_service)
+                                    .getCharacteristic(Characteristic.On)
+                                    .updateValue(false);
+                            }, 2000);
+                        }
+                    });
+                this.accessories.storeCharacteristicItem("switch", _accessory.context.deviceData.deviceid, c);
+            }
+            c.updateValue(this.transforms.transformAttributeState('switch', _accessory.context.deviceData.attributes.switch));
+        });
         _accessory.context.deviceGroups.push("button");
         return _accessory;
     }
@@ -586,7 +603,7 @@ module.exports = class DeviceCharacteristics {
         if (!c._events.get || !c._events.set) {
             if (!c._events.get)
                 c.on("get", (callback) => {
-                    callback(null, this.transforms.transformAttributeState('switch', _accessory.context.deviceData.attributes.switch));
+                    callback(null, false);
                 });
             if (!c._events.set)
                 c.on("set", (value, callback) => {
@@ -595,11 +612,8 @@ module.exports = class DeviceCharacteristics {
                         setTimeout(() => {
                             console.log("routineOff...");
                             _accessory.context.deviceData.attributes.switch = "off";
-                            _accessory
-                                .getOrAddService(_service)
-                                .getCharacteristic(Characteristic.On)
-                                .updateValue(false);
-                        }, 2000);
+                            c.updateValue(false);
+                        }, 1000);
                     }
                 });
             this.accessories.storeCharacteristicItem("switch", _accessory.context.deviceData.deviceid, c);
