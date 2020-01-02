@@ -17,21 +17,6 @@ module.exports = class DeviceCharacteristics {
         this.homebridge = accessories.homebridge;
     }
 
-    log_change(attr, char, acc, chgObj) {
-        if (this.logConfig.debug === true)
-            this.log.notice(`[CHARACTERISTIC (${char}) CHANGE] ${attr} (${acc.displayName}) | LastUpdate: (${acc.context.lastUpdate}) | NewValue: (${chgObj.newValue}) | OldValue: (${chgObj.oldValue})`);
-    }
-
-    log_get(attr, char, acc, val) {
-        if (this.logConfig.debug === true)
-            this.log.good(`[CHARACTERISTIC (${char}) GET] ${attr} (${acc.displayName}) | LastUpdate: (${acc.context.lastUpdate}) | Value: (${val})`);
-    }
-
-    log_set(attr, char, acc, val) {
-        if (this.logConfig.debug === true)
-            this.log.warn(`[CHARACTERISTIC (${char}) SET] ${attr} (${acc.displayName}) | LastUpdate: (${acc.context.lastUpdate}) | Value: (${val})`);
-    }
-
     manageGetCharacteristic(svc, acc, char, attr, opts = {}) {
         let c = this.getOrAddService(svc).getCharacteristic(char);
         if (!c._events.get) {
@@ -40,7 +25,7 @@ module.exports = class DeviceCharacteristics {
                     callback(null, this.context.deviceData.status === 'Online');
                 } else {
                     callback(null, accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
-                    this.log_get(attr, char, acc, accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
+                    accClass.log_get(attr, char, acc, accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
                 }
             });
             if (opts.props && Object.keys(opts.props).length) c.setProps(opts.props);
@@ -52,12 +37,12 @@ module.exports = class DeviceCharacteristics {
                 c.updateValue(this.context.deviceData.status === 'Online');
             } else {
                 c.updateValue(accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
-                this.log_get(attr, char, acc, accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
+                accClass.log_get(attr, char, acc, accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
             }
         }
         if (!c._events.change) {
             c.on("change", (chg) => {
-                this.log_change(attr, char, acc, chg);
+                accClass.log_change(attr, char, acc, chg);
             });
         }
     }
@@ -68,7 +53,7 @@ module.exports = class DeviceCharacteristics {
             if (!c._events.get) {
                 c.on("get", (callback) => {
                     callback(null, accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
-                    this.log_get(attr, char, acc, accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
+                    accClass.log_get(attr, char, acc, accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
                 });
             }
             if (!c._events.set) {
@@ -90,11 +75,11 @@ module.exports = class DeviceCharacteristics {
             accClass.storeCharacteristicItem(attr, this.context.deviceData.deviceid, c);
         } else {
             c.updateValue(accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
-            this.log_get(attr, char, acc, accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
+            accClass.log_get(attr, char, acc, accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
         }
         if (!c._events.change) {
             c.on("change", (chg) => {
-                this.log_change(attr, char, acc, chg);
+                accClass.log_change(attr, char, acc, chg);
             });
         }
     }

@@ -126,6 +126,21 @@ module.exports = class ST_Accessories {
         });
     }
 
+    log_change(attr, char, acc, chgObj) {
+        if (this.logConfig.debug === true)
+            this.log.notice(`[CHARACTERISTIC (${char}) CHANGE] ${attr} (${acc.displayName}) | LastUpdate: (${acc.context.lastUpdate}) | NewValue: (${chgObj.newValue}) | OldValue: (${chgObj.oldValue})`);
+    }
+
+    log_get(attr, char, acc, val) {
+        if (this.logConfig.debug === true)
+            this.log.good(`[CHARACTERISTIC (${char}) GET] ${attr} (${acc.displayName}) | LastUpdate: (${acc.context.lastUpdate}) | Value: (${val})`);
+    }
+
+    log_set(attr, char, acc, val) {
+        if (this.logConfig.debug === true)
+            this.log.warn(`[CHARACTERISTIC (${char}) SET] ${attr} (${acc.displayName}) | LastUpdate: (${acc.context.lastUpdate}) | Value: (${val})`);
+    }
+
     hasCapability(obj) {
         let keys = Object.keys(this.context.deviceData.capabilities);
         if (keys.includes(obj) || keys.includes(obj.toString().replace(/\s/g, ""))) return true;
