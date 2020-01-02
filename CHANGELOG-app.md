@@ -1,7 +1,8 @@
 
 # Changelog
 
-All notable changes to this SmartApp will be documented in this file.
+## v2.1.0
+- [FIX] Other bug fixes and cleanups.
 
 ## v2.0.3
 - [NEW] Added a new device data input where you can select a device and see all available attributes, capabilities, commands, and the last 30 events.

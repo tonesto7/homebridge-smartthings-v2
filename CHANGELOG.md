@@ -1,9 +1,9 @@
 
-All notable changes to this project will be documented in this file.
-
 ## v2.1.0
 - [UPDATE] Refactored the device service and characteristic so it's more modular now and easier to maintain.
+- [FIX] Lot's of fixes for device state updates and device commands.
 - [FIX] Other minor bugfixes and tweaks.
+- [FIX] More to add here before release.
 
 ## v2.0.5 - v2.0.10
 - [FIX] Fixed thermostat temp unit error.

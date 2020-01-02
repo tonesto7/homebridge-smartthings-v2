@@ -4,14 +4,14 @@
  *  Copyright 2018, 2019, 2020 Anthony Santilli
  */
 
-String appVersion()                     { return "2.0.4" }
-String appModified()                    { return "12-30-2019" }
+String appVersion()                     { return "2.1.0" }
+String appModified()                    { return "01-02-2020" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
 String appIconUrl()                     { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/${branch()}/images/hb_tonesto7@2x.png" }
 String getAppImg(imgName, ext=".png")   { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/${branch()}/images/${imgName}${ext}" }
-Map minVersions()                       { return [plugin: 209] }
+Map minVersions()                       { return [plugin: 210] }
 
 //TODO: Finish Virtual Buttons
 definition(
