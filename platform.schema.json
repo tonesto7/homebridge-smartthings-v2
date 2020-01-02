@@ -1,7 +1,5 @@
 {
-    "plugin_alias": "SmartThings-v2",
-    "singular": true,
-    "footerDisplay": "If you need help or have issues visit: [issues](https://github.com/tonesto7/homebridge-smartthings-v2/issues)",
+    "plugin_alias": "SmartThings",
     "schema": {
         "type": "object",
         "properties": {
@@ -49,8 +47,7 @@
                 "title": "Define Temperature Unit",
                 "type": "string",
                 "default": "F",
-                "enum": [
-                    {
+                "enum": [{
                         "text": "Fahrenheit",
                         "value": "F"
                     },
@@ -113,8 +110,7 @@
                                 "title": "Log File Output Level",
                                 "type": "string",
                                 "default": "good",
-                                "enum": [
-                                    {
+                                "enum": [{
                                         "text": "Debug",
                                         "value": "debug"
                                     },
@@ -146,6 +142,5 @@
                 }
             }
         }
-
     }
 }

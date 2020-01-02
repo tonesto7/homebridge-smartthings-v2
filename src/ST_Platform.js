@@ -160,7 +160,7 @@ module.exports = class ST_Platform {
     addDevice(device) {
         let accessory;
         const new_uuid = this.uuid.generate(`smartthings_v2_${device.deviceid}`);
-        device.excludedCapabilities = this.excludedCapabilities[device.deviceid] || ["None"];
+        device.excludedCapabilities = this.excludedCapabilities[device.deviceid] || [];
         this.log.debug(`Initializing New Device (${device.name} | ${device.deviceid})`);
         accessory = this.getNewAccessory(device, new_uuid);
         this.homebridge.registerPlatformAccessories(pluginName, platformName, [accessory]);
@@ -170,7 +170,7 @@ module.exports = class ST_Platform {
 
     updateDevice(device) {
         let cachedAccessory = this.SmartThingsAccessories.getAccessoryFromCache(device);
-        device.excludedCapabilities = this.excludedCapabilities[device.deviceid] || ["None"];
+        device.excludedCapabilities = this.excludedCapabilities[device.deviceid] || [];
         cachedAccessory.context.deviceData = device;
         this.log.info(`Loading Existing Device (${device.name}) | (${device.deviceid})`);
         cachedAccessory = this.SmartThingsAccessories.initializeAccessory(cachedAccessory);
