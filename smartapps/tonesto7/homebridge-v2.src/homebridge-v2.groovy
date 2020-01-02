@@ -1164,7 +1164,6 @@ def pluginStatus() {
     state?.pluginUpdates = [hasUpdate: (body?.hasUpdate == true), newVersion: (body?.newVersion ?: null)]
     if(body?.version) { updCodeVerMap("plugin", body?.version)}
     def resultJson = new groovy.json.JsonOutput().toJson([status: 'OK'])
-    log.debug "resultJson: ${resultJson}"
     render contentType: "application/json", data: resultJson
 }
 
