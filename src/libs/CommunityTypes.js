@@ -355,6 +355,39 @@ module.exports = function(Service, Characteristic) {
         this.addOptionalCharacteristic(Characteristic.StatusTampered);
         this.addOptionalCharacteristic(Characteristic.Name);
     };
+    
+    CommunityTypes.FanOscilationMode = function() {
+         Characteristic.call(this, 'RotationSpeed', '00000029-0000-1000-8000-0026BB765291');
+         this.setProps({
+             format: Characteristic.Formats.UINT8,
+             maxValue: 100,
+             minValue: 0,
+             validValues: [25,50,75,100],
+             perms: [Characteristic.Perms.READ,Characteristic.Perms.WRITE, Characteristic.Perms.NOTIFY]
+         });
+         this.value = this.getDefaultValue();
+     };
+     inherits(CommunityTypes.FanOscilationMode, Characteristic.RotationSpeed);
+
+     // The value property of FanOscilationMode must be one of the following:
+     CommunityTypes.FanOscilationMode.SLEEP  = 25;
+     CommunityTypes.FanOscilationMode.LOW    = 50;
+     CommunityTypes.FanOscilationMode.MEDIUM = 75;
+     CommunityTypes.FanOscilationMode.HIGH   = 100;
+     
+     CommunityTypes.NewAirPurifierService = function(displayName, subtype) {
+         Service.call(this, displayName, '000000BB-0000-1000-8000-0026BB765291', subtype);
+
+         // Required Characteristics
+         this.addCharacteristic(Characteristic.Active);
+         this.addCharacteristic(Characteristic.CurrentAirPurifierState);
+         this.addCharacteristic(Characteristic.TargetAirPurifierState);
+         this.addCharacteristic(CommunityTypes.FanOscilationMode);
+
+         // Optional Characteristics
+         this.addOptionalCharacteristic(Characteristic.Name);
+     };
+     inherits(CommunityTypes.NewAirPurifierService, Service.AirPurifier);
 
     return CommunityTypes;
 };

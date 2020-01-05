@@ -26,6 +26,17 @@ module.exports = class Transforms {
                     default:
                         return charName && charName === "Target Door State" ? Characteristic.TargetDoorState.OPEN : Characteristic.TargetDoorState.STOPPED;
                 }
+                
+            case "fanMode":
+                switch (val) {
+                    case "low":
+                        return CommunityTypes.FanOscilationMode.LOW;
+                    case "medium":
+                        return CommunityTypes.FanOscilationMode.MEDIUM;
+                    case "high":
+                        return CommunityTypes.FanOscilationMode.HIGH;
+                    default CommunityTypes.FanOscilationMode.SLEEP;
+                }
 
             case "lock":
                 switch (val) {

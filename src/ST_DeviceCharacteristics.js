@@ -83,6 +83,80 @@ module.exports = class DeviceCharacteristics {
             });
         }
     }
+    
+    air_purifier(_accessory, _service) {
+        let stateName=that.device.attributes.switch;
+                 let state=Characteristic.Active.INACTIVE;
+                 if (that.device.attributes.switch==="on") state=Characteristic.Active.ACTIVE;
+                 thisCharacteristic = that.getaddService(CommunityTypes.NewAirPurifierService).getCharacteristic(Characteristic.Active)
+                     .on('get', function(callback) {
+                         callback(null, state);
+                     })
+                     .on('set', function(value, callback) {
+                         if (value) {
+                             platform.api.runCommand(callback, device.deviceid, 'on');
+                         } else {
+                             platform.api.runCommand(callback, device.deviceid, 'off');
+                         }
+                     });
+
+                 thisCharacteristic = that.getaddService(CommunityTypes.NewAirPurifierService).getCharacteristic(Characteristic.CurrentAirPurifierState)
+                     .on('get', function(callback) {
+                         if (state===Characteristic.Active.INACTIVE) {
+                             callback(null, Characteristic.CurrentAirPurifierState.INACTIVE);
+                         }
+                         else {
+                             callback(null, Characteristic.CurrentAirPurifierState.PURIFYING_AIR); //kind of simple but prevents infinite "powering on..."
+                         }
+                     });
+
+                 //console.log(that.device.attributes);
+
+                 let fanLvlName = that.device.attributes.fanMode;
+                 let fanLvl = CommunityTypes.FanOscilationMode.SLEEP;
+                      if (fanLvlName=="low")    fanLvl=CommunityTypes.FanOscilationMode.LOW;
+                 else if (fanLvlName=="medium") fanLvl=CommunityTypes.FanOscilationMode.MEDIUM;
+                 else if (fanLvlName=="high")   fanLvl=CommunityTypes.FanOscilationMode.HIGH;
+                 thisCharacteristic = that.getaddService(CommunityTypes.NewAirPurifierService).getCharacteristic(CommunityTypes.FanOscilationMode)
+                     .on('get', function(callback) {
+                         callback(null, fanLvl);
+                     })
+                     .on('set', function(value, callback) {
+                         if (value>=0 && value<=CommunityTypes.FanOscilationMode.SLEEP){
+                             platform.api.runCommand(callback, device.deviceid, 'setFanMode', {
+                                 value1: "sleep"
+                             });
+                         } 
+                         else if (value>CommunityTypes.FanOscilationMode.SLEEP && value<=CommunityTypes.FanOscilationMode.LOW){
+                             platform.api.runCommand(callback, device.deviceid, 'setFanMode', {
+                                 value1: "low"
+                             });
+                         } 
+                         else if (value>CommunityTypes.FanOscilationMode.LOW && value<=CommunityTypes.FanOscilationMode.MEDIUM){
+                             platform.api.runCommand(callback, device.deviceid, 'setFanMode', {
+                                 value1: "medium"
+                             });
+                         } 
+                         else if (value>CommunityTypes.FanOscilationMode.MEDIUM && value<=CommunityTypes.FanOscilationMode.HIGH){
+                             platform.api.runCommand(callback, device.deviceid, 'setFanMode', {
+                                 value1: "high"
+                             });
+                         }
+                     });
+                 platform.addAttributeUsage('level', device.deviceid, thisCharacteristic);
+    }
+    
+    air_quality(_accessory, _service) {
+        let c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.AirQuality);
+        if (!c._events.get) {
+            c.on("get", (callback) => {
+                callback(null, Characteristic.AirQuality);
+            });
+        }
+        this.accessories.storeCharacteristicItem("airQuality", _accessory.context.deviceData.deviceid, c);
+        _accessory.context.deviceGroups.push("airQuality");
+        return _accessory;
+    }
 
     alarm_system(_accessory, _service) {
         _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.SecuritySystemCurrentState, 'alarmSystemStatus');
@@ -387,11 +461,6 @@ module.exports = class DeviceCharacteristics {
         // CURRENT TEMPERATURE
         c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CurrentTemperature);
         if (!c._events.get) {
-            c.setProps({
-                minValue: this.transforms.thermostatTempConversion(40),
-                maxValue: this.transforms.thermostatTempConversion(90),
-                minSteps: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5
-            });
             c.on("get", (callback) => {
                 callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.temperature));
             });
@@ -427,11 +496,6 @@ module.exports = class DeviceCharacteristics {
 
         c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetTemperature);
         if (!c._events.get || !c._events.set) {
-            c.setProps({
-                minValue: this.transforms.thermostatTempConversion(40),
-                maxValue: this.transforms.thermostatTempConversion(90),
-                minSteps: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5
-            });
             if (!c._events.get) {
                 c.on("get", (callback) => {
                     callback(null, targetTemp ? this.transforms.thermostatTempConversion(targetTemp) : "Unknown");
@@ -484,59 +548,50 @@ module.exports = class DeviceCharacteristics {
         c.updateValue((this.platform.getTempUnit() === 'F') ? Characteristic.TemperatureDisplayUnits.FAHRENHEIT : Characteristic.TemperatureDisplayUnits.CELSIUS);
 
         // HEATING THRESHOLD TEMPERATURE
-        c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.HeatingThresholdTemperature);
-        if (!c._events.get || !c._events.set) {
-            c.setProps({
-                minValue: this.transforms.thermostatTempConversion(40),
-                maxValue: this.transforms.thermostatTempConversion(90),
-                minSteps: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5
-            });
-            if (!c._events.get) {
-                c.on("get", (callback) => {
-                    callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
-                });
-            }
-            if (!c._events.set) {
-                c.on("set", (value, callback) => {
-                    // Convert the Celsius value to the appropriate unit for Smartthings
-                    let temp = this.transforms.thermostatTempConversion(value, true);
-                    this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "setHeatingSetpoint", {
-                        value1: temp
-                    });
-                    _accessory.context.deviceData.attributes.heatingSetpoint = temp;
-                });
-            }
-        }
-        this.accessories.storeCharacteristicItem("heatingSetpoint", _accessory.context.deviceData.deviceid, c);
-        c.updateValue(this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
-
-        // COOLING THRESHOLD TEMPERATURE
-        c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CoolingThresholdTemperature);
-        if (!c._events.get || !c._events.set) {
-            c.setProps({
-                minValue: this.transforms.thermostatTempConversion(40),
-                maxValue: this.transforms.thermostatTempConversion(90),
-                minSteps: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5
-            });
+        if (_accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetHeatingCoolingState).props.validValues.includes(3)) {
+            c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.HeatingThresholdTemperature);
             if (!c._events.get || !c._events.set) {
-                c.on("get", (callback) => {
-                    callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.coolingSetpoint));
-                });
-            }
-            if (!c._events.set) {
-                c.on("set", (value, callback) => {
-                    // Convert the Celsius value to the appropriate unit for Smartthings
-                    let temp = this.transforms.thermostatTempConversion(value, true);
-                    this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "setCoolingSetpoint", {
-                        value1: temp
+                if (!c._events.get) {
+                    c.on("get", (callback) => {
+                        callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
                     });
-                    _accessory.context.deviceData.attributes.coolingSetpoint = temp;
-                });
+                }
+                if (!c._events.set) {
+                    c.on("set", (value, callback) => {
+                        // Convert the Celsius value to the appropriate unit for Smartthings
+                        let temp = this.transforms.thermostatTempConversion(value, true);
+                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "setHeatingSetpoint", {
+                            value1: temp
+                        });
+                        _accessory.context.deviceData.attributes.heatingSetpoint = temp;
+                    });
+                }
             }
+            this.accessories.storeCharacteristicItem("heatingSetpoint", _accessory.context.deviceData.deviceid, c);
+            c.updateValue(this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
+    
+            // COOLING THRESHOLD TEMPERATURE
+            c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CoolingThresholdTemperature);
+            if (!c._events.get || !c._events.set) {
+                if (!c._events.get || !c._events.set) {
+                    c.on("get", (callback) => {
+                        callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.coolingSetpoint));
+                    });
+                }
+                if (!c._events.set) {
+                    c.on("set", (value, callback) => {
+                        // Convert the Celsius value to the appropriate unit for Smartthings
+                        let temp = this.transforms.thermostatTempConversion(value, true);
+                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "setCoolingSetpoint", {
+                            value1: temp
+                        });
+                        _accessory.context.deviceData.attributes.coolingSetpoint = temp;
+                    });
+                }
+            }
+            this.accessories.storeCharacteristicItem("coolingSetpoint", _accessory.context.deviceData.deviceid, c);
+            c.updateValue(this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.coolingSetpoint));
         }
-        this.accessories.storeCharacteristicItem("coolingSetpoint", _accessory.context.deviceData.deviceid, c);
-        c.updateValue(this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.coolingSetpoint));
-
         _accessory.context.deviceGroups.push("thermostat");
         return _accessory;
     }
