@@ -87,7 +87,6 @@ module.exports = class Transforms {
                         validValues.push(Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS);
                         validValues.push(Characteristic.ProgrammableSwitchEvent.LONG_PRESS);
                     }
-                    // console.log('validValues: ', validValues);
                     return validValues;
                 }
             case "fanState":

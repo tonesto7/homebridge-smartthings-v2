@@ -62,7 +62,7 @@ module.exports = class ST_Accessories {
             return this.configureCharacteristics(accessory);
         } catch (err) {
             this.log.error(`initializeAccessory (fromCache: ${fromCache}) Error: ${err}`);
-            console.error(err);
+            // console.error(err);
             return accessory;
         }
     }

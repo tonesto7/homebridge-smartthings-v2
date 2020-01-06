@@ -169,7 +169,7 @@ module.exports = class DeviceCharacteristics {
         let c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.ProgrammableSwitchEvent);
         if (!c._events.get) {
             c.on("get", (callback) => {
-                console.log(this);
+                // console.log(this);
                 callback(null, this.transforms.transformAttributeState('button', _accessory.context.deviceData.attributes.button));
             });
         }
@@ -179,7 +179,7 @@ module.exports = class DeviceCharacteristics {
             maxValue: Math.max(validValues)
         });
         c.eventOnlyCharacteristic = false;
-        console.log('validValues', validValues, ' | min: ', Math.min(validValues), ' | max: ', Math.max(validValues));
+        // console.log('validValues', validValues, ' | min: ', Math.min(validValues), ' | max: ', Math.max(validValues));
         this.accessories.storeCharacteristicItem("button", _accessory.context.deviceData.deviceid, c);
         _accessory.context.deviceGroups.push("button");
         return _accessory;

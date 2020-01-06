@@ -132,7 +132,7 @@ module.exports = class ST_Client {
                     reject(undefined);
                 })
                 .then((body) => {
-                    console.log(body);
+                    // console.log(body);
                     if (body) {
                         this.log.debug(`sendUpdateStatus Resp: ${JSON.stringify(body)}`);
                         resolve(body);
