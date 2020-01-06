@@ -13,7 +13,7 @@ module.exports = class ServiceTypes {
         Service = srvc;
         this.homebridge = accessories.homebridge;
         this.serviceMap = {
-            air_purifier: CommunityTypes.NewAirPurifierService,
+            air_purifier: this.CommunityTypes.NewAirPurifierService,
             air_quality: Service.AirQualitySensor,
             alarm_system: Service.SecuritySystem,
             battery: Service.BatteryService,
@@ -90,7 +90,7 @@ class ServiceTest {
 const serviceTests = [
     new ServiceTest("window_shade", accessory => (accessory.hasCapability('Switch Level') && !accessory.hasCapability('Speaker') && !(accessory.hasCapability('Fan') || accessory.hasCapability('Fan Light') || accessory.hasCapability('Fan Speed') || accessory.hasCapability('Fan Control') || accessory.hasCommand('setFanSpeed') || accessory.hasCommand('lowSpeed') || accessory.hasAttribute('fanSpeed') || accessory.hasCapability('custom.airPurifierOperationMode')) && accessory.hasCapability('Window Shade') && (accessory.hasCommand('levelOpenClose') || accessory.hasCommand('presetPosition'))), true),
     new ServiceTest("light", accessory => (accessory.hasCapability('Switch Level') && (accessory.hasCapability('LightBulb') || accessory.hasCapability('Fan Light') || accessory.hasCapability('Bulb') || accessory.context.deviceData.name.includes('light') || accessory.hasAttribute('saturation') || accessory.hasAttribute('hue') || accessory.hasAttribute('colorTemperature') || accessory.hasCapability("Color Control"))), true),
-    new ServiceTest("air_purifier", accessory => accessory.hasCapability('custom.airPurifierOperationMode'), true),
+    new ServiceTest("air_purifier", accessory => accessory.hasCapability('custom.airPurifierOperationMode')),
     new ServiceTest("garage_door", accessory => accessory.hasCapability("Garage Door Control")),
     new ServiceTest("lock", accessory => accessory.hasCapability("Lock")),
     new ServiceTest("valve", accessory => accessory.hasCapability("Valve")),
@@ -111,7 +111,7 @@ const serviceTests = [
     new ServiceTest("temperature_sensor", accessory => (accessory.hasCapability("Temperature Measurement") && !(accessory.hasCapability('Thermostat') || accessory.hasCapability('Thermostat Operating State') || accessory.hasAttribute('thermostatOperatingState')))),
     new ServiceTest("illuminance_sensor", accessory => (accessory.hasCapability("Illuminance Measurement"))),
     new ServiceTest("contact_sensor", accessory => (accessory.hasCapability('Contact Sensor') && !accessory.hasCapability('Garage Door Control'))),
-    new ServiceTest("air_quality", accessory => (accessory.hasCapability('airQuality'), true),
+    new ServiceTest("air_quality", accessory => (accessory.hasCapability('airQuality'))),
     new ServiceTest("battery", accessory => (accessory.hasCapability('Battery'))),
     new ServiceTest("energy_meter", accessory => (accessory.hasCapability('Energy Meter') && !accessory.hasCapability('Switch')), true),
     new ServiceTest("power_meter", accessory => (accessory.hasCapability('Power Meter') && !accessory.hasCapability('Switch')), true),
