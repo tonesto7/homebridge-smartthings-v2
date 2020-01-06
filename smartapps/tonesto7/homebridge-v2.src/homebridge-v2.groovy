@@ -5,7 +5,7 @@
  */
 
 String appVersion()                     { return "2.1.0" }
-String appModified()                    { return "01-02-2020" }
+String appModified()                    { return "01-06-2020" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
@@ -13,7 +13,6 @@ String appIconUrl()                     { return "https://raw.githubusercontent.
 String getAppImg(imgName, ext=".png")   { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/${branch()}/images/${imgName}${ext}" }
 Map minVersions()                       { return [plugin: 210] }
 
-//TODO: Finish Virtual Buttons
 definition(
     name: "Homebridge v2",
     namespace: "tonesto7",
@@ -48,7 +47,7 @@ preferences {
 private Map ignoreLists() {
     return [
         commands: ["indicatorWhenOn", "indicatorWhenOff", "ping", "refresh", "indicatorNever", "configure", "poll", "reset"],
-        attributes: ['DeviceWatch-Enroll', 'DeviceWatch-Status', "checkInterval"],
+        attributes: ['DeviceWatch-Enroll', 'DeviceWatch-Status', "checkInterval", "LchildVer", "FchildVer", "LchildCurr", "FchildCurr", "lightStatus", "lastFanMode", "lightLevel", "coolingSetpointRange", "heatingSetpointRange", "thermostatSetpointRange"],
         evt_attributes: [
             'DeviceWatch-DeviceStatus', "DeviceWatch-Enroll", 'checkInterval', 'devTypeVer', 'dayPowerAvg', 'apiStatus', 'yearCost', 'yearUsage','monthUsage', 'monthEst', 'weekCost', 'todayUsage',
             'maxCodeLength', 'maxCodes', 'readingUpdated', 'maxEnergyReading', 'monthCost', 'maxPowerReading', 'minPowerReading', 'monthCost', 'weekUsage', 'minEnergyReading',
@@ -56,7 +55,8 @@ private Map ignoreLists() {
             'closestPlaceDistance', 'leavingPlace', 'currentPlace', 'codeChanged', 'codeLength', 'lockCodes', 'healthStatus', 'horizontalAccuracy', 'bearing', 'speedMetric',
             'speed', 'verticalAccuracyMetric', 'altitude', 'indicatorStatus', 'todayCost', 'longitude', 'distance', 'previousPlace','closestPlace', 'places', 'minCodeLength',
             'arrivingAtPlace', 'lastUpdatedDt', 'scheduleType', 'zoneStartDate', 'zoneElapsed', 'zoneDuration', 'watering', 'eventTime', 'eventSummary', 'endOffset', 'startOffset',
-            'closeTime', 'endMsgTime', 'endMsg', 'openTime', 'startMsgTime', 'startMsg', 'calName', "deleteInfo", "eventTitle", "floor", "sleeping", "powerSource", "batteryStatus"
+            'closeTime', 'endMsgTime', 'endMsg', 'openTime', 'startMsgTime', 'startMsg', 'calName', "deleteInfo", "eventTitle", "floor", "sleeping", "powerSource", "batteryStatus",
+            "LchildVer", "FchildVer", "LchildCurr", "FchildCurr", "lightStatus", "lastFanMode", "lightLevel", "coolingSetpointRange", "heatingSetpointRange", "thermostatSetpointRange"
         ],
         capabilities: ["Health Check", "Ultraviolet Index", "Indicator"]
     ]
@@ -71,11 +71,9 @@ def startPage() {
 }
 
 def mainPage() {
-    if (!state?.accessToken) {
-        createAccessToken()
-    }
+    if(!getAccessToken()) { return dynamicPage(name: "mainPage", install: false, uninstall: true) { section() { paragraph title: "OAuth Error", "OAuth is not Enabled for ${app?.getName()}!.\n\nPlease click remove and Enable Oauth under the SmartApp App Settings in the IDE", required: true, state: null } } }
     Boolean isInst = (state?.isInstalled == true)
-    return dynamicPage(name: "mainPage", title: "Homebridge Device Configuration", nextPage: (isInst ? "confirmPage" : ""), install: !isInst, uninstall:true) {
+    return dynamicPage(name: "mainPage", nextPage: (isInst ? "confirmPage" : ""), install: !isInst, uninstall: true) {
         appInfoSect()
         section("Define Specific Categories:") {
             paragraph "Each category below will adjust the device attributes to make sure they are recognized as the desired device type under HomeKit", state: "complete"
@@ -115,7 +113,7 @@ def mainPage() {
 
         section("Virtual Devices:") {
             Boolean conf = (modeList || routineList)
-            String desc = "Create virtual (mode, routine, button) devices\n\nTap to Configure..."
+            String desc = "Create virtual (mode, routine) devices\n\nTap to Configure..."
             if(conf) {
                 desc = ""
                 desc += modeList ? "(${modeList?.size()}) Mode Devices\n" : ""
@@ -135,7 +133,7 @@ def mainPage() {
         }
         section("Review Configuration:") {
             Integer devCnt = getDeviceCnt()
-            href url: getAppEndpointUrl("config"), style: "embedded", required: false, title: "Render the config.json data for Homebridge", description: "Tap, select, copy, then click \"Done\"", state: "complete", image: getAppImg("info")
+            href url: getAppEndpointUrl("config"), style: "embedded", required: false, title: "Render the platform data for Homebridge config.json", description: "Tap, select, copy, then click \"Done\"", state: "complete", image: getAppImg("info")
             if(devCnt > 148) {
                 paragraph "Notice:\nHomebridge Allows for 149 Devices per Bridge!!!", image: getAppImg("error"), state: null, required: true
             }
@@ -146,7 +144,8 @@ def mainPage() {
             href "deviceDebugPage", title: "Device Data Viewer", image: getAppImg("debug")
         }
         section("App Preferences:") {
-            href "settingsPage", title: "App Settings", required: false, image: getAppImg("settings")
+            def sDesc = getSetDesc()
+            href "settingsPage", title: "App Settings", description: sDesc, state: (sDesc?.endsWith("modify...") ? "complete" : null), required: false, image: getAppImg("settings")
             label title: "App Label (optional)", description: "Rename this App", defaultValue: app?.name, required: false, image: getAppImg("name_tag")
         }
         if(devMode()) {
@@ -196,6 +195,13 @@ def settingsPage() {
             input "showDebugLogs", "bool", title: "Debug Logging?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("debug")
         }
     }
+}
+
+String getSetDesc() {
+    def s = []
+    if(settings?.showEventLogs == true) s?.push("\u2022 Device Event Logs")
+    if(settings?.showDebugLogs == true) s?.push("\u2022 Debug Logging")
+    return s?.size() ? "${s?.join("\n")}\n\nTap to modify..." : "Tap to configure..."
 }
 
 def historyPage() {
@@ -372,16 +378,31 @@ def updated() {
 }
 
 def initialize() {
-    if(!state?.accessToken) { createAccessToken() }
-    subscribeToEvts()
-    if(settings?.restartService == true) {
-        log.warn "Sent Request to Homebridge Service to Stop... Service should restart automatically"
-        attemptServiceRestart()
-        settingUpdate("restartService", "false", "bool")
+    if(getAccessToken()) {
+        subscribeToEvts()
+        if(settings?.restartService == true) {
+            log.warn "Sent Request to Homebridge Service to Stop... Service should restart automatically"
+            attemptServiceRestart()
+            settingUpdate("restartService", "false", "bool")
+        }
+        runIn(10, "updateServicePrefs")
+        runIn(15, "sendDeviceRefreshCmd")
+        runEvery5Minutes("healthCheck")
+    } else { log.error "initialize error: Unable to get or generate smartapp access token" }
+}
+
+def getAccessToken() {
+    try {
+        if(!atomicState?.accessToken) {
+            atomicState?.accessToken = createAccessToken();
+            if(showDebugLogs) log.debug "SmartApp Access Token Missing... Generating New Token!!!"
+            return true;
+        } else { return true }
+    } catch (ex) {
+        def msg = "Error: OAuth is not Enabled for ${appName()}!. Please click remove and Enable Oauth under the SmartApp App Settings in the IDE"
+        log.error "getAccessToken Exception: ${msg}"
+        return false
     }
-    runIn(10, "updateServicePrefs")
-    runIn(15, "sendDeviceRefreshCmd")
-    runEvery5Minutes("healthCheck")
 }
 
 private subscribeToEvts() {
@@ -604,24 +625,20 @@ private setSecurityMode(mode) {
 
 def renderConfig() {
     Map jsonMap = [
-        platforms: [
-            [
-                platform: pluginName(),
-                name: pluginName(),
-                app_url: apiServerUrl("/api/smartapps/installations/"),
-                app_id: app?.getId(),
-                access_token: state?.accessToken,
-                temperature_unit: settings?.temp_unit ?: location?.temperatureScale,
-                validateTokenId: false,
-                logConfig: [
-                    debug: false,
-                    showChanges: true,
-                    hideTimestamp: false,
-                    hideNamePrefix: false,
-                    file: [
-                        enabled: true
-                    ]
-                ]
+        platform: pluginName(),
+        name: pluginName(),
+        app_url: apiServerUrl("/api/smartapps/installations/"),
+        app_id: app?.getId(),
+        access_token: atomicState?.accessToken,
+        temperature_unit: settings?.temp_unit ?: location?.temperatureScale,
+        validateTokenId: false,
+        logConfig: [
+            debug: false,
+            showChanges: true,
+            hideTimestamp: false,
+            hideNamePrefix: false,
+            file: [
+                enabled: true
             ]
         ]
     ]
@@ -675,6 +692,7 @@ def lanEventHandler(evt) {
                                 state?.pluginDetails = [
                                     directIP: msgData?.ip,
                                     directPort: msgData?.port,
+                                    version: msgData?.version ?: null
                                 ]
                                 updCodeVerMap("plugin", msgData?.version ?: null)
                                 activateDirectUpdates(true)
@@ -879,7 +897,7 @@ def deviceAttributeList(device) {
     }
 }
 
-String getAppEndpointUrl(subPath) { return "${apiServerUrl("/api/smartapps/installations/${app.id}${subPath ? "/${subPath}" : ""}?access_token=${state?.accessToken}")}" }
+String getAppEndpointUrl(subPath) { return "${apiServerUrl("/api/smartapps/installations/${app.id}${subPath ? "/${subPath}" : ""}?access_token=${atomicState?.accessToken}")}" }
 
 def getAllData() {
     state?.subscriptionRenewed = now()
@@ -1045,7 +1063,7 @@ def changeHandler(evt) {
                 change_value: send?.evtValue,
                 change_date: send?.evtDate,
                 app_id: app?.getId(),
-                access_token: state?.accessToken
+                access_token: atomicState?.accessToken
             ])
             logEvt([name: send?.evtAttr, value: send?.evtValue, device: send?.evtDeviceName])
         }
@@ -1129,7 +1147,7 @@ private activateDirectUpdates(isLocal=false) {
     log.trace "activateDirectUpdates: ${getServerAddress()}${isLocal ? " | (Local)" : ""}"
     sendHttpPost("initial", [
         app_id: app?.getId(),
-        access_token: state?.accessToken
+        access_token: atomicState?.accessToken
     ])
 }
 
@@ -1137,7 +1155,7 @@ private attemptServiceRestart(isLocal=false) {
     log.trace "attemptServiceRestart: ${getServerAddress()}${isLocal ? " | (Local)" : ""}"
     sendHttpPost("restart", [
         app_id: app?.getId(),
-        access_token: state?.accessToken
+        access_token: atomicState?.accessToken
     ])
 }
 
@@ -1145,7 +1163,7 @@ private sendDeviceRefreshCmd(isLocal=false) {
     log.trace "sendDeviceRefreshCmd: ${getServerAddress()}${isLocal ? " | (Local)" : ""}"
     sendHttpPost("refreshDevices", [
         app_id: app?.getId(),
-        access_token: state?.accessToken
+        access_token: atomicState?.accessToken
     ])
 }
 
@@ -1153,7 +1171,7 @@ private updateServicePrefs(isLocal=false) {
     log.trace "updateServicePrefs: ${getServerAddress()}${isLocal ? " | (Local)" : ""}"
     sendHttpPost("updateprefs", [
         app_id: app?.getId(),
-        access_token: state?.accessToken,
+        access_token: atomicState?.accessToken,
         local_commands: (settings?.sendCmdViaHubaction != false),
         local_hub_ip: location?.hubs[0]?.localIP
     ])
@@ -1171,7 +1189,8 @@ def enableDirectUpdates() {
     // log.trace "enableDirectUpdates: ($params)"
     state?.pluginDetails = [
         directIP: params?.ip,
-        directPort: params?.port
+        directPort: params?.port,
+        version: params?.version ?: null
     ]
     updCodeVerMap("plugin", params?.version ?: null)
     activateDirectUpdates()
@@ -1181,7 +1200,7 @@ def enableDirectUpdates() {
 }
 
 mappings {
-    if (!params?.access_token || (params?.access_token && params?.access_token != state?.accessToken)) {
+    if (!params?.access_token || (params?.access_token && params?.access_token != atomicState?.accessToken)) {
         path("/devices")					{ action: [GET: "authError"] }
         path("/config")						{ action: [GET: "authError"] }
         path("/location")					{ action: [GET: "authError"] }
@@ -1235,7 +1254,7 @@ def appInfoSect() {
 String bulletItem(String inStr, String strVal) { return "${inStr == "" ? "" : "\n"} \u2022 ${strVal}" }
 String dashItem(String inStr, String strVal, newLine=false) { return "${(inStr == "" && !newLine) ? "" : "\n"} - ${strVal}" }
 String textDonateLink() { return "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RVFJTG8H86SK8&source=url" }
-Integer versionStr2Int(str) { return str ? str.toString()?.replaceAll("\\.", "")?.toInteger() : null }
+Integer versionStr2Int(str) { return str ? str?.toString().tokenize("-")[0]?.replaceAll("\\.", "")?.toInteger() : null }
 Boolean codeUpdIsAvail(String newVer, String curVer, String type) {
     Boolean result = false
     def latestVer
@@ -1260,7 +1279,11 @@ private Map getMinVerUpdsRequired() {
     Map codeItems = [plugin: "Homebridge Plugin"]
     Map codeVers = state?.codeVersions ?: [:]
     codeVers?.each { k,v->
-        if(codeItems?.containsKey(k as String) && v != null && (versionStr2Int(v) < minVersions()[k as String])) { updRequired = true; updItems?.push(codeItems[k]); }
+        try {
+            if(codeItems?.containsKey(k as String) && v != null && (versionStr2Int(v) < minVersions()[k as String])) { updRequired = true; updItems?.push(codeItems[k]); }
+        } catch (ex) {
+            log.error "getMinVerUpdsRequired Error: ${ex}"
+        }
     }
     return [updRequired: updRequired, updItems: updItems]
 }
