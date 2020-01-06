@@ -1,11 +1,12 @@
 // const debounce = require('debounce-promise');
-var Characteristic, accClass;
+var Characteristic, CommunityTypes, accClass;
 
 module.exports = class DeviceCharacteristics {
     constructor(accessories, char) {
         this.platform = accessories;
         this.platform = accessories.mainPlatform;
         Characteristic = char;
+        CommunityTypes = accessories.CommunityTypes;
         accClass = accessories;
         this.log = accessories.log;
         this.logConfig = accessories.logConfig;
@@ -13,7 +14,6 @@ module.exports = class DeviceCharacteristics {
         this.client = accessories.client;
         this.myUtils = accessories.myUtils;
         this.transforms = accessories.transforms;
-        this.CommunityTypes = accessories.CommunityTypes;
         this.homebridge = accessories.homebridge;
     }
 
@@ -83,69 +83,60 @@ module.exports = class DeviceCharacteristics {
             });
         }
     }
-    
+
     air_purifier(_accessory, _service) {
-        let stateName=that.device.attributes.switch;
-                 let state=Characteristic.Active.INACTIVE;
-                 if (that.device.attributes.switch==="on") state=Characteristic.Active.ACTIVE;
-                 thisCharacteristic = that.getaddService(CommunityTypes.NewAirPurifierService).getCharacteristic(Characteristic.Active)
-                     .on('get', function(callback) {
-                         callback(null, state);
-                     })
-                     .on('set', function(value, callback) {
-                         if (value) {
-                             platform.api.runCommand(callback, device.deviceid, 'on');
-                         } else {
-                             platform.api.runCommand(callback, device.deviceid, 'off');
-                         }
-                     });
+        let actState = (_accessory.context.deviceData.attributes.switch === "on") ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE;
+        let c = this.getOrAddService(_service).getCharacteristic(Characteristic.Active);
+        if (!c.events.get || !c.events.set) {
+            if (!c.events.get) {
+                c.on('get', function(callback) {
+                    callback(null, actState);
+                });
+            }
+            if (!c.events.set) {
+                c.on('set', function(value, callback) {
+                    if (value) {
+                        this.client.sendDeviceCommand(callback, this.context.deviceData.deviceid, 'on');
+                    } else {
+                        this.client.sendDeviceCommand(callback, this.context.deviceData.deviceid, 'off');
+                    }
+                });
+            }
+            c.getValue();
+            accClass.storeCharacteristicItem("switch", this.context.deviceData.deviceid, c);
+        } else {
+            c.updateValue(actState);
+        }
 
-                 thisCharacteristic = that.getaddService(CommunityTypes.NewAirPurifierService).getCharacteristic(Characteristic.CurrentAirPurifierState)
-                     .on('get', function(callback) {
-                         if (state===Characteristic.Active.INACTIVE) {
-                             callback(null, Characteristic.CurrentAirPurifierState.INACTIVE);
-                         }
-                         else {
-                             callback(null, Characteristic.CurrentAirPurifierState.PURIFYING_AIR); //kind of simple but prevents infinite "powering on..."
-                         }
-                     });
+        c = this.getaddService(_service).getCharacteristic(Characteristic.CurrentAirPurifierState);
+        let apState = (actState === Characteristic.Active.INACTIVE) ? Characteristic.CurrentAirPurifierState.INACTIVE : Characteristic.CurrentAirPurifierState.PURIFYING_AIR;
+        if (!c.events.get) {
+            c.on('get', function(callback) {
+                callback(null, apState);
+            });
+        }
+        c.updateValue(apState);
 
-                 //console.log(that.device.attributes);
-
-                 let fanLvlName = that.device.attributes.fanMode;
-                 let fanLvl = CommunityTypes.FanOscilationMode.SLEEP;
-                      if (fanLvlName=="low")    fanLvl=CommunityTypes.FanOscilationMode.LOW;
-                 else if (fanLvlName=="medium") fanLvl=CommunityTypes.FanOscilationMode.MEDIUM;
-                 else if (fanLvlName=="high")   fanLvl=CommunityTypes.FanOscilationMode.HIGH;
-                 thisCharacteristic = that.getaddService(CommunityTypes.NewAirPurifierService).getCharacteristic(CommunityTypes.FanOscilationMode)
-                     .on('get', function(callback) {
-                         callback(null, fanLvl);
-                     })
-                     .on('set', function(value, callback) {
-                         if (value>=0 && value<=CommunityTypes.FanOscilationMode.SLEEP){
-                             platform.api.runCommand(callback, device.deviceid, 'setFanMode', {
-                                 value1: "sleep"
-                             });
-                         } 
-                         else if (value>CommunityTypes.FanOscilationMode.SLEEP && value<=CommunityTypes.FanOscilationMode.LOW){
-                             platform.api.runCommand(callback, device.deviceid, 'setFanMode', {
-                                 value1: "low"
-                             });
-                         } 
-                         else if (value>CommunityTypes.FanOscilationMode.LOW && value<=CommunityTypes.FanOscilationMode.MEDIUM){
-                             platform.api.runCommand(callback, device.deviceid, 'setFanMode', {
-                                 value1: "medium"
-                             });
-                         } 
-                         else if (value>CommunityTypes.FanOscilationMode.MEDIUM && value<=CommunityTypes.FanOscilationMode.HIGH){
-                             platform.api.runCommand(callback, device.deviceid, 'setFanMode', {
-                                 value1: "high"
-                             });
-                         }
-                     });
-                 platform.addAttributeUsage('level', device.deviceid, thisCharacteristic);
+        c = this.getaddService(CommunityTypes.NewAirPurifierService).getCharacteristic(CommunityTypes.FanOscilationMode);
+        if (!c.events.get || !c.events.set) {
+            if (!c.events.get) {
+                c.on('get', function(callback) {
+                    callback(null, this.transforms.transformAttributeState('fanMode', _accessory.context.deviceData.attributes.fanMode));
+                });
+            }
+            if (!c.events.set) {
+                c.on('set', function(value, callback) {
+                    this.client.sendDeviceCommand(callback, this.device.deviceid, 'setFanMode', {
+                        value1: this.transforms.transformCommandValue('fanMode', value)
+                    });
+                });
+            }
+        }
+        this.accessories.storeCharacteristicItem("fanMode", _accessory.context.deviceData.deviceid, c);
+        _accessory.context.deviceGroups.push("air_purifier");
+        return _accessory;
     }
-    
+
     air_quality(_accessory, _service) {
         let c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.AirQuality);
         if (!c._events.get) {
@@ -227,7 +218,7 @@ module.exports = class DeviceCharacteristics {
     }
 
     energy_meter(_accessory, _service) {
-        _accessory.manageGetCharacteristic(_service, this.CommunityTypes.KilowattHours, 'energy');
+        _accessory.manageGetCharacteristic(_service, CommunityTypes.KilowattHours, 'energy');
         _accessory.context.deviceGroups.push("energy_meter");
         return _accessory;
     }
@@ -322,7 +313,7 @@ module.exports = class DeviceCharacteristics {
     }
 
     power_meter(_accessory, _service) {
-        _accessory.manageGetCharacteristic(_service, this.CommunityTypes.Watts, 'power');
+        _accessory.manageGetCharacteristic(_service, CommunityTypes.Watts, 'power');
         _accessory.context.deviceGroups.push("power_meter");
         return _accessory;
     }
@@ -569,7 +560,7 @@ module.exports = class DeviceCharacteristics {
             }
             this.accessories.storeCharacteristicItem("heatingSetpoint", _accessory.context.deviceData.deviceid, c);
             c.updateValue(this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
-    
+
             // COOLING THRESHOLD TEMPERATURE
             c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CoolingThresholdTemperature);
             if (!c._events.get || !c._events.set) {

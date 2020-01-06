@@ -1,4 +1,5 @@
 var Characteristic;
+var CommunityTypes;
 
 module.exports = class Transforms {
     constructor(platform, char) {
@@ -6,6 +7,7 @@ module.exports = class Transforms {
         this.platform = platform.mainPlatform;
         this.client = platform.client;
         Characteristic = char;
+        CommunityTypes = platform.CommunityTypes;
         this.log = platform.log;
     }
 
@@ -26,7 +28,7 @@ module.exports = class Transforms {
                     default:
                         return charName && charName === "Target Door State" ? Characteristic.TargetDoorState.OPEN : Characteristic.TargetDoorState.STOPPED;
                 }
-                
+
             case "fanMode":
                 switch (val) {
                     case "low":
@@ -35,7 +37,8 @@ module.exports = class Transforms {
                         return CommunityTypes.FanOscilationMode.MEDIUM;
                     case "high":
                         return CommunityTypes.FanOscilationMode.HIGH;
-                    default CommunityTypes.FanOscilationMode.SLEEP;
+                    default:
+                        return CommunityTypes.FanOscilationMode.SLEEP;
                 }
 
             case "lock":
@@ -190,7 +193,6 @@ module.exports = class Transforms {
                 }
             case "alarmSystemStatus":
                 return this.convertAlarmState(val);
-
             default:
                 return val;
         }
@@ -272,6 +274,17 @@ module.exports = class Transforms {
                     default:
                         return undefined;
                 }
+
+            case "fanMode":
+                if (val >= 0 && val <= CommunityTypes.FanOscilationMode.SLEEP) {
+                    return "sleep";
+                } else if (val > CommunityTypes.FanOscilationMode.SLEEP && val <= CommunityTypes.FanOscilationMode.LOW) {
+                    return "low";
+                } else if (val > CommunityTypes.FanOscilationMode.LOW && val <= CommunityTypes.FanOscilationMode.MEDIUM) {
+                    return "medium";
+                } else if (val > CommunityTypes.FanOscilationMode.MEDIUM && val <= CommunityTypes.FanOscilationMode.HIGH) {
+                    return "high";
+                } else { return "sleep"; }
             default:
                 return val;
         }
