@@ -126,12 +126,10 @@ def mainPage() {
         section("Smart Home Monitor (SHM):") {
             input "addSecurityDevice", "bool", title: "Allow SHM Control in HomeKit?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("alarm_home")
         }
-        section("Plugin Options:") {
+        section("Plugin Options & Review:") {
             paragraph "Turn off if you are having issues sending commands"
             input "sendCmdViaHubaction", "bool", title: "Send HomeKit Commands Locally?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("command2")
             input "temp_unit", "enum", title: "Temperature Unit?", required: true, defaultValue: location?.temperatureScale, options: ["F":"Fahrenheit", "C":"Celcius"], submitOnChange: true, image: getAppImg("command2")
-        }
-        section("Review Configuration:") {
             Integer devCnt = getDeviceCnt()
             href url: getAppEndpointUrl("config"), style: "embedded", required: false, title: "Render the platform data for Homebridge config.json", description: "Tap, select, copy, then click \"Done\"", state: "complete", image: getAppImg("info")
             if(devCnt > 148) {
@@ -140,7 +138,7 @@ def mainPage() {
             paragraph "Devices Selected: (${devCnt})", image: getAppImg("info"), state: "complete"
         }
         section("History and Device Data:") {
-            href "historyPage", title: "View Command and Event History", image: getAppImg("backup")
+            href "historyPage", title: "Command and Event History", image: getAppImg("backup")
             href "deviceDebugPage", title: "Device Data Viewer", image: getAppImg("debug")
         }
         section("App Preferences:") {
@@ -284,8 +282,8 @@ def donationPage() {
 }
 
 def confirmPage() {
-    return dynamicPage(name: "confirmPage", title: "Confirm Page", install: true, uninstall:true) {
-        section("") {
+    return dynamicPage(name: "confirmPage", title: "Confirmation Page", install: true, uninstall:true) {
+        section() {
             paragraph "Restarting the service is no longer required to apply any device changes under homekit.\n\nThe service will refresh your devices shortly after Pressing Done/Save.", state: "complete", image: getAppImg("info")
         }
     }
@@ -350,12 +348,13 @@ def getDeviceDebugMap(dev) {
     return r
 }
 
-def getDeviceCnt() {
-    def devices = []
-    def items = ["deviceList", "sensorList", "switchList", "lightList", "buttonList", "fanList", "fan3SpdList", "fan4SpdList", "speakerList", "shadesList", "modeList", "routineList"]
-    items?.each { item ->
-        if(settings[item]?.size() > 0) {
-            devices = devices + settings[item]
+def getDeviceCnt(phyOnly=false) {
+    List devices = []
+    List items = deviceSettingKeys()?.collect { it?.key as String }
+    items?.each { item -> if(settings[item]?.size() > 0) devices = devices + settings[item] }
+    if(!phyOnly) {
+        ["modeList", "routineList"]?.each { item->
+            if(settings[item]?.size() > 0) devices = devices + settings[item]
         }
     }
     return devices?.unique()?.size() ?: 0
@@ -380,13 +379,6 @@ def updated() {
 def initialize() {
     if(getAccessToken()) {
         subscribeToEvts()
-        if(settings?.restartService == true) {
-            log.warn "Sent Request to Homebridge Service to Stop... Service should restart automatically"
-            attemptServiceRestart()
-            settingUpdate("restartService", "false", "bool")
-        }
-        runIn(10, "updateServicePrefs")
-        runIn(15, "sendDeviceRefreshCmd")
         runEvery5Minutes("healthCheck")
     } else { log.error "initialize error: Unable to get or generate smartapp access token" }
 }
@@ -406,19 +398,16 @@ def getAccessToken() {
 }
 
 private subscribeToEvts() {
-    runIn(2, "registerDevices_1")
-    runIn(4, "registerDevices_2")
-    runIn(6, "registerDevices_3")
-    log.info "--------------------------------------"
+    runIn(3, "registerDevices")
+    log.info "-----------------------------------------------"
     log.info "Starting Device Subscription Process"
-    log.info "--------------------------------------"
     if(settings?.addSecurityDevice) {
         subscribe(location, "alarmSystemStatus", changeHandler)
     }
     if(settings?.modeList) {
         if(showDebugLogs) log.debug "Registering (${settings?.modeList?.size() ?: 0}) Virtual Mode Devices"
         subscribe(location, "mode", changeHandler)
-        if(state.lastMode == null) { state?.lastMode = location?.mode?.toString() }
+        if(state?.lastMode == null) { state?.lastMode = location?.mode?.toString() }
     }
     state?.subscriptionRenewed = 0
     subscribe(app, onAppTouch)
@@ -478,7 +467,7 @@ def onAppTouch(event) {
 def renderDevices() {
     Map devMap = [:]
     List devList = []
-    List items = ["deviceList", "sensorList", "switchList", "lightList", "buttonList", "fanList", "fan3SpdList", "fan4SpdList", "speakerList", "shadesList", "modeList", "routineList"]
+    List items = deviceSettingKeys()?.collect { it?.key as String }
     items?.each { item ->
         if(settings[item]?.size()) {
             settings[item]?.each { dev->
@@ -590,7 +579,7 @@ def getDeviceFlags(device) {
 
 def findDevice(dev_id) {
     List allDevs = []
-    ["deviceList", "sensorList", "switchList", "lightList", "buttonList", "fanList", "fan3SpdList", "fan4SpdList", "speakerList", "shadesList"]?.each { key-> allDevs = allDevs + (settings?."${key}" ?: []) }
+    deviceSettingKeys()?.collect { it?.key as String }?.each { key-> allDevs = allDevs + (settings?."${key}" ?: []) }
     return allDevs?.find { it?.id == dev_id } ?: null
 }
 
@@ -907,31 +896,107 @@ def getAllData() {
     render contentType: "application/json", data: deviceJson
 }
 
-def registerDevices_1() {
-    //This has to be done at startup because it takes too long for a normal command.
-    ["fanList": "Fan Devices", "fan3SpdList": "Fans (3Spd) Devices", "fan4SpdList": "Fans (4Spd) Devices", "buttonList": "Button Devices", "deviceList": "Other Devices"]?.each { k,v->
-        if(showDebugLogs) log.debug "Registering (${settings?."${k}"?.size() ?: 0}) ${v}"
-        registerChangeHandler(settings?."${k}")
+def checkForMissedRegistration() {
+    def mr = atomicState?.pendingDeviceRegistrations ?: []
+}
+
+Map deviceSettingKeys() {
+    return [
+        "fanList": "Fan Devices", "fan3SpdList": "Fans (3Spd) Devices", "fan4SpdList": "Fans (4Spd) Devices", "buttonList": "Button Devices", "deviceList": "Other Devices",
+        "sensorList": "Sensor Devices", "speakerList": "Speaker Devices", "switchList": "Switch Devices", "lightList": "Light Devices", "shadesList": "Window Shade Devices"
+    ]
+}
+
+private registerDevicesTest() {
+    Boolean done = true
+    List keysToRegister = atomicState?.pendingDeviceRegistrations ?: []
+    Integer regRnd = atomicState?.pendingDeviceRegistrationRnd ?: 1
+    if(!keysToRegister?.size()) {
+        deviceSettingKeys()?.each { k,v ->
+            if(settings?."${k}"?.size()>0) keysToRegister?.push(k)
+        }
+    }
+
+    if(keysToRegister?.size()) {
+        List keyToRemove = []
+        List devItems = []
+        log.trace "(${keysToRegister?.size()}) Device Groups Pending Event Registration..."
+        Boolean sched = false
+
+        keysToRegister?.each { key->
+            if(devItems?.size() <= 40) {
+                settings?."${key}"?.each { dev->
+                    devItems?.push(dev)
+                    registerChangeHandler(dev)
+                }
+                keyToRemove?.push(key)
+            } else { sched = true }
+        }
+        keysToRegister -= keyToRemove
+
+        if(sched) {
+            done = false
+            log.trace "Device Registration Round (${regRnd}) Completed | Registered (${devItems?.size()}) Devices | Starting Next Round in 4 seconds..."
+            runIn(4, "registerDevices")
+
+            atomicState?.pendingDeviceRegistrations = keysToRegister
+            atomicState?.pendingDeviceRegistrationRnd = regRnd+1
+            // log.debug "Device Groups Remaining to Register: ${keysToRegister?.size()}"
+        } else {
+            log.trace "Device Registration Round (${regRnd}) Completed | Registered (${devItems?.size()}) Devices..."
+        }
+    }
+    if(done) {
+        log.trace "Device Registration Process Completed | Registered (${getDeviceCnt(true)} Devices)"
+        log.info "-----------------------------------------------"
+        unschedule("registerDevices")
+        state?.remove("pendingDeviceRegistrations");
+        state?.remove("pendingDeviceRegistrationRnd")
+
+        if(settings?.restartService == true) {
+            log.warn "Sent Request to Homebridge Service to Stop... Service should restart automatically"
+            attemptServiceRestart()
+            settingUpdate("restartService", "false", "bool")
+        }
+        runIn(10, "updateServicePrefs")
+        runIn(15, "sendDeviceRefreshCmd")
     }
 }
 
-def registerDevices_2() {
+def registerDevices() {
     //This has to be done at startup because it takes too long for a normal command.
-    ["sensorList": "Sensor Devices", "speakerList": "Speaker Devices"]?.each { k,v->
+    ["lightList": "Light Devices", "fanList": "Fan Devices", "fan3SpdList": "Fans (3SPD) Devices", "fan4SpdList": "Fans (4SPD) Devices", "buttonList": "Button Devices"]?.each { k,v->
         if(showDebugLogs) log.debug "Registering (${settings?."${k}"?.size() ?: 0}) ${v}"
         registerChangeHandler(settings?."${k}")
     }
+    runIn(3, "registerDevices2")
 }
 
-def registerDevices_3() {
+def registerDevices2() {
     //This has to be done at startup because it takes too long for a normal command.
-    ["switchList": "Switch Devices", "lightList": "Light Devices", "shadesList": "Window Shade Devices"]?.each { k,v->
+    ["sensorList": "Sensor Devices", "speakerList": "Speaker Devices", "deviceList": "Other Devices"]?.each { k,v->
         if(showDebugLogs) log.debug "Registering (${settings?."${k}"?.size() ?: 0}) ${v}"
         registerChangeHandler(settings?."${k}")
     }
-    log.info "--------------------------------------"
-    log.info "Registered (${getDeviceCnt()} Devices)"
-    log.info "--------------------------------------"
+    runIn(3, "registerDevices3")
+}
+
+def registerDevices3() {
+    //This has to be done at startup because it takes too long for a normal command.
+    ["switchList": "Switch Devices", "shadesList": "Window Shade Devices"]?.each { k,v->
+        if(showDebugLogs) log.debug "Registering (${settings?."${k}"?.size() ?: 0}) ${v}"
+        registerChangeHandler(settings?."${k}")
+    }
+    log.info "Registered (${getDeviceCnt(true)} Devices)"
+    log.info "-----------------------------------------------"
+
+    if(settings?.restartService == true) {
+        log.warn "Sent Request to Homebridge Service to Stop... Service should restart automatically"
+        attemptServiceRestart()
+        settingUpdate("restartService", "false", "bool")
+    }
+    runIn(5, "updateServicePrefs")
+    runIn(8, "sendDeviceRefreshCmd")
 }
 
 Boolean isDeviceInInput(setKey, devId) {
@@ -972,7 +1037,7 @@ def registerChangeHandler(devices, showlog=false) {
                 if(att == "valve" &&        isDeviceInInput('removeValve', device?.id)) { return }
 
                 subscribe(device, att, "changeHandler")
-                if(showlog) { log.debug "Registering ${device?.displayName}.${att}" }
+                if(showlog) { log.debug "Registering ${device?.displayName} for ${att} events" }
             }
         }
     }
