@@ -47,8 +47,7 @@
                 "title": "Define Temperature Unit",
                 "type": "string",
                 "default": "F",
-                "enum": [
-                    {
+                "enum": [{
                         "text": "Fahrenheit",
                         "value": "F"
                     },
@@ -111,8 +110,7 @@
                                 "title": "Log File Output Level",
                                 "type": "string",
                                 "default": "good",
-                                "enum": [
-                                    {
+                                "enum": [{
                                         "text": "Debug",
                                         "value": "debug"
                                     },

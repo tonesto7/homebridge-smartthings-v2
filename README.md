@@ -5,31 +5,7 @@ V2 of this plugin is a complete rewrite of the homebridge-smartthings-tonesto7 p
 
 [![npm version](https://badge.fury.io/js/homebridge-smartthings-v2.svg)](https://badge.fury.io/js/homebridge-smartthings-v2)
 
-**```Latest SmartApp Version: 2.0.3```**
-
-### What's New for 2.x.x:
-
-
-#### Plugin
-* Completely rewrote the entire plugin using modern javascript structure.
-* The code is now much cleaner,  easier to update/maintain, and easier for others to follow.
-* This translates into a  faster/leaner and way more stable plugin than previous versions.
-* The plugin now uses the Homebridge Dynamic platform API, meaning it no longer requires a restart of the Homebridge service for device changes to occur.
-* The plugin now utilizes the device cache on service restart to prevent losing all of your devices when the plugin fails to start for an extended period of time.
-* It will now remove devices no longer selected under SmartThings.
-* Introduced an all-new logging system to provide more insight into issues and status, as well as write them to a file.
-* I used all of the issues from my existing plugin to repair this new version.
-* Many, many other bug fixes for devices, commands and many other items.
-* ***Important NOTICE:***
-**Due to the changes in the plugin API you can not directly update the plugin, you will need to add as a new accessory and setup your devices/automations/scenes again.
-On a positive note, you can use the same SmartApp instance though as long as you update to the latest code.**
-
-#### SmartApp
-* Reworked and cleaned up the UI so it's now more organized and easier to follow.
-* Added new capability filter options.
-* Optimized the command/event streaming system to perform faster and more reliably.
-* Added duplicate device detection cleanups so Homekit doesn't try to create duplicate devices and throw an error.
-* Many, many other bug fixes and cleanups.
+**```Latest SmartApp Version: 2.1.0```**
 
 ## Credits
 Big thanks for @Areson for his help/motivation in rewriting this.
@@ -47,7 +23,6 @@ I also wanted to mention the following projects I referenced for inspiration for
 ### Homebridge Plugin:
 
 - See [CHANGELOG](https://github.com/tonesto7/homebridge-smartthings-v2/blob/master/CHANGELOG.md)
-
 
 #### Direct Updates from SmartThings
  * This method is nearly instant.
@@ -142,6 +117,7 @@ _Note to users updating from homebridge-smartthings-tonesto7: You can continue t
   <h4 style="padding: 0em .6em; margin-bottom: 5px;"><u>Example of all settings. Not all settings are required. Read the breakdown below</u></h4>
 
 ```
+   {
       "platform": "SmartThings-v2",
       "name": "SmartThings-v2",
       "app_url": "https://graph.api.smartthings.com:443/api/smartapps/installations/",
@@ -149,6 +125,9 @@ _Note to users updating from homebridge-smartthings-tonesto7: You can continue t
       "access_token": "1888d2bc-7792-1114-9f32-e4724e388a26",
       "direct": true,
       "direct_port": 8000,
+      "local_commands": true,
+      "temperature_unit": "F",
+      "validateTokenId": false,
       "excluded_capabilities": {
          "SMARTTHINGS-DEVICE-ID-1": [
             "Switch",
@@ -165,6 +144,7 @@ _Note to users updating from homebridge-smartthings-tonesto7: You can continue t
             "level": "good"
          }
       }
+   }
 ```
 
 
@@ -188,7 +168,10 @@ _Note to users updating from homebridge-smartthings-tonesto7: You can continue t
  * <p><code>temperature_unit</code>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `F`</i></small><br>
     This will allow you to define the temp unit to use.  This can also be set in the SmartApp</p>
 
- * <p><code>excluded_capabilities</code><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `{}` (None)</i></small><br>
+ * <p><u>validateTokenId</u>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `false`</i></small><br>
+    This forces the plugin to validate the smartthings app token and location with that in the plugin configuration</p>
+
+ * <p><u>excluded_capabilities</u><small style="color: #f92672; font-weight: 600;"><i> Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `{}` (None)</i></small><br>
    NOTICE: The smartapp offers many inputs to help filter out device capabilities. Only use this if the available inputs don't meet your needs.
    Specify the SmartThings device by ID and the associated capabilities you want the plugin to ignore<br>This prevents a SmartThings device creating unwanted or redundant HomeKit accessories.</p>
 

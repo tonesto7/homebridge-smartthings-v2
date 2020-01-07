@@ -1,5 +1,4 @@
 const {
-    knownCapabilities,
     pluginName,
     platformName,
     platformDesc,
@@ -42,10 +41,6 @@ module.exports = class ST_Platform {
         this.local_hub_ip = undefined;
         this.myUtils = new myUtils(this);
         this.configItems = this.getConfigItems();
-
-        this.deviceCache = {};
-        this.attributeLookup = {};
-        this.knownCapabilities = knownCapabilities;
         this.unknownCapabilities = [];
         this.client = new SmartThingsClient(this);
         this.SmartThingsAccessories = new SmartThingsAccessories(this);
@@ -90,21 +85,6 @@ module.exports = class ST_Platform {
 
     getTempUnit() {
         return this.temperature_unit;
-    }
-
-    getDeviceCache() {
-        return this.deviceCache || {};
-    }
-    getDeviceCacheItem(devid) {
-        return this.deviceCache[devid] || undefined;
-    }
-
-    updDeviceCacheItem(devid, data) {
-        this.deviceCache[devid] = data;
-    }
-
-    remDeviceCacheItem(devid) {
-        delete this.deviceCache[devid];
     }
 
     didFinishLaunching() {
@@ -172,14 +152,15 @@ module.exports = class ST_Platform {
 
     getNewAccessory(device, UUID) {
         let accessory = new PlatformAccessory(device.name, UUID);
-        this.SmartThingsAccessories.PopulateAccessory(accessory, device);
+        accessory.context.deviceData = device;
+        this.SmartThingsAccessories.initializeAccessory(accessory);
         return accessory;
     }
 
     addDevice(device) {
         let accessory;
         const new_uuid = this.uuid.generate(`smartthings_v2_${device.deviceid}`);
-        device.excludedCapabilities = this.excludedCapabilities[device.deviceid] || ["None"];
+        device.excludedCapabilities = this.excludedCapabilities[device.deviceid] || [];
         this.log.debug(`Initializing New Device (${device.name} | ${device.deviceid})`);
         accessory = this.getNewAccessory(device, new_uuid);
         this.homebridge.registerPlatformAccessories(pluginName, platformName, [accessory]);
@@ -188,12 +169,12 @@ module.exports = class ST_Platform {
     }
 
     updateDevice(device) {
-        let cacheDevice = this.SmartThingsAccessories.getAccessoryFromCache(device);
-        let accessory;
-        device.excludedCapabilities = this.excludedCapabilities[device.deviceid] || ["None"];
+        let cachedAccessory = this.SmartThingsAccessories.getAccessoryFromCache(device);
+        device.excludedCapabilities = this.excludedCapabilities[device.deviceid] || [];
+        cachedAccessory.context.deviceData = device;
         this.log.info(`Loading Existing Device (${device.name}) | (${device.deviceid})`);
-        accessory = this.SmartThingsAccessories.loadAccessoryData(cacheDevice, device);
-        this.SmartThingsAccessories.addAccessoryToCache(accessory);
+        cachedAccessory = this.SmartThingsAccessories.initializeAccessory(cachedAccessory);
+        this.SmartThingsAccessories.addAccessoryToCache(cachedAccessory);
     }
 
     removeAccessory(accessory) {
@@ -205,7 +186,7 @@ module.exports = class ST_Platform {
 
     configureAccessory(accessory) {
         this.log.info(`Configure Cached Accessory: ${accessory.displayName}, UUID: ${accessory.UUID}`);
-        let cachedAccessory = this.SmartThingsAccessories.CreateAccessoryFromHomebridgeCache(accessory, this);
+        let cachedAccessory = this.SmartThingsAccessories.initializeAccessory(accessory, true);
         this.SmartThingsAccessories.addAccessoryToCache(cachedAccessory);
     }
 
@@ -255,7 +236,6 @@ module.exports = class ST_Platform {
                 webApp.post("/initial", (req, res) => {
                     let body = JSON.parse(JSON.stringify(req.body));
                     if (body && that.isValidRequestor(body.access_token, body.app_id, 'initial')) {
-
                         that.log.info(`${platformName} Hub Communication Established`);
                         res.send({
                             status: "OK"
@@ -265,6 +245,36 @@ module.exports = class ST_Platform {
                             status: "Failed: Missing access_token or app_id"
                         });
                     }
+                });
+
+                webApp.get("/debugOpts", (req, res) => {
+                    that.log.info(`${platformName} Debug Option Request(${req.query.option})...`);
+                    if (req.query && req.query.option) {
+                        let accs = this.SmartThingsAccessories.getAllAccessoriesFromCache();
+                        // let accsKeys = Object.keys(accs);
+                        // console.log(accsKeys);
+                        switch (req.query.option) {
+                            case 'allAccData':
+                                res.send(JSON.stringify(accs));
+                                break;
+                                // case 'accServices':
+                                //     {
+                                //         let o = accsKeys.forEach(s => s.services.forEach(s1 => s1.UUID));
+                                //         res.send(JSON.stringify(o));
+                                //         break;
+                                //     }
+                                // case 'accCharacteristics':
+                                //     {
+                                //         let o = accsKeys.forEach(s => s.services.forEach(s1 => s1.characteristics.forEach(c => c.displayName)));
+                                //         res.send(JSON.stringify(o));
+                                //         break;
+                                //     }
+                                // case 'accContext':
+                                //     res.send(JSON.stringify(this.SmartThingsAccessories.getAllAccessoriesFromCache()));
+                                //     break;
+                        }
+
+                    } else { res.send('Error: Missing Valid Debug Query Parameter'); }
                 });
 
                 webApp.post("/restartService", (req, res) => {

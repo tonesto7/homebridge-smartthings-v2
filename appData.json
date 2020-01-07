@@ -1,8 +1,8 @@
 {
     "appDataVer": "1.0",
     "versions": {
-        "mainApp": "2.0.3",
-        "plugin": "2.0.10"
+        "mainApp": "2.1.0",
+        "plugin": "2.1.0"
     },
     "settings": {
         "allowLocalCmds": true

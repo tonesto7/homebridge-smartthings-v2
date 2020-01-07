@@ -98,7 +98,8 @@ config.json
 accessories
 auth.json
 persist
+.uix-secrets
+auth.json
 
 .uix-secrets
-
-.uix-secrets
+smartthings_rsa.pub

@@ -108,7 +108,7 @@ module.exports = class ST_Client {
                     reject(err);
                 })
                 .then((body) => {
-                    that.log.debug('sendDeviceCommand Resp:', body);
+                    this.log.debug(`sendDeviceCommand Resp: ${JSON.stringify(body)}`);
                     callback(undefined);
                     resolve(body);
                 });
@@ -117,7 +117,7 @@ module.exports = class ST_Client {
 
     sendUpdateStatus(hasUpdate, newVersion = null) {
         return new Promise((resolve, reject) => {
-            this.log.notice(`Sending Plugin Status to SmartThings | UpdateAvailable: ${hasUpdate} | newVersion: ${newVersion}`);
+            this.log.notice(`Sending Plugin Status to SmartThings | UpdateAvailable: ${hasUpdate}${newVersion ?  ' | newVersion: ' + newVersion : ''}`);
             rp({
                     method: 'POST',
                     uri: `${this.configItems.app_url}${this.configItems.app_id}/pluginStatus`,
@@ -132,8 +132,11 @@ module.exports = class ST_Client {
                     reject(undefined);
                 })
                 .then((body) => {
-                    this.log.debug('sendUpdateStatus Resp:', body);
-                    resolve(body);
+                    // console.log(body);
+                    if (body) {
+                        this.log.debug(`sendUpdateStatus Resp: ${JSON.stringify(body)}`);
+                        resolve(body);
+                    } else { resolve(null); }
                 });
         });
     }
@@ -167,7 +170,10 @@ module.exports = class ST_Client {
             rp(config)
                 .then((body) => {
                     // that.log.info('sendStartDirect Resp:', body);
-                    resolve(body);
+                    if (body) {
+                        this.log.debug(`sendStartDirect Resp:' ${JSON.stringify(body)}`);
+                        resolve(body);
+                    } else { resolve(null); }
                 })
                 .catch((err) => {
                     that.log.error("sendStartDirect Error: ", err.message);
