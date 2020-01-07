@@ -5,7 +5,7 @@
  */
 
 String appVersion()                     { return "2.1.0" }
-String appModified()                    { return "01-06-2020" }
+String appModified()                    { return "01-07-2020" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
@@ -398,8 +398,7 @@ def getAccessToken() {
 }
 
 private subscribeToEvts() {
-    runIn(4, "registerDevicesTest")
-    log.info "-----------------------------------------------"
+    runIn(4, "registerDevices")
     log.info "Starting Device Subscription Process"
     if(settings?.addSecurityDevice) {
         subscribe(location, "alarmSystemStatus", changeHandler)
@@ -910,7 +909,7 @@ Map deviceSettingKeys() {
 
 private registerDevicesTest() {
     def strtDt = now()
-    Boolean done = true
+    Boolean done = false
     Boolean sched = false
     List keysToRegister = atomicState?.pendingDeviceRegistrations ?: []
     Integer regRnd = atomicState?.pendingDeviceRegistrationRnd ?: 1
@@ -924,30 +923,30 @@ private registerDevicesTest() {
         List devItems = []
         log.trace "(${keysToRegister?.size()}) Device Groups Pending Event Registration..."
         keysToRegister?.each { key->
-            if(devItems?.size() <= 30) {
+            if(devItems?.size() > 30) {
+                sched = true
+            } else {
                 settings?."${key}"?.each { dev->
                     devItems?.push(dev)
                     registerChangeHandler(dev)
                 }
                 keyToRemove?.push(key)
-            } else { sched = true }
+            }
         }
         keysToRegister -= keyToRemove
 
         if(sched) {
-            done = false
             log.trace "Device Registration Round (${regRnd}) Completed | Registered (${devItems?.size()}) Devices | Starting Next Round in 4 seconds... | Process Time: (${now()-strtDt}ms)"
-            runIn(4, "registerDevices")
-
             atomicState?.pendingDeviceRegistrations = keysToRegister
             atomicState?.pendingDeviceRegistrationRnd = regRnd+1
-            // log.debug "Device Groups Remaining to Register: ${keysToRegister?.size()}"
+            runIn(3, "registerDevices")
         } else {
+            done = true
             log.trace "Device Registration Round (${regRnd}) Completed | Registered (${devItems?.size()}) Devices... | Process Time: (${now()-strtDt}ms)"
         }
     }
     if(done) {
-        log.trace "Device Registration Process Completed | Registered (${getDeviceCnt(true)} Devices) | Process Time: (${now()-strtDt}ms)"
+        log.trace "Device Registration Process Completed | Registered (${getDeviceCnt(true)} Devices) | Process Time: (${now()-strtDt}ms) | Rounds: ${atomicState?.pendingDeviceRegistrationRnd}"
         log.info "-----------------------------------------------"
         unschedule("registerDevices")
         state?.remove("pendingDeviceRegistrations");
