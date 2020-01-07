@@ -398,7 +398,7 @@ def getAccessToken() {
 }
 
 private subscribeToEvts() {
-    runIn(3, "registerDevices")
+    runIn(4, "registerDevicesTest")
     log.info "-----------------------------------------------"
     log.info "Starting Device Subscription Process"
     if(settings?.addSecurityDevice) {
@@ -468,6 +468,7 @@ def renderDevices() {
     Map devMap = [:]
     List devList = []
     List items = deviceSettingKeys()?.collect { it?.key as String }
+    items = items+["modeList", "routineList"]
     items?.each { item ->
         if(settings[item]?.size()) {
             settings[item]?.each { dev->
@@ -908,7 +909,9 @@ Map deviceSettingKeys() {
 }
 
 private registerDevicesTest() {
+    def strtDt = now()
     Boolean done = true
+    Boolean sched = false
     List keysToRegister = atomicState?.pendingDeviceRegistrations ?: []
     Integer regRnd = atomicState?.pendingDeviceRegistrationRnd ?: 1
     if(!keysToRegister?.size()) {
@@ -916,15 +919,12 @@ private registerDevicesTest() {
             if(settings?."${k}"?.size()>0) keysToRegister?.push(k)
         }
     }
-
     if(keysToRegister?.size()) {
         List keyToRemove = []
         List devItems = []
         log.trace "(${keysToRegister?.size()}) Device Groups Pending Event Registration..."
-        Boolean sched = false
-
         keysToRegister?.each { key->
-            if(devItems?.size() <= 40) {
+            if(devItems?.size() <= 30) {
                 settings?."${key}"?.each { dev->
                     devItems?.push(dev)
                     registerChangeHandler(dev)
@@ -936,18 +936,18 @@ private registerDevicesTest() {
 
         if(sched) {
             done = false
-            log.trace "Device Registration Round (${regRnd}) Completed | Registered (${devItems?.size()}) Devices | Starting Next Round in 4 seconds..."
+            log.trace "Device Registration Round (${regRnd}) Completed | Registered (${devItems?.size()}) Devices | Starting Next Round in 4 seconds... | Process Time: (${now()-strtDt}ms)"
             runIn(4, "registerDevices")
 
             atomicState?.pendingDeviceRegistrations = keysToRegister
             atomicState?.pendingDeviceRegistrationRnd = regRnd+1
             // log.debug "Device Groups Remaining to Register: ${keysToRegister?.size()}"
         } else {
-            log.trace "Device Registration Round (${regRnd}) Completed | Registered (${devItems?.size()}) Devices..."
+            log.trace "Device Registration Round (${regRnd}) Completed | Registered (${devItems?.size()}) Devices... | Process Time: (${now()-strtDt}ms)"
         }
     }
     if(done) {
-        log.trace "Device Registration Process Completed | Registered (${getDeviceCnt(true)} Devices)"
+        log.trace "Device Registration Process Completed | Registered (${getDeviceCnt(true)} Devices) | Process Time: (${now()-strtDt}ms)"
         log.info "-----------------------------------------------"
         unschedule("registerDevices")
         state?.remove("pendingDeviceRegistrations");
@@ -988,7 +988,7 @@ def registerDevices3() {
         registerChangeHandler(settings?."${k}")
     }
     log.info "Registered (${getDeviceCnt(true)} Devices)"
-    log.info "-----------------------------------------------"
+    if(showDebugLogs) log.info "-----------------------------------------------"
 
     if(settings?.restartService == true) {
         log.warn "Sent Request to Homebridge Service to Stop... Service should restart automatically"
