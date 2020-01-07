@@ -2,7 +2,11 @@
 # Changelog
 
 ## v2.1.0
-- [FIX] Other bug fixes and cleanups.
+- [NEW] Added a Device Event and Command history page to review events and commands sent and received by the plugin.
+- [UPDATE] Cleaned up some of the unnecessary attributes from the subscription logic.
+- [FIX] Refactored the accessToken logic to be more consistent.
+- [UPDATE] Modified the device event subscription process to reduce timeouts.
+- [FIX] Other bug fixes, cleanups, and optimizations.
 
 ## v2.0.3
 - [NEW] Added a new device data input where you can select a device and see all available attributes, capabilities, commands, and the last 30 events.
