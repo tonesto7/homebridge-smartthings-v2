@@ -1,9 +1,12 @@
 
 ## v2.1.0
 - [UPDATE] Refactored the device service and characteristic logic so it's cleaner, more modular, and easier to maintain.
+- [NEW] Device services and characteristics are now cleaned up when they are no longer used.
 - [FIX] Lot's of fixes for device state updates and device commands.
+- [FIX] Button events should now work again.
 - [FIX] Updated the Hoobs config file (Plugin will be undergoing review by Hoobs to be certified soon) (@mkellsy)
 - [FIX] Added support for AirPurifier & AirQuality (@danielskowronski)
+- [FIX] Delays on device event updates resolved. (@devarshi) #33 #40
 - [FIX] Thermostat Mode fixes (@torandreroland)
 - [FIX] Dozens of other minor bugfixes and tweaks.
 
