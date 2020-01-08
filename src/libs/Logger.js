@@ -37,19 +37,19 @@ module.exports = class Logging {
     }
 
     getLogger() {
-        let transports = [];
-        let console = new(winston.transports.Console)({
-            level: this.logLevel,
-            colorize: true,
-            handleExceptions: true,
-            json: false,
-            prettyPrint: false,
-            formatter: (params) => { return this.msgFmt(params); },
-            timestamp: () => { return new Date().toISOString(); }
-        });
-        transports.push(console);
+        let transports = [
+            new(winston.transports.Console)({
+                level: this.logLevel,
+                colorize: true,
+                handleExceptions: true,
+                json: false,
+                prettyPrint: false,
+                formatter: (params) => { return this.msgFmt(params); },
+                timestamp: () => { return new Date().toISOString(); }
+            })
+        ];
         if (this.logConfig && this.logConfig.file && this.logConfig.file.enabled) {
-            let logFile = new Rotate({
+            transports.push(new Rotate({
                 file: `${this.homebridge.user.storagePath()}/${pluginName}.log`,
                 level: this.logConfig.file.level || this.logLevel,
                 colorize: false,
@@ -62,10 +62,9 @@ module.exports = class Logging {
                     return `[${new Date().toLocaleString()}] [${params.level.toUpperCase()}]: ${this.removeAnsi(params.message)}`;
                 },
                 levels: this.options.levels
-            });
-            transports.push(logFile);
+            }));
         }
-        logger = new(winston.Logger)({
+        logger = new winston.Logger({
             levels: this.options.levels,
             colors: this.options.colors,
             transports: transports,
