@@ -1,7 +1,7 @@
 const pluginName = require("./Constants").pluginName,
     winston = require('winston'),
-    chalk = require('chalk'),
-    Rotate = require('winston-logrotate').Rotate;
+    chalk = require('chalk');
+require('winston-daily-rotate-file');
 var DEBUG_ENABLED = false;
 var TIMESTAMP_ENABLED = true;
 var logger;
@@ -37,40 +37,58 @@ module.exports = class Logging {
     }
 
     getLogger() {
-        let transports = [];
-        let console = new(winston.transports.Console)({
-            level: this.logLevel,
-            colorize: true,
-            handleExceptions: true,
-            json: false,
-            prettyPrint: false,
-            formatter: (params) => { return this.msgFmt(params); },
-            timestamp: () => { return new Date().toISOString(); }
-        });
-        transports.push(console);
+        let transports = [
+            new(winston.transports.Console)({
+                level: this.logLevel,
+                colorize: true,
+                handleExceptions: true,
+                json: false,
+                prettyPrint: false,
+                formatter: (params) => { return this.msgFmt(params); },
+                timestamp: () => { return new Date().toISOString(); }
+            })
+        ];
         if (this.logConfig && this.logConfig.file && this.logConfig.file.enabled) {
-            let logFile = new Rotate({
-                file: `${this.homebridge.user.storagePath()}/${pluginName}.log`,
+            let logFile = new(winston.transports.DailyRotateFile)({
+                filename: `${this.homebridge.user.storagePath()}/${pluginName}-%DATE%.log`,
+                datePattern: 'YYYY-MM-DD-HH',
+                createSymlink: true,
+                symlinkName: `${pluginName}.log`,
                 level: this.logConfig.file.level || this.logLevel,
+                auditFile: 'logaudit.json',
                 colorize: false,
                 handleExceptions: true,
                 json: false,
-                compress: (this.logConfig.file.compress !== false),
-                keep: this.logConfig.file.daysToKeep || 5,
-                size: this.logConfig.file.maxFilesize || '10m',
+                zippedArchive: (this.logConfig.file.compress !== false),
+                maxFiles: this.logConfig.file.daysToKeep || 5,
+                maxSize: this.logConfig.file.maxFilesize || '10m',
                 formatter: (params) => {
                     return `[${new Date().toLocaleString()}] [${params.level.toUpperCase()}]: ${this.removeAnsi(params.message)}`;
                 },
                 levels: this.options.levels
             });
+            logFile.on('rotate', (oldFilename, newFilename) => {
+                // do something fun
+                console.log('LogFile Rotated | oldFilename: ' + oldFilename + ' | newFilename: ' + newFilename);
+            });
+            logFile.on('new', (newFilename) => {
+                console.log('New LogFile Created | newFilename: ' + newFilename);
+            });
+            logFile.on('archive', (zipFilename) => {
+                console.log('LogFile Archived | zipFilename: ' + zipFilename);
+            });
+            logFile.on('logRemoved', (removedFilename) => {
+                console.log('LogFile Removed | removedFilename: ' + removedFilename);
+            });
             transports.push(logFile);
         }
-        logger = new(winston.Logger)({
+        logger = new winston.Logger({
             levels: this.options.levels,
             colors: this.options.colors,
             transports: transports,
             exitOnError: false
         });
+
         return logger;
     }
 
