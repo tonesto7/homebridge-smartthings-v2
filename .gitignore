@@ -103,3 +103,4 @@ auth.json
 
 .uix-secrets
 smartthings_rsa.pub
+logaudit.json
