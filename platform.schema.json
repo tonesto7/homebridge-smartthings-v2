@@ -109,7 +109,7 @@
                             "level": {
                                 "title": "Log File Output Level",
                                 "type": "string",
-                                "default": "good",
+                                "default": "Good",
                                 "enum": [{
                                         "text": "Debug",
                                         "value": "debug"

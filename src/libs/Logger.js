@@ -1,5 +1,5 @@
 const pluginName = require("./Constants").pluginName,
-    winston = require('../../node_modules/winston'),
+    winston = require('winston'),
     chalk = require('chalk');
 require('winston-logrotate');
 var DEBUG_ENABLED = false;
@@ -37,25 +37,19 @@ module.exports = class Logging {
     }
 
     getLogger() {
-        logger = new(winston.Logger)({
-            levels: this.options.levels,
-            colors: this.options.colors,
-            transports: [
-                new(winston.transports.Console)({
-                    level: this.logLevel,
-                    colorize: true,
-                    handleExceptions: true,
-                    json: false,
-                    prettyPrint: false,
-                    formatter: (params) => { return this.msgFmt(params); },
-                    timestamp: () => { return new Date().toISOString(); }
-                })
-            ],
-            exitOnError: false
-        });
-
+        let transports = [
+            new(winston.transports.Console)({
+                level: this.logLevel,
+                colorize: true,
+                handleExceptions: true,
+                json: false,
+                prettyPrint: false,
+                formatter: (params) => { return this.msgFmt(params); },
+                timestamp: () => { return new Date().toISOString(); }
+            })
+        ];
         if (this.logConfig && this.logConfig.file && this.logConfig.file.enabled) {
-            logger.add(winston.transports.Rotate, {
+            transports.push(new(winston.transports.Rotate)({
                 file: `${this.homebridge.user.storagePath()}/${pluginName}.log`,
                 level: this.logConfig.file.level || this.logLevel,
                 colorize: false,
@@ -68,8 +62,14 @@ module.exports = class Logging {
                     return `[${new Date().toLocaleString()}] [${params.level.toUpperCase()}]: ${this.removeAnsi(params.message)}`;
                 },
                 levels: this.options.levels
-            });
+            }));
         }
+        logger = new(winston.Logger)({
+            levels: this.options.levels,
+            colors: this.options.colors,
+            transports: transports,
+            exitOnError: false
+        });
         return logger;
     }
 
