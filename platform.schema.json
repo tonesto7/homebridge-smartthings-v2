@@ -1,5 +1,5 @@
 {
-    "plugin_alias": "SmartThings",
+    "plugin_alias": "SmartThings-v2",
     "schema": {
         "type": "object",
         "properties": {
