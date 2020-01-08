@@ -1,7 +1,7 @@
 const pluginName = require("./Constants").pluginName,
     winston = require('winston'),
-    chalk = require('chalk');
-require('winston-logrotate');
+    chalk = require('chalk'),
+    Rotate = require('winston-logrotate').Rotate;
 var DEBUG_ENABLED = false;
 var TIMESTAMP_ENABLED = true;
 var logger;
@@ -37,19 +37,19 @@ module.exports = class Logging {
     }
 
     getLogger() {
-        let transports = [
-            new(winston.transports.Console)({
-                level: this.logLevel,
-                colorize: true,
-                handleExceptions: true,
-                json: false,
-                prettyPrint: false,
-                formatter: (params) => { return this.msgFmt(params); },
-                timestamp: () => { return new Date().toISOString(); }
-            })
-        ];
+        let transports = [];
+        let console = new(winston.transports.Console)({
+            level: this.logLevel,
+            colorize: true,
+            handleExceptions: true,
+            json: false,
+            prettyPrint: false,
+            formatter: (params) => { return this.msgFmt(params); },
+            timestamp: () => { return new Date().toISOString(); }
+        });
+        transports.push(console);
         if (this.logConfig && this.logConfig.file && this.logConfig.file.enabled) {
-            transports.push(new(winston.transports.Rotate)({
+            let logFile = new Rotate({
                 file: `${this.homebridge.user.storagePath()}/${pluginName}.log`,
                 level: this.logConfig.file.level || this.logLevel,
                 colorize: false,
@@ -62,7 +62,8 @@ module.exports = class Logging {
                     return `[${new Date().toLocaleString()}] [${params.level.toUpperCase()}]: ${this.removeAnsi(params.message)}`;
                 },
                 levels: this.options.levels
-            }));
+            });
+            transports.push(logFile);
         }
         logger = new(winston.Logger)({
             levels: this.options.levels,
