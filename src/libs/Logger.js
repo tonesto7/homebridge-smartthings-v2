@@ -1,5 +1,5 @@
 const pluginName = require("./Constants").pluginName,
-    winston = require('winston'),
+    winston = require('../../node_modules/winston'),
     chalk = require('chalk');
 require('winston-logrotate');
 var DEBUG_ENABLED = false;
