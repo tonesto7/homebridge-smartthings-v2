@@ -104,3 +104,4 @@ auth.json
 .uix-secrets
 smartthings_rsa.pub
 logaudit.json
+homebridge-smartthings-v2-logaudit.json

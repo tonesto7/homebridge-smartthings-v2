@@ -68,7 +68,7 @@ module.exports = class Logging {
                 createSymlink: true,
                 symlinkName: `${pluginName}.log`,
                 level: this.logConfig.file.level || this.logLevel,
-                auditFile: 'logaudit.json',
+                auditFile: `${this.homebridge.user.storagePath()}/${pluginName}-logaudit.json`,
                 colorize: false,
                 handleExceptions: true,
                 zippedArchive: (this.logConfig.file.compress !== false),
