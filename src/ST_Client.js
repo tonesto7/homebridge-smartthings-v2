@@ -81,9 +81,8 @@ module.exports = class ST_Client {
                 access_token: this.configItems.access_token
             },
             headers: {
-                evtSource: `Homebridge_${platformName}`,
-                evtType: 'hkCommand',
-                evtAppId: this.configItems.app_id
+                evtSource: `Homebridge_${platformName}_${this.configItems.app_id}`,
+                evtType: 'hkCommand'
             },
             body: vals,
             json: true
@@ -152,9 +151,8 @@ module.exports = class ST_Client {
                 access_token: this.configItems.access_token
             },
             headers: {
-                evtSource: `Homebridge_${platformName}`,
-                evtType: 'enableDirect',
-                evtAppId: this.configItems.app_id
+                evtSource: `Homebridge_${platformName}_${this.configItems.app_id}`,
+                evtType: 'enableDirect'
             },
             body: {
                 ip: that.configItems.direct_ip,

@@ -663,9 +663,13 @@ def lanEventHandler(evt) {
     try {
         Map msgData = [:]
         if (headerMap?.size()) {
-            if (headerMap?.evtSource && headerMap?.evtSource == "Homebridge_${pluginName()}") {
-                if(headerMap.evtAppId && !headerMap?.evtAppId == app?.getId()) {
-                    if(showDebugLogs) log.warn "Recieved Homebride Event But it Wasn't Meant for this APPID..."
+            String evtSrc = headerMap?.evtSource ?: null
+            if (evtSrc && evtSrc?.startsWith("Homebridge_${pluginName()}")) {
+                // log.debug "evtSource: (${evtSrc}) | app: (Homebridge_${pluginName()}_${app?.getId()})"
+                if(evtSrc != "Homebridge_${pluginName()}_${app?.getId()}") {
+                    if(showDebugLogs) log.warn "Recieved Local Homebridge Command | Unfortunately it wasn't meant for this APPID..."
+                    log.warn "Recieved Local Homebridge Command | Unfortunately it wasn't meant for this APPID..."
+                    return
                 }
                 if (msg?.body != null) {
                     def slurper = new groovy.json.JsonSlurper()
