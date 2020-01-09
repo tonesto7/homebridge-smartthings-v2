@@ -659,7 +659,7 @@ def lanEventHandler(evt) {
     // log.trace "lanStreamEvtHandler..."
     def msg = parseLanMessage(evt?.description as String)
     Map headerMap = msg?.headers
-    log.trace "lanEventHandler... | headers: ${headerMap}"
+    // log.trace "lanEventHandler... | headers: ${headerMap}"
     try {
         Map msgData = [:]
         if (headerMap?.size()) {
