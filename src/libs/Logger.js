@@ -36,7 +36,7 @@ module.exports = class Logging {
         this.prefix = pre;
     }
 
-    getLogger() {
+    getLoggerOld() {
         let transports = [
             new(winston.transports.Console)({
                 level: this.logLevel,
@@ -89,6 +89,42 @@ module.exports = class Logging {
             exitOnError: false
         });
 
+        return logger;
+    }
+
+    getLogger() {
+        logger = new winston.Logger({
+            levels: this.options.levels,
+            colors: this.options.colors,
+            transports: [
+                new(winston.transports.Console)({
+                    level: this.logLevel,
+                    colorize: true,
+                    handleExceptions: true,
+                    json: false,
+                    prettyPrint: false,
+                    formatter: (params) => { return this.msgFmt(params); },
+                    timestamp: () => { return new Date().toISOString(); }
+                })
+            ],
+            exitOnError: false
+        });
+        if (this.logConfig && this.logConfig.file && this.logConfig.file.enabled) {
+            logger.add(winston.transports.Rotate, {
+                file: `${this.homebridge.user.storagePath()}/${pluginName}.log`,
+                level: this.logConfig.file.level || this.logLevel,
+                colorize: false,
+                handleExceptions: true,
+                json: false,
+                compress: (this.logConfig.file.compress !== false),
+                keep: this.logConfig.file.daysToKeep || 5,
+                size: this.logConfig.file.maxFilesize || '10m',
+                formatter: (params) => {
+                    return `[${new Date().toLocaleString()}] [${params.level.toUpperCase()}]: ${this.removeAnsi(params.message)}`;
+                },
+                levels: this.options.levels
+            });
+        }
         return logger;
     }
 
