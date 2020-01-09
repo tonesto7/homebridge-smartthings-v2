@@ -1,7 +1,11 @@
 const pluginName = require("./Constants").pluginName,
-    winston = require('winston'),
-    chalk = require('chalk');
-require('winston-daily-rotate-file');
+    chalk = require('chalk'),
+    { createLogger, format, transports } = require('winston'),
+    { combine } = format,
+    util = require('util'),
+    DailyRotateFile = require('winston-daily-rotate-file');
+
+// rotateFile = require('winston-daily-rotate-file');
 var DEBUG_ENABLED = false;
 var TIMESTAMP_ENABLED = true;
 var logger;
@@ -37,54 +41,59 @@ module.exports = class Logging {
     }
 
     getLogger() {
-        logger = new winston.Logger({
-            levels: this.options.levels,
-            colors: this.options.colors,
-            transports: [
-                new(winston.transports.Console)({
-                    level: this.logLevel,
-                    colorize: true,
-                    handleExceptions: true,
-                    json: false,
-                    prettyPrint: false,
-                    formatter: (params) => { return this.msgFmt(params); },
-                    timestamp: () => { return new Date().toISOString(); }
-                })
-            ],
-            exitOnError: false
-        });
+        let that = this;
+        let trans = [
+            new transports.Console({
+                level: this.logLevel,
+                colorize: true,
+                handleExceptions: true,
+                format: combine(
+                    format.timestamp({ format: 'M/D/YYYY, h:mm:ss a' }),
+                    format.printf((info) => {
+                        const timestamp = (TIMESTAMP_ENABLED === true) ? chalk.white("[" + info.timestamp.trim() + "] ") : '';
+                        const prefix = that.prefix ? chalk.cyan("[" + that.prefix + "] ") : '';
+                        const strArgs = (info[Symbol.for('splat')] || []).map((arg) => {
+                            return util.inspect(arg, { colors: true });
+                        }).join(' ');
+                        const message = (`${this.colorMsgLevel(info.level, info.message + ' ' + strArgs)}`).trim();
+                        return `${timestamp}${prefix}${this.levelColor(info.level.toUpperCase())}: ${message}`;
+                    })
+                )
+            })
+        ];
         if (this.logConfig && this.logConfig.file && this.logConfig.file.enabled) {
-            logger.add(winston.transports.DailyRotateFile, {
+            trans.push(new DailyRotateFile({
                 filename: `${this.homebridge.user.storagePath()}/${pluginName}-%DATE%.log`,
-                datePattern: 'YYYY-MM-DD-HH',
+                datePattern: 'YYYY-MM-DD',
                 createSymlink: true,
                 symlinkName: `${pluginName}.log`,
                 level: this.logConfig.file.level || this.logLevel,
                 auditFile: 'logaudit.json',
                 colorize: false,
                 handleExceptions: true,
-                json: false,
                 zippedArchive: (this.logConfig.file.compress !== false),
                 maxFiles: this.logConfig.file.daysToKeep || 5,
                 maxSize: this.logConfig.file.maxFilesize || '10m',
-                formatter: (params) => {
-                    return `[${new Date().toLocaleString()}] [${params.level.toUpperCase()}]: ${this.removeAnsi(params.message)}`;
-                },
-                levels: this.options.levels
-            });
+                format: combine(
+                    format.timestamp({ format: 'M/D/YYYY, h:mm:ss a' }),
+                    format.printf((info) => {
+                        const strArgs = (info[Symbol.for('splat')] || []).map((arg) => {
+                            return util.inspect(arg, { colors: true });
+                        }).join(' ');
+                        return `[${info.timestamp.trim()}] [${info.level.toUpperCase()}]: ${this.removeAnsi(info.message + ' ' + strArgs)}`;
+                    })
+                )
+            }));
         }
+        logger = createLogger({
+            levels: this.options.levels,
+            colors: this.options.colors,
+            transports: trans,
+            exitOnError: false
+        });
         return logger;
     }
 
-    msgFmt(params) {
-        let msg = (TIMESTAMP_ENABLED === true) ? chalk.white("[" + new Date().toLocaleString() + "]") : '';
-        msg += this.prefix ? chalk.cyan("[" + this.prefix + "]") : '';
-        msg += `${this.levelColor(params.level.toUpperCase())}`;
-        msg += ': ' + this.colorMsgLevel(params.level, params.message);
-        return msg;
-    };
-
-    // console.log(chalk`There are {bold 5280 feet} in a mile. In {bold ${miles} miles}, there are {green.bold ${calculateFeet(miles)} feet}.`);
     removeAnsi(msg) {
         // eslint-disable-next-line no-control-regex
         return msg.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
