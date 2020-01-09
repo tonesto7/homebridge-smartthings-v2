@@ -1,5 +1,6 @@
-## v2.1.1 - v2.1.9
+## v2.1.1 - v2.1.10
 - [UPDATE] Updated winston logger from v2 to v3 to help with issues running on Hoobs.
+- [UPDATE] Added app id header to all local commands made to ST app so if you have more than one instance of the homebridge smartapp it doesn't start sending events to wrong plugin.
 
 ## v2.1.0
 - [UPDATE] Refactored the device service and characteristic logic so it's cleaner, more modular, and easier to maintain.

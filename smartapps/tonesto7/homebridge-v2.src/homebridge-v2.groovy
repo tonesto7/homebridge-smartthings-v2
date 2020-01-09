@@ -4,8 +4,8 @@
  *  Copyright 2018, 2019, 2020 Anthony Santilli
  */
 
-String appVersion()                     { return "2.1.0" }
-String appModified()                    { return "01-07-2020" }
+String appVersion()                     { return "2.1.1" }
+String appModified()                    { return "01-09-2020" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
@@ -659,11 +659,14 @@ def lanEventHandler(evt) {
     // log.trace "lanStreamEvtHandler..."
     def msg = parseLanMessage(evt?.description as String)
     Map headerMap = msg?.headers
-    // log.trace "lanEventHandler... | headers: ${headerMap}"
+    log.trace "lanEventHandler... | headers: ${headerMap}"
     try {
         Map msgData = [:]
         if (headerMap?.size()) {
             if (headerMap?.evtSource && headerMap?.evtSource == "Homebridge_${pluginName()}") {
+                if(headerMap.evtAppId && !headerMap?.evtAppId == app?.getId()) {
+                    if(showDebugLogs) log.warn "Recieved Homebride Event But it Wasn't Meant for this APPID..."
+                }
                 if (msg?.body != null) {
                     def slurper = new groovy.json.JsonSlurper()
                     msgData = slurper?.parseText(msg?.body as String)

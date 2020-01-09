@@ -82,7 +82,8 @@ module.exports = class ST_Client {
             },
             headers: {
                 evtSource: `Homebridge_${platformName}`,
-                evtType: 'hkCommand'
+                evtType: 'hkCommand',
+                evtAppId: this.configItems.app_id
             },
             body: vals,
             json: true
@@ -152,7 +153,8 @@ module.exports = class ST_Client {
             },
             headers: {
                 evtSource: `Homebridge_${platformName}`,
-                evtType: 'enableDirect'
+                evtType: 'enableDirect',
+                evtAppId: this.configItems.app_id
             },
             body: {
                 ip: that.configItems.direct_ip,

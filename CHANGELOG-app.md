@@ -1,6 +1,9 @@
 
 # Changelog
 
+## v2.1.1
+- [UPDATE] The app now validates the appId on all local commands made to ST app so if you have more than one instance of the homebridge smartapp it doesn't start sending events to wrong plugin.
+
 ## v2.1.0
 - [NEW] Added a Device Event and Command history page to review events and commands sent and received by the plugin.
 - [UPDATE] Cleaned up some of the unnecessary attributes from the subscription logic.
