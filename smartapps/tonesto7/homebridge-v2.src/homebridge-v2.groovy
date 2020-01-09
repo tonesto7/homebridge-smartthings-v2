@@ -668,7 +668,6 @@ def lanEventHandler(evt) {
                 // log.debug "evtSource: (${evtSrc}) | app: (Homebridge_${pluginName()}_${app?.getId()})"
                 if(evtSrc != "Homebridge_${pluginName()}_${app?.getId()}") {
                     if(showDebugLogs) log.warn "Recieved Local Homebridge Command | Unfortunately it wasn't meant for this APPID..."
-                    log.warn "Recieved Local Homebridge Command | Unfortunately it wasn't meant for this APPID..."
                     return
                 }
                 if (msg?.body != null) {

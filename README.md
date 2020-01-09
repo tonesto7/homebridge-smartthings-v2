@@ -5,7 +5,7 @@ V2 of this plugin is a complete rewrite of the homebridge-smartthings-tonesto7 p
 
 [![npm version](https://badge.fury.io/js/homebridge-smartthings-v2.svg)](https://badge.fury.io/js/homebridge-smartthings-v2)
 
-**```Latest SmartApp Version: 2.1.0```**
+**```Latest SmartApp Version: 2.1.1```**
 
 ## Credits
 Big thanks for @Areson for his help/motivation in rewriting this.

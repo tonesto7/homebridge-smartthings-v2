@@ -32,12 +32,12 @@ module.exports = class ST_Platform {
         this.log = this.logging.getLogger();
         this.log.info(`Homebridge Version: ${api.version}`);
         this.log.info(`${platformName} Plugin Version: ${pluginVersion}`);
-        this.polling_seconds = config["polling_seconds"] || 3600;
-        this.excludedAttributes = this.config["excluded_attributes"] || [];
-        this.excludedCapabilities = this.config["excluded_capabilities"] || [];
-        this.update_method = this.config["update_method"] || "direct";
-        this.temperature_unit = this.config["temperature_unit"] || "F";
-        this.local_commands = false;
+        this.polling_seconds = config.polling_seconds || 3600;
+        this.excludedAttributes = this.config.excluded_attributes || [];
+        this.excludedCapabilities = this.config.excluded_capabilities || [];
+        this.update_method = this.config.update_method || "direct";
+        this.temperature_unit = this.config.temperature_unit || "F";
+        this.local_commands = this.config.local_commands || false;
         this.local_hub_ip = undefined;
         this.myUtils = new myUtils(this);
         this.configItems = this.getConfigItems();
@@ -74,6 +74,7 @@ module.exports = class ST_Platform {
             direct_port: this.config.direct_port || 8000,
             direct_ip: this.config.direct_ip || this.myUtils.getIPAddress(),
             debug: (this.config.debug === true),
+            local_commands: (this.config.local_commands === true),
             validateTokenId: (this.config.validateTokenId === true)
         };
     }

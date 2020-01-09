@@ -43,6 +43,13 @@
                 "default": 8000,
                 "required": true
             },
+            "local_commands": {
+                "title": "Enable Local Commands?",
+                "description": "This will send device commands directly to the SmartThings hub locally instead of through the cloud. (This setting will be overriden by the one in the SmartApp)",
+                "type": "boolean",
+                "required": false,
+                "default": true
+            },
             "temperature_unit": {
                 "title": "Define Temperature Unit",
                 "type": "string",
