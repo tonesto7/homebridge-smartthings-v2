@@ -97,7 +97,7 @@ module.exports = class ST_Client {
             };
         }
         return new Promise((resolve, reject) => {
-            that.log.notice(`Sending Device Command: ${cmd} | Value: ${JSON.stringify(vals) || "Nothing"} | DeviceID: (${devid}) | SendToLocalHub: (${sendLocal})`);
+            that.log.notice(`Sending Device Command: ${cmd}${vals ? ' | Value: ' + JSON.stringify(vals) : ''} | DeviceID: (${devid}) | SendToLocalHub: (${sendLocal})`);
             rp(config)
                 .catch((err) => {
                     that.log.error('sendDeviceCommand Error:', err.message);
@@ -109,7 +109,7 @@ module.exports = class ST_Client {
                 })
                 .then((body) => {
                     this.log.debug(`sendDeviceCommand Resp: ${JSON.stringify(body)}`);
-                    callback(undefined);
+                    callback();
                     resolve(body);
                 });
         });

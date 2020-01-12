@@ -27,6 +27,7 @@ module.exports = class ST_Platform {
             log(`${platformName} Plugin is not Configured | Skipping...`);
             return;
         }
+        this.ok2Run = true;
         this.logConfig = this.getLogConfig();
         this.logging = new Logging(this, this.config["name"], this.logConfig);
         this.log = this.logging.getLogger();
@@ -186,6 +187,7 @@ module.exports = class ST_Platform {
     }
 
     configureAccessory(accessory) {
+        if (!this.ok2Run) return;
         this.log.info(`Configure Cached Accessory: ${accessory.displayName}, UUID: ${accessory.UUID}`);
         let cachedAccessory = this.SmartThingsAccessories.initializeAccessory(accessory, true);
         this.SmartThingsAccessories.addAccessoryToCache(cachedAccessory);
