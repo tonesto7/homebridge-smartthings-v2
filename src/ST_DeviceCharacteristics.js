@@ -170,7 +170,6 @@ module.exports = class DeviceCharacteristics {
         let c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.ProgrammableSwitchEvent);
         if (!c._events.get) {
             c.on("get", (callback) => {
-                console.log('button', that.transforms.transformAttributeState('button', _accessory.context.deviceData.attributes.button));
                 this.value = -1;
                 callback(null, that.transforms.transformAttributeState('button', _accessory.context.deviceData.attributes.button));
             });
@@ -422,7 +421,7 @@ module.exports = class DeviceCharacteristics {
             });
             if (!c._events.get) {
                 c.on("get", (callback) => {
-                    console.log('thermostatMode(get): ', this.transforms.transformAttributeState('thermostatMode', _accessory.context.deviceData.attributes.thermostatMode));
+                    // console.log('thermostatMode(get): ', this.transforms.transformAttributeState('thermostatMode', _accessory.context.deviceData.attributes.thermostatMode));
                     callback(null, this.transforms.transformAttributeState('thermostatMode', _accessory.context.deviceData.attributes.thermostatMode));
                 });
             }

@@ -1,3 +1,8 @@
+## v2.1.13
+- [NEW] Added Sentry library to help collect/report anonymous error/exception data (absolutely no person data is shared with the exception of maybe a device label in the logs).
+- [FIX] Thermostats should now update the state correctly.
+- [FIX] Resolved the issue with Buttons crashing your entire HomeKit Instance.
+
 ## v2.1.1 - v2.1.12
 - [UPDATE] Updated winston logger from v2 to v3 to help with issues running on Hoobs.
 - [UPDATE] Added app id header to all local commands made to ST app so if you have more than one instance of the homebridge smartapp it doesn't start sending events to wrong plugin.
