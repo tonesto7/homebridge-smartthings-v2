@@ -170,6 +170,7 @@ module.exports = class DeviceCharacteristics {
         if (!c._events.get) {
             c.on("get", (callback) => {
                 // console.log(this);
+                this.value = -1;
                 callback(null, this.transforms.transformAttributeState('button', _accessory.context.deviceData.attributes.button));
             });
         }
