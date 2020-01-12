@@ -109,7 +109,10 @@ module.exports = class ST_Client {
                 })
                 .then((body) => {
                     this.log.debug(`sendDeviceCommand Resp: ${JSON.stringify(body)}`);
-                    callback();
+                    if (callback) {
+                        callback();
+                        callback = undefined;
+                    };
                     resolve(body);
                 });
         });

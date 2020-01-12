@@ -421,6 +421,7 @@ module.exports = class DeviceCharacteristics {
             });
             if (!c._events.get) {
                 c.on("get", (callback) => {
+                    console.log('thermostatMode: ', this.transforms.transformAttributeState('thermostatMode', _accessory.context.deviceData.attributes.thermostatMode));
                     callback(null, this.transforms.transformAttributeState('thermostatMode', _accessory.context.deviceData.attributes.thermostatMode));
                 });
             }
@@ -489,6 +490,7 @@ module.exports = class DeviceCharacteristics {
         if (!c._events.get || !c._events.set) {
             if (!c._events.get) {
                 c.on("get", (callback) => {
+                    console.log('targetTemp : ', targetTemp ? this.transforms.thermostatTempConversion(targetTemp) : undefined);
                     callback(null, targetTemp ? this.transforms.thermostatTempConversion(targetTemp) : "Unknown");
                 });
             }
@@ -535,7 +537,7 @@ module.exports = class DeviceCharacteristics {
                 callback(null, (this.platform.getTempUnit() === 'F') ? Characteristic.TemperatureDisplayUnits.FAHRENHEIT : Characteristic.TemperatureDisplayUnits.CELSIUS);
             });
         }
-        this.accessories.storeCharacteristicItem("temperature_unit", "platform", c);
+        this.accessories.storeCharacteristicItem("temperature_unit", _accessory.context.deviceData.deviceid, c);
         c.updateValue((this.platform.getTempUnit() === 'F') ? Characteristic.TemperatureDisplayUnits.FAHRENHEIT : Characteristic.TemperatureDisplayUnits.CELSIUS);
 
         // HEATING THRESHOLD TEMPERATURE
@@ -544,6 +546,7 @@ module.exports = class DeviceCharacteristics {
             if (!c._events.get || !c._events.set) {
                 if (!c._events.get) {
                     c.on("get", (callback) => {
+                        console.log('heatingSetpoint: ', this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
                         callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
                     });
                 }
@@ -566,6 +569,7 @@ module.exports = class DeviceCharacteristics {
             if (!c._events.get || !c._events.set) {
                 if (!c._events.get || !c._events.set) {
                     c.on("get", (callback) => {
+                        console.log('coolingSetpoint: ', this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
                         callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.coolingSetpoint));
                     });
                 }
