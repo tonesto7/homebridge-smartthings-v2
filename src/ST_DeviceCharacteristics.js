@@ -409,9 +409,10 @@ module.exports = class DeviceCharacteristics {
             c.on("get", (callback) => {
                 callback(null, this.transforms.transformAttributeState('thermostatOperatingState', _accessory.context.deviceData.attributes.thermostatOperatingState));
             });
+            this.accessories.storeCharacteristicItem("thermostatOperatingState", _accessory.context.deviceData.deviceid, c);
+        } else {
+            c.updateValue(this.transforms.transformAttributeState("thermostatOperatingState", _accessory.context.deviceData.attributes.thermostatOperatingState));
         }
-        this.accessories.storeCharacteristicItem("thermostatOperatingState", _accessory.context.deviceData.deviceid, c);
-        c.updateValue(this.transforms.transformAttributeState("thermostatOperatingState", _accessory.context.deviceData.attributes.thermostatOperatingState));
 
         // TARGET HEATING/COOLING STATE
         c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetHeatingCoolingState);
@@ -421,7 +422,7 @@ module.exports = class DeviceCharacteristics {
             });
             if (!c._events.get) {
                 c.on("get", (callback) => {
-                    console.log('thermostatMode: ', this.transforms.transformAttributeState('thermostatMode', _accessory.context.deviceData.attributes.thermostatMode));
+                    console.log('thermostatMode(get): ', this.transforms.transformAttributeState('thermostatMode', _accessory.context.deviceData.attributes.thermostatMode));
                     callback(null, this.transforms.transformAttributeState('thermostatMode', _accessory.context.deviceData.attributes.thermostatMode));
                 });
             }
@@ -434,20 +435,22 @@ module.exports = class DeviceCharacteristics {
                     _accessory.context.deviceData.attributes.thermostatMode = state;
                 });
             }
+            this.accessories.storeCharacteristicItem("thermostatMode", _accessory.context.deviceData.deviceid, c);
+        } else {
+            c.updateValue(this.transforms.transformAttributeState("thermostatMode", _accessory.context.deviceData.attributes.thermostatMode));
         }
-        this.accessories.storeCharacteristicItem("thermostatMode", _accessory.context.deviceData.deviceid, c);
-        c.updateValue(this.transforms.transformAttributeState("thermostatMode", _accessory.context.deviceData.attributes.thermostatMode));
 
         // CURRENT RELATIVE HUMIDITY
         if (_accessory.hasCapability('Relative Humidity Measurement')) {
             c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CurrentRelativeHumidity);
             if (!c._events.get) {
                 c.on("get", (callback) => {
-                    callback(null, parseInt(_accessory.context.deviceData.attributes.humidity));
+                    callback(null, this.transforms.transformAttributeState("humidity", _accessory.context.deviceData.attributes.humidity));
                 });
+                this.accessories.storeCharacteristicItem("humidity", _accessory.context.deviceData.deviceid, c);
+            } else {
+                c.updateValue(this.transforms.transformAttributeState("humidity", _accessory.context.deviceData.attributes.humidity));
             }
-            this.accessories.storeCharacteristicItem("humidity", _accessory.context.deviceData.deviceid, c);
-            _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CurrentRelativeHumidity).updateValue(this.transforms.transformAttributeState("humidity", _accessory.context.deviceData.attributes.humidity));
         }
 
         // CURRENT TEMPERATURE
@@ -456,9 +459,10 @@ module.exports = class DeviceCharacteristics {
             c.on("get", (callback) => {
                 callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.temperature));
             });
+            this.accessories.storeCharacteristicItem("temperature", _accessory.context.deviceData.deviceid, c);
+        } else {
+            c.updateValue(this.transforms.transformAttributeState("temperature", _accessory.context.deviceData.attributes.temperature));
         }
-        this.accessories.storeCharacteristicItem("temperature", _accessory.context.deviceData.deviceid, c);
-        c.updateValue(this.transforms.transformAttributeState("temperature", _accessory.context.deviceData.attributes.temperature));
 
 
         // TARGET TEMPERATURE
@@ -496,7 +500,7 @@ module.exports = class DeviceCharacteristics {
         if (!c._events.get || !c._events.set) {
             if (!c._events.get) {
                 c.on("get", (callback) => {
-                    console.log('targetTemp : ', targetTemp || undefined);
+                    console.log('targetTemp(get): ', targetTemp || undefined);
                     callback(null, targetTemp ? this.transforms.thermostatTempConversion(targetTemp) : "Unknown");
                 });
             }
@@ -538,13 +542,12 @@ module.exports = class DeviceCharacteristics {
                     }
                 });
             }
+            this.accessories.storeCharacteristicItem("coolingSetpoint", _accessory.context.deviceData.deviceid, c);
+            this.accessories.storeCharacteristicItem("heatingSetpoint", _accessory.context.deviceData.deviceid, c);
+            this.accessories.storeCharacteristicItem("thermostatSetpoint", _accessory.context.deviceData.deviceid, c);
+        } else {
+            c.updateValue(targetTemp ? this.transforms.thermostatTempConversion(targetTemp) : "Unknown");
         }
-        this.accessories.storeCharacteristicItem("thermostatMode", _accessory.context.deviceData.deviceid, c);
-        this.accessories.storeCharacteristicItem("coolingSetpoint", _accessory.context.deviceData.deviceid, c);
-        this.accessories.storeCharacteristicItem("heatingSetpoint", _accessory.context.deviceData.deviceid, c);
-        this.accessories.storeCharacteristicItem("thermostatSetpoint", _accessory.context.deviceData.deviceid, c);
-        this.accessories.storeCharacteristicItem("temperature", _accessory.context.deviceData.deviceid, c);
-        c.updateValue(targetTemp ? this.transforms.thermostatTempConversion(targetTemp) : "Unknown");
 
         // TEMPERATURE DISPLAY UNITS
         c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TemperatureDisplayUnits);
@@ -552,9 +555,10 @@ module.exports = class DeviceCharacteristics {
             c.on("get", (callback) => {
                 callback(null, (this.platform.getTempUnit() === 'F') ? Characteristic.TemperatureDisplayUnits.FAHRENHEIT : Characteristic.TemperatureDisplayUnits.CELSIUS);
             });
+            this.accessories.storeCharacteristicItem("temperature_unit", _accessory.context.deviceData.deviceid, c);
+        } else {
+            c.updateValue((this.platform.getTempUnit() === 'F') ? Characteristic.TemperatureDisplayUnits.FAHRENHEIT : Characteristic.TemperatureDisplayUnits.CELSIUS);
         }
-        this.accessories.storeCharacteristicItem("temperature_unit", _accessory.context.deviceData.deviceid, c);
-        c.updateValue((this.platform.getTempUnit() === 'F') ? Characteristic.TemperatureDisplayUnits.FAHRENHEIT : Characteristic.TemperatureDisplayUnits.CELSIUS);
 
         // HEATING THRESHOLD TEMPERATURE
         if (_accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetHeatingCoolingState).props.validValues.includes(3)) {
@@ -576,9 +580,10 @@ module.exports = class DeviceCharacteristics {
                         _accessory.context.deviceData.attributes.heatingSetpoint = temp;
                     });
                 }
+                this.accessories.storeCharacteristicItem("heatingSetpoint", _accessory.context.deviceData.deviceid, c);
+            } else {
+                c.updateValue(this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
             }
-            this.accessories.storeCharacteristicItem("heatingSetpoint", _accessory.context.deviceData.deviceid, c);
-            c.updateValue(this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
 
             // COOLING THRESHOLD TEMPERATURE
             c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CoolingThresholdTemperature);
@@ -599,9 +604,10 @@ module.exports = class DeviceCharacteristics {
                         _accessory.context.deviceData.attributes.coolingSetpoint = temp;
                     });
                 }
+                this.accessories.storeCharacteristicItem("coolingSetpoint", _accessory.context.deviceData.deviceid, c);
+            } else {
+                c.updateValue(this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.coolingSetpoint));
             }
-            this.accessories.storeCharacteristicItem("coolingSetpoint", _accessory.context.deviceData.deviceid, c);
-            c.updateValue(this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.coolingSetpoint));
         }
         _accessory.context.deviceGroups.push("thermostat");
         return _accessory;
