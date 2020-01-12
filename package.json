@@ -1,20 +1,22 @@
 {
     "dependencies": {
-        "request": "^2.88.0",
-        "lodash": "^4.17.15",
-        "chalk": "^3.0.0",
-        "express": "^4.17.1",
+        "@sentry/node": "^5.11.0",
         "body-parser": "^1.19.0",
-        "hap-nodejs-community-types": "0.3.1",
-        "request-promise-native": "^1.0.8",
+        "chalk": "^3.0.0",
         "compare-versions": "^3.5.1",
+        "debounce-promise": "^3.1.2",
+        "express": "^4.17.1",
+        "hap-nodejs-community-types": "0.3.1",
+        "lodash": "^4.17.15",
+        "node-machine-id": "^1.1.12",
+        "os": "0.1.1",
+        "request": "^2.88.0",
+        "request-promise-native": "^1.0.8",
         "winston": "^3.2.1",
-        "winston-daily-rotate-file": "^4.4.1",
-        "debounce-promise": "^3.1.2"
+        "winston-daily-rotate-file": "^4.4.1"
     },
     "devDependencies": {
         "eslint": "^6.8.0",
-        "hap-nodejs": "0.5.5",
         "eslint-config-prettier": "^6.9.0",
         "eslint-plugin-prettier": "^3.1.2",
         "lint-staged": "^9.5.0",

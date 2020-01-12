@@ -474,15 +474,21 @@ module.exports = class DeviceCharacteristics {
                 targetTemp = _accessory.context.deviceData.attributes.heatingSetpoint;
                 break;
             default:
-                switch (_accessory.context.deviceData.attributes.thermostatOperatingState) {
-                    case 'cooling':
-                    case 'cool':
-                        targetTemp = _accessory.context.deviceData.attributes.coolingSetpoint;
-                        break;
-                    default:
-                        targetTemp = _accessory.context.deviceData.attributes.heatingSetpoint;
-                        break;
-                }
+                // This should only refer to auto
+                // Choose closest target as single target
+                var high = _accessory.context.deviceData.attributes.coolingSetpoint;
+                var low = _accessory.context.deviceData.attributes.heatingSetpoint;
+                var cur = _accessory.context.deviceData.attributes.temperature;
+                targetTemp = Math.abs(high - cur) < Math.abs(cur - low) ? high : low;
+                // switch (_accessory.context.deviceData.attributes.thermostatOperatingState) {
+                //     case 'cooling':
+                //     case 'cool':
+                //         targetTemp = _accessory.context.deviceData.attributes.coolingSetpoint;
+                //         break;
+                //     default:
+                //         targetTemp = _accessory.context.deviceData.attributes.heatingSetpoint;
+                //         break;
+                // }
                 break;
         }
 
@@ -490,7 +496,7 @@ module.exports = class DeviceCharacteristics {
         if (!c._events.get || !c._events.set) {
             if (!c._events.get) {
                 c.on("get", (callback) => {
-                    console.log('targetTemp : ', targetTemp ? this.transforms.thermostatTempConversion(targetTemp) : undefined);
+                    console.log('targetTemp : ', targetTemp || undefined);
                     callback(null, targetTemp ? this.transforms.thermostatTempConversion(targetTemp) : "Unknown");
                 });
             }
@@ -515,10 +521,20 @@ module.exports = class DeviceCharacteristics {
                             _accessory.context.deviceData.attributes.thermostatSetpoint = temp;
                             break;
                         default:
-                            this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "setThermostatSetpoint", {
+                            // This should only refer to auto
+                            // Choose closest target as single target
+                            var high = _accessory.context.deviceData.attributes.coolingSetpoint;
+                            var low = _accessory.context.deviceData.attributes.heatingSetpoint;
+                            var cur = _accessory.context.deviceDatathat.device.attributes.temperature;
+                            var isHighTemp = Math.abs(high - cur) < Math.abs(cur - low);
+                            var cmdName = (isHighTemp) ? "setCoolingSetpoint" : "setHeatingSetpoint";
+                            var attName = (isHighTemp) ? "coolingSetpoint" : "heatingSetpoint";
+
+                            this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, cmdName, {
                                 value1: temp
                             });
                             _accessory.context.deviceData.attributes.thermostatSetpoint = temp;
+                            _accessory.context.deviceData.attributes[attName] = temp;
                     }
                 });
             }
@@ -546,7 +562,7 @@ module.exports = class DeviceCharacteristics {
             if (!c._events.get || !c._events.set) {
                 if (!c._events.get) {
                     c.on("get", (callback) => {
-                        console.log('heatingSetpoint: ', this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
+                        console.log('heatingSetpoint: ', _accessory.context.deviceData.attributes.heatingSetpoint);
                         callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
                     });
                 }
@@ -569,7 +585,7 @@ module.exports = class DeviceCharacteristics {
             if (!c._events.get || !c._events.set) {
                 if (!c._events.get || !c._events.set) {
                     c.on("get", (callback) => {
-                        console.log('coolingSetpoint: ', this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
+                        console.log('coolingSetpoint: ', _accessory.context.deviceData.attributes.coolingSetpoint);
                         callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.coolingSetpoint));
                     });
                 }
@@ -590,6 +606,7 @@ module.exports = class DeviceCharacteristics {
         _accessory.context.deviceGroups.push("thermostat");
         return _accessory;
     }
+
     valve(_accessory, _service) {
         _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.InUse, 'valve');
         _accessory.manageGetSetCharacteristic(_service, _accessory, Characteristic.Active, 'valve');

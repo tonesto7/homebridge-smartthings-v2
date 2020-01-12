@@ -11,10 +11,21 @@ const {
     bodyParser = require("body-parser"),
     chalk = require('chalk'),
     Logging = require("./libs/Logger"),
-    webApp = express();
+    webApp = express(),
+    os = require('os'),
+    Sentry = require('@sentry/node');
 
 var PlatformAccessory;
-
+Sentry.init({ dsn: 'https://c126c2d965e84da8af105d80c5e92474@sentry.io/1878896' });
+Sentry.configureScope(function(scope) {
+    scope.setUser({ id: require('node-machine-id').machineIdSync() });
+    scope.setTag("node", process.version);
+    scope.setTag("version", pluginVersion);
+    scope.setTag("platform", os.platform());
+    scope.setTag("type", os.type());
+    scope.setTag("arch", os.arch());
+    scope.setTag("release", os.release());
+});
 module.exports = class ST_Platform {
     constructor(log, config, api) {
         this.config = config;
