@@ -61,9 +61,9 @@ module.exports = class DeviceCharacteristics {
                     let cmdName = accClass.transforms.transformCommandName(opts.set_altAttr || attr, value);
                     let cmdVal = accClass.transforms.transformCommandValue(opts.set_altAttr || attr, value);
                     if (opts.cmdHasVal === true) {
-                        accClass.client.sendDeviceCommand(callback, this.context.deviceData.deviceid, cmdName, { value1: cmdVal });
+                        accClass.client.sendDeviceCommand(callback, this.context.deviceData, cmdName, { value1: cmdVal });
                     } else {
-                        accClass.client.sendDeviceCommand(callback, this.context.deviceData.deviceid, cmdVal);
+                        accClass.client.sendDeviceCommand(callback, this.context.deviceData, cmdVal);
                     }
                     if (opts.updAttrVal) this.context.deviceData.attributes[attr] = accClass.transforms.transformAttributeState(opts.set_altAttr || attr, this.context.deviceData.attributes[opts.set_altValAttr || attr], c.displayName);
                 });
@@ -96,14 +96,14 @@ module.exports = class DeviceCharacteristics {
             if (!c.events.set) {
                 c.on('set', function(value, callback) {
                     if (value) {
-                        this.client.sendDeviceCommand(callback, this.context.deviceData.deviceid, 'on');
+                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, 'on');
                     } else {
-                        this.client.sendDeviceCommand(callback, this.context.deviceData.deviceid, 'off');
+                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, 'off');
                     }
                 });
             }
             c.getValue();
-            accClass.storeCharacteristicItem("switch", this.context.deviceData.deviceid, c);
+            accClass.storeCharacteristicItem("switch", _accessory.context.deviceData.deviceid, c);
         } else {
             c.updateValue(actState);
         }
@@ -126,7 +126,7 @@ module.exports = class DeviceCharacteristics {
             }
             if (!c.events.set) {
                 c.on('set', function(value, callback) {
-                    this.client.sendDeviceCommand(callback, this.device.deviceid, 'setFanMode', {
+                    this.client.sendDeviceCommand(callback, _accessory.context.deviceData, 'setFanMode', {
                         value1: this.transforms.transformCommandValue('fanMode', value)
                     });
                 });
@@ -165,19 +165,18 @@ module.exports = class DeviceCharacteristics {
     }
 
     button(_accessory, _service) {
+        let that = this;
         let validValues = this.transforms.transformAttributeState('supportedButtonValues', _accessory.context.deviceData.attributes.supportedButtonValues) || [0, 2];
         let c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.ProgrammableSwitchEvent);
         if (!c._events.get) {
             c.on("get", (callback) => {
-                // console.log(this);
+                console.log('button', that.transforms.transformAttributeState('button', _accessory.context.deviceData.attributes.button));
                 this.value = -1;
-                callback(null, this.transforms.transformAttributeState('button', _accessory.context.deviceData.attributes.button));
+                callback(null, that.transforms.transformAttributeState('button', _accessory.context.deviceData.attributes.button));
             });
         }
         c.setProps({
-            validValues: validValues,
-            minValue: Math.min(validValues),
-            maxValue: Math.max(validValues)
+            validValues: validValues
         });
         c.eventOnlyCharacteristic = false;
         // console.log('validValues', validValues, ' | min: ', Math.min(validValues), ' | max: ', Math.max(validValues));
@@ -358,14 +357,14 @@ module.exports = class DeviceCharacteristics {
                             lastVolumeWriteValue = value;
                             sonosVolumeTimeout = this.accessories.clearAndSetTimeout(sonosVolumeTimeout, () => {
                                 this.log.debug(`Existing volume: ${_accessory.context.deviceData.attributes.volume}, set to ${lastVolumeWriteValue}`);
-                                this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "setVolume", {
+                                this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setVolume", {
                                     value1: lastVolumeWriteValue
                                 });
                             }, 1000);
                         }
                     }
                     if (value > 0) {
-                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, this.accessories.transformCommandName(lvlAttr, value), {
+                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, this.accessories.transformCommandName(lvlAttr, value), {
                             value1: this.transforms.transformAttributeState(lvlAttr, value)
                         });
                     }
@@ -430,7 +429,7 @@ module.exports = class DeviceCharacteristics {
             if (!c._events.set) {
                 c.on("set", (value, callback) => {
                     let state = this.transforms.transformCommandValue('thermostatMode', value);
-                    this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, this.transforms.transformCommandName('thermostatMode', value), {
+                    this.client.sendDeviceCommand(callback, _accessory.context.deviceData, this.transforms.transformCommandName('thermostatMode', value), {
                         value1: state
                     });
                     _accessory.context.deviceData.attributes.thermostatMode = state;
@@ -511,7 +510,7 @@ module.exports = class DeviceCharacteristics {
                     let temp = this.transforms.thermostatTempConversion(value, true);
                     switch (_accessory.context.deviceData.attributes.thermostatMode) {
                         case "cool":
-                            this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "setCoolingSetpoint", {
+                            this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setCoolingSetpoint", {
                                 value1: temp
                             });
                             _accessory.context.deviceData.attributes.coolingSetpoint = temp;
@@ -519,7 +518,7 @@ module.exports = class DeviceCharacteristics {
                             break;
                         case "emergency heat":
                         case "heat":
-                            this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "setHeatingSetpoint", {
+                            this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setHeatingSetpoint", {
                                 value1: temp
                             });
                             _accessory.context.deviceData.attributes.heatingSetpoint = temp;
@@ -535,7 +534,7 @@ module.exports = class DeviceCharacteristics {
                             var cmdName = (isHighTemp) ? "setCoolingSetpoint" : "setHeatingSetpoint";
                             var attName = (isHighTemp) ? "coolingSetpoint" : "heatingSetpoint";
 
-                            this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, cmdName, {
+                            this.client.sendDeviceCommand(callback, _accessory.context.deviceData, cmdName, {
                                 value1: temp
                             });
                             _accessory.context.deviceData.attributes.thermostatSetpoint = temp;
@@ -575,7 +574,7 @@ module.exports = class DeviceCharacteristics {
                     c.on("set", (value, callback) => {
                         // Convert the Celsius value to the appropriate unit for Smartthings
                         let temp = this.transforms.thermostatTempConversion(value, true);
-                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "setHeatingSetpoint", {
+                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setHeatingSetpoint", {
                             value1: temp
                         });
                         _accessory.context.deviceData.attributes.heatingSetpoint = temp;
@@ -599,7 +598,7 @@ module.exports = class DeviceCharacteristics {
                     c.on("set", (value, callback) => {
                         // Convert the Celsius value to the appropriate unit for Smartthings
                         let temp = this.transforms.thermostatTempConversion(value, true);
-                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "setCoolingSetpoint", {
+                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setCoolingSetpoint", {
                             value1: temp
                         });
                         _accessory.context.deviceData.attributes.coolingSetpoint = temp;
@@ -634,7 +633,7 @@ module.exports = class DeviceCharacteristics {
             if (!c._events.set)
                 c.on("set", (value, callback) => {
                     if (value && (_accessory.context.deviceData.attributes.switch === "off")) {
-                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "mode");
+                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "mode");
                     }
                 });
             this.accessories.storeCharacteristicItem("switch", _accessory.context.deviceData.deviceid, c);
@@ -654,7 +653,7 @@ module.exports = class DeviceCharacteristics {
             if (!c._events.set)
                 c.on("set", (value, callback) => {
                     if (value) {
-                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "routine");
+                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "routine");
                         setTimeout(() => {
                             console.log("routineOff...");
                             _accessory.context.deviceData.attributes.switch = "off";
@@ -693,9 +692,9 @@ module.exports = class DeviceCharacteristics {
                 c.on("set", (value, callback) => {
                     if (_accessory.hasCommand('close') && value === 0) {
                         // setLevel: 0, not responding on spring fashion blinds
-                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "close");
+                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "close");
                     } else {
-                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData.deviceid, "setLevel", {
+                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setLevel", {
                             value1: value
                         });
                     }

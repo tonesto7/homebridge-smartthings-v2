@@ -18,7 +18,7 @@ const {
 var PlatformAccessory;
 Sentry.init({ dsn: 'https://c126c2d965e84da8af105d80c5e92474@sentry.io/1878896' });
 Sentry.configureScope(function(scope) {
-    scope.setUser({ id: require('node-machine-id').machineIdSync() });
+    scope.setUser({ id: require('node-machine-id').machineIdSync(), release: `${pluginName}@${pluginVersion}` });
     scope.setTag("node", process.version);
     scope.setTag("version", pluginVersion);
     scope.setTag("platform", os.platform());
@@ -38,6 +38,7 @@ module.exports = class ST_Platform {
             log(`${platformName} Plugin is not Configured | Skipping...`);
             return;
         }
+        this.Sentry = Sentry;
         this.ok2Run = true;
         this.logConfig = this.getLogConfig();
         this.logging = new Logging(this, this.config["name"], this.logConfig);
@@ -114,6 +115,7 @@ module.exports = class ST_Platform {
             })
             .catch(err => {
                 that.log.error(`didFinishLaunching | refreshDevices Exception:`, err);
+                this.Sentry.captureException(err);
             });
     }
 
@@ -126,6 +128,7 @@ module.exports = class ST_Platform {
                 this.client.getDevices()
                     .catch(err => {
                         that.log.error('getDevices Exception:', err);
+                        this.Sentry.captureException(err);
                         reject(err.message);
                     })
                     .then(resp => {
@@ -158,6 +161,7 @@ module.exports = class ST_Platform {
 
             } catch (ex) {
                 this.log.error("refreshDevices Error: ", ex);
+                this.Sentry.captureException(ex);
                 resolve(false);
             }
         });
@@ -389,6 +393,7 @@ module.exports = class ST_Platform {
                 });
             } catch (ex) {
                 that.log.error('WebServerInit Exception: ', ex.message);
+                this.Sentry.captureException(ex);
                 resolve({
                     status: ex.message
                 });

@@ -43,6 +43,7 @@ module.exports = class ST_Client {
                 })
                 .catch((err) => {
                     that.log.error("getDevices Error: ", err.message);
+                    that.platform.Sentry.captureException(err);
                     resolve(undefined);
                 })
                 .then((body) => {
@@ -63,6 +64,7 @@ module.exports = class ST_Client {
                 })
                 .catch((err) => {
                     that.log.error("getDevice Error: ", err.message);
+                    that.platform.Sentry.captureException(err);
                     resolve(undefined);
                 })
                 .then((body) => {
@@ -71,12 +73,12 @@ module.exports = class ST_Client {
         });
     }
 
-    sendDeviceCommand(callback, devid, cmd, vals) {
+    sendDeviceCommand(callback, devData, cmd, vals) {
         let that = this;
         let sendLocal = this.sendAsLocalCmd();
         let config = {
             method: 'POST',
-            uri: `${this.configItems.app_url}${this.configItems.app_id}/${devid}/command/${cmd}`,
+            uri: `${this.configItems.app_url}${this.configItems.app_id}/${devData.deviceid}/command/${cmd}`,
             qs: {
                 access_token: this.configItems.access_token
             },
@@ -91,16 +93,17 @@ module.exports = class ST_Client {
             config.uri = `http://${this.hubIp}:39500/event`;
             delete config.qs;
             config.body = {
-                deviceid: devid,
+                deviceid: devData.deviceid,
                 command: cmd,
                 values: vals
             };
         }
         return new Promise((resolve, reject) => {
-            that.log.notice(`Sending Device Command: ${cmd}${vals ? ' | Value: ' + JSON.stringify(vals) : ''} | DeviceID: (${devid}) | SendToLocalHub: (${sendLocal})`);
+            that.log.notice(`Sending Device Command: ${cmd}${vals ? ' | Value: ' + JSON.stringify(vals) : ''} | Name: (${devData.name}) | DeviceID: (${devData.deviceid}) | SendToLocalHub: (${sendLocal})`);
             rp(config)
                 .catch((err) => {
                     that.log.error('sendDeviceCommand Error:', err.message);
+                    that.platform.Sentry.captureException(err);
                     if (callback) {
                         callback();
                         callback = undefined;
@@ -132,6 +135,7 @@ module.exports = class ST_Client {
                 })
                 .catch((err) => {
                     this.log.error('sendUpdateStatus Error:', err.message);
+                    this.platform.Sentry.captureException(err);
                     reject(undefined);
                 })
                 .then((body) => {
@@ -180,6 +184,7 @@ module.exports = class ST_Client {
                 })
                 .catch((err) => {
                     that.log.error("sendStartDirect Error: ", err.message);
+                    that.platform.Sentry.captureException(err);
                     resolve(undefined);
                 });
         });
