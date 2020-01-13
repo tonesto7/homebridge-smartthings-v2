@@ -1,4 +1,4 @@
-## v2.1.14 - v2.1.15
+## v2.1.14 - v2.1.16
 - [FIX] Thermostats should now update the state correctly and also auto mode is working again.
 
 ## v2.1.13
