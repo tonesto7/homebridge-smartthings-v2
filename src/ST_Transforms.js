@@ -190,6 +190,13 @@ module.exports = class Transforms {
                     }
                     return validModes;
                 }
+            case "thermostatFanMode":
+                if (val === Characteristic.TargetFanState.MANUAL) {
+                    return 'on';
+                } else {
+                    return 'auto';
+                }
+
             case "alarmSystemStatus":
                 return this.convertAlarmState(val);
             default:
@@ -222,6 +229,13 @@ module.exports = class Transforms {
             case "hue":
             case "colorTemperature":
                 return `set${attr.charAt(0).toUpperCase() + attr.slice(1)}`;
+            case "thermostatFanMode":
+                switch (val) {
+                    case Characteristic.TargetFanState.MANUAL:
+                        return "fanOn";
+                    default:
+                        return "fanAuto";
+                }
             default:
                 return val;
         }
@@ -303,6 +317,65 @@ module.exports = class Transforms {
         } else {
             return (this.platform.getTempUnit() === 'C') ? Math.round(temp * 10) / 10 : Math.round((temp - 32) / 1.8 * 10) / 10;
         }
+    }
+
+    thermostatTargetTemp(devData) {
+        // console.log('ThermostatMode:', devData.attributes.thermostatMode, ' | thermostatOperatingState: ', devData.attributes.thermostatOperatingState);
+        switch (devData.attributes.thermostatMode) {
+            case 'cool':
+            case 'cooling':
+                return devData.attributes.coolingSetpoint;
+            case 'emergency heat':
+            case 'heat':
+            case 'heating':
+                return devData.attributes.heatingSetpoint;
+            default:
+                {
+                    const cool = devData.attributes.coolingSetpoint;
+                    const heat = devData.attributes.heatingSetpoint;
+                    const cur = devData.attributes.temperature;
+                    const cDiff = Math.abs(cool - cur);
+                    const hDiff = Math.abs(heat - cur);
+                    const useCool = cDiff < hDiff;
+                    // console.log('(cool-cur):', cDiff);
+                    // console.log('(heat-cur):', hDiff);
+                    // console.log(`targerTemp(GET) | cool: ${cool} | heat: ${heat} | cur: ${cur} | useCool: ${useCool}`);
+                    return useCool ? cool : heat;
+                }
+        }
+    }
+
+    thermostatTargetTemp_set(devData) {
+        let cmdName;
+        let attrName;
+        switch (devData.attributes.thermostatMode) {
+            case "cool":
+                cmdName = "setCoolingSetpoint";
+                attrName = "coolingSetpoint";
+                break;
+            case "emergency heat":
+            case "heat":
+                cmdName = "setHeatingSetpoint";
+                attrName = "heatingSetpoint";
+                break;
+            default:
+                {
+                    // This should only refer to auto
+                    // Choose closest target as single target
+                    const cool = devData.attributes.coolingSetpoint;
+                    const heat = devData.attributes.heatingSetpoint;
+                    const cur = devData.attributes.temperature;
+                    const cDiff = Math.abs(cool - cur);
+                    const hDiff = Math.abs(heat - cur);
+                    const useCool = cDiff < hDiff;
+                    // console.log('(cool-cur):', cDiff);
+                    // console.log('(heat-cur):', hDiff);
+                    // console.log(`targerTemp(SET) | cool: ${cool} | heat: ${heat} | cur: ${cur} | useCool: ${useCool}`);
+                    cmdName = useCool ? "setCoolingSetpoint" : "setHeatingSetpoint";
+                    attrName = useCool ? "coolingSetpoint" : "heatingSetpoint";
+                }
+        }
+        return { cmdName: cmdName, attrName: attrName };
     }
 
     tempConversion(temp, onlyC = false) {
