@@ -118,8 +118,14 @@ module.exports = class ST_Accessories {
                 characteristics.forEach(char => {
                     accessory.context.deviceData.attributes[change.attribute] = change.value;
                     accessory.context.lastUpdate = new Date().toLocaleString();
-                    char.updateValue(this.transforms.transformAttributeState(change.attribute, change.value, char.displayName));
-                    // char.getValue();
+                    switch (change.attribute) {
+                        case 'thermostatSetpoint':
+                            char.getValue();
+                            break;
+                        default:
+                            char.updateValue(this.transforms.transformAttributeState(change.attribute, change.value, char.displayName));
+                            break;
+                    }
                 });
                 resolve(this.addAccessoryToCache(accessory));
             }

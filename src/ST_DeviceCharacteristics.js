@@ -402,171 +402,114 @@ module.exports = class DeviceCharacteristics {
 
     thermostat(_accessory, _service) {
         //TODO:  Still seeing an issue when setting mode from OFF to HEAT.  It's setting the temp to 40 but if I change to cool then back to heat it sets the correct value.
+
+        let curTempChar = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CurrentTemperature);
+        let curHeatCoolStateChar = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CurrentHeatingCoolingState);
+        let targetHeatCoolStateChar = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetHeatingCoolingState);
+        let targetTempChar = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetTemperature);
+
+
         // CURRENT HEATING/COOLING STATE
-        let c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CurrentHeatingCoolingState);
-        if (!c._events.get) {
-            c.on("get", (callback) => {
-                callback(null, this.transforms.transformAttributeState('thermostatOperatingState', _accessory.context.deviceData.attributes.thermostatOperatingState));
+        if (!curHeatCoolStateChar._events.get) {
+            curHeatCoolStateChar.on("get", (callback) => {
+                const state = this.transforms.transformAttributeState('thermostatOperatingState', _accessory.context.deviceData.attributes.thermostatOperatingState);
+                callback(null, state);
             });
-            this.accessories.storeCharacteristicItem("thermostatOperatingState", _accessory.context.deviceData.deviceid, c);
+            this.accessories.storeCharacteristicItem("thermostatOperatingState", _accessory.context.deviceData.deviceid, curHeatCoolStateChar);
         } else {
-            c.updateValue(this.transforms.transformAttributeState("thermostatOperatingState", _accessory.context.deviceData.attributes.thermostatOperatingState));
+            curHeatCoolStateChar.updateValue(this.transforms.transformAttributeState("thermostatOperatingState", _accessory.context.deviceData.attributes.thermostatOperatingState));
         }
 
         // TARGET HEATING/COOLING STATE
-        c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetHeatingCoolingState);
-        if (!c._events.get || !c._events.set) {
-            c.setProps({
+        if (!targetHeatCoolStateChar._events.get || !c._events.set) {
+            targetHeatCoolStateChar.setProps({
                 validValues: this.transforms.transformAttributeState('supportedThermostatModes', _accessory.context.deviceData.attributes.supportedThermostatModes)
             });
-            if (!c._events.get) {
-                c.on("get", (callback) => {
+            if (!targetHeatCoolStateChar._events.get) {
+                targetHeatCoolStateChar.on("get", (callback) => {
                     // console.log('thermostatMode(get): ', this.transforms.transformAttributeState('thermostatMode', _accessory.context.deviceData.attributes.thermostatMode));
                     callback(null, this.transforms.transformAttributeState('thermostatMode', _accessory.context.deviceData.attributes.thermostatMode));
                 });
             }
-            if (!c._events.set) {
-                c.on("set", (value, callback) => {
+            if (!targetHeatCoolStateChar._events.set) {
+                targetHeatCoolStateChar.on("set", (value, callback) => {
                     let state = this.transforms.transformCommandValue('thermostatMode', value);
                     this.client.sendDeviceCommand(callback, _accessory.context.deviceData, this.transforms.transformCommandName('thermostatMode', value), {
                         value1: state
                     });
                     _accessory.context.deviceData.attributes.thermostatMode = state;
+                    targetTempChar.updateValue(this.transforms.thermostatTargetTemp(_accessory.context.deviceData));
                 });
             }
-            this.accessories.storeCharacteristicItem("thermostatMode", _accessory.context.deviceData.deviceid, c);
+            this.accessories.storeCharacteristicItem("thermostatMode", _accessory.context.deviceData.deviceid, targetHeatCoolStateChar);
         } else {
-            c.updateValue(this.transforms.transformAttributeState("thermostatMode", _accessory.context.deviceData.attributes.thermostatMode));
+            targetHeatCoolStateChar.updateValue(this.transforms.transformAttributeState("thermostatMode", _accessory.context.deviceData.attributes.thermostatMode));
         }
 
         // CURRENT RELATIVE HUMIDITY
         if (_accessory.hasCapability('Relative Humidity Measurement')) {
-            c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CurrentRelativeHumidity);
-            if (!c._events.get) {
-                c.on("get", (callback) => {
-                    callback(null, this.transforms.transformAttributeState("humidity", _accessory.context.deviceData.attributes.humidity));
-                });
-                this.accessories.storeCharacteristicItem("humidity", _accessory.context.deviceData.deviceid, c);
-            } else {
-                c.updateValue(this.transforms.transformAttributeState("humidity", _accessory.context.deviceData.attributes.humidity));
-            }
+            _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.CurrentRelativeHumidity, 'humidity');
         }
 
         // CURRENT TEMPERATURE
-        c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CurrentTemperature);
-        if (!c._events.get) {
-            c.on("get", (callback) => {
+        if (!curTempChar._events.get) {
+            curTempChar.on("get", (callback) => {
+                targetTempChar.updateValue(this.transforms.thermostatTargetTemp(_accessory.context.deviceData));
                 callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.temperature));
             });
-            this.accessories.storeCharacteristicItem("temperature", _accessory.context.deviceData.deviceid, c);
+            this.accessories.storeCharacteristicItem("temperature", _accessory.context.deviceData.deviceid, curTempChar);
+            this.accessories.storeCharacteristicItem("thermostatSetpoint", _accessory.context.deviceData.deviceid, targetTempChar);
         } else {
-            c.updateValue(this.transforms.transformAttributeState("temperature", _accessory.context.deviceData.attributes.temperature));
+            curTempChar.updateValue(this.transforms.transformAttributeState("temperature", _accessory.context.deviceData.attributes.temperature));
         }
-
 
         // TARGET TEMPERATURE
-        let targetTemp;
-        switch (_accessory.context.deviceData.attributes.thermostatMode) {
-            case 'cool':
-            case 'cooling':
-                targetTemp = _accessory.context.deviceData.attributes.coolingSetpoint;
-                break;
-            case 'emergency heat':
-            case 'heat':
-            case 'heating':
-                targetTemp = _accessory.context.deviceData.attributes.heatingSetpoint;
-                break;
-            default:
-                // This should only refer to auto
-                // Choose closest target as single target
-                // var high = _accessory.context.deviceData.attributes.coolingSetpoint;
-                // var low = _accessory.context.deviceData.attributes.heatingSetpoint;
-                // var cur = _accessory.context.deviceData.attributes.temperature;
-                // targetTemp = Math.abs(high - cur) < Math.abs(cur - low) ? high : low;
-                switch (_accessory.context.deviceData.attributes.thermostatOperatingState) {
-                    case 'cooling':
-                    case 'cool':
-                        targetTemp = _accessory.context.deviceData.attributes.coolingSetpoint;
-                        break;
-                    default:
-                        targetTemp = _accessory.context.deviceData.attributes.heatingSetpoint;
-                        break;
-                }
-                break;
-        }
-
-        c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetTemperature);
-        if (!c._events.get || !c._events.set) {
-            if (!c._events.get) {
-                c.on("get", (callback) => {
-                    console.log('targetTemp(get): ', targetTemp || undefined);
-                    callback(null, targetTemp ? this.transforms.thermostatTempConversion(targetTemp) : "Unknown");
+        if (!targetTempChar._events.get || !targetTempChar._events.set) {
+            if (!targetTempChar._events.get) {
+                targetTempChar.on("get", (callback) => {
+                    const targetTemp = this.transforms.thermostatTargetTemp(_accessory.context.deviceData);
+                    // console.log('targetTemp:', targetTemp);
+                    callback(null, targetTemp ? this.transforms.thermostatTempConversion(targetTemp) : null);
                 });
             }
-            if (!c._events.set) {
-                c.on("set", (value, callback) => {
+            if (!targetTempChar._events.set) {
+                targetTempChar.on("set", (value, callback) => {
                     // Convert the Celsius value to the appropriate unit for Smartthings
                     let temp = this.transforms.thermostatTempConversion(value, true);
-                    let cmdName;
-                    let attrName;
-                    switch (_accessory.context.deviceData.attributes.thermostatMode) {
-                        case "cool":
-                            cmdName = "setCoolingSetpoint";
-                            attrName = "coolingSetpoint";
-                            break;
-                        case "emergency heat":
-                        case "heat":
-                            cmdName = "setHeatingSetpoint";
-                            attrName = "heatingSetpoint";
-                            break;
-                        default:
-                            // This should only refer to auto
-                            // Choose closest target as single target
-                            var high = _accessory.context.deviceData.attributes.coolingSetpoint;
-                            var low = _accessory.context.deviceData.attributes.heatingSetpoint;
-                            var cur = _accessory.context.deviceData.attributes.temperature;
-                            var isHighTemp = Math.abs(high - cur) < Math.abs(cur - low);
-                            cmdName = (isHighTemp) ? "setCoolingSetpoint" : "setHeatingSetpoint";
-                            attrName = (isHighTemp) ? "coolingSetpoint" : "heatingSetpoint";
-                    }
-                    if (cmdName && attrName && temp) {
-                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, cmdName, {
+                    const targetObj = this.transforms.thermostatTargetTemp_set(_accessory.context.deviceData);
+                    if (targetObj && targetObj.cmdName && targetObj.attrName && temp) {
+                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, targetObj.cmdName, {
                             value1: temp
                         });
-                        _accessory.context.deviceData.attributes[attrName] = temp;
+                        _accessory.context.deviceData.attributes[targetObj.attrName] = temp;
                     }
                 });
             }
-            this.accessories.storeCharacteristicItem("coolingSetpoint", _accessory.context.deviceData.deviceid, c);
-            this.accessories.storeCharacteristicItem("heatingSetpoint", _accessory.context.deviceData.deviceid, c);
-            // this.accessories.storeCharacteristicItem("thermostatSetpoint", _accessory.context.deviceData.deviceid, c);
+            this.accessories.storeCharacteristicItem("coolingSetpoint", _accessory.context.deviceData.deviceid, targetTempChar);
+            this.accessories.storeCharacteristicItem("heatingSetpoint", _accessory.context.deviceData.deviceid, targetTempChar);
+            this.accessories.storeCharacteristicItem("thermostatSetpoint", _accessory.context.deviceData.deviceid, targetTempChar);
         } else {
-            c.updateValue(targetTemp ? this.transforms.thermostatTempConversion(targetTemp) : "Unknown");
+            const targetTemp = this.transforms.thermostatTargetTemp(_accessory.context.deviceData);
+            targetTempChar.updateValue(targetTemp ? this.transforms.thermostatTempConversion(targetTemp) : "Unknown");
         }
 
         // TEMPERATURE DISPLAY UNITS
-        c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TemperatureDisplayUnits);
-        if (!c._events.get) {
-            c.on("get", (callback) => {
-                callback(null, (this.platform.getTempUnit() === 'F') ? Characteristic.TemperatureDisplayUnits.FAHRENHEIT : Characteristic.TemperatureDisplayUnits.CELSIUS);
-            });
-            this.accessories.storeCharacteristicItem("temperature_unit", _accessory.context.deviceData.deviceid, c);
-        } else {
-            c.updateValue((this.platform.getTempUnit() === 'F') ? Characteristic.TemperatureDisplayUnits.FAHRENHEIT : Characteristic.TemperatureDisplayUnits.CELSIUS);
-        }
+        let tempUnitChar = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TemperatureDisplayUnits);
+        tempUnitChar.updateValue((this.platform.getTempUnit() === 'F') ? Characteristic.TemperatureDisplayUnits.FAHRENHEIT : Characteristic.TemperatureDisplayUnits.CELSIUS);
 
         // HEATING THRESHOLD TEMPERATURE
-        if (_accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetHeatingCoolingState).props.validValues.includes(3)) {
-            c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.HeatingThresholdTemperature);
-            if (!c._events.get || !c._events.set) {
-                if (!c._events.get) {
-                    c.on("get", (callback) => {
+        if (targetHeatCoolStateChar.props.validValues.includes(3)) {
+            let heatThreshTempChar = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.HeatingThresholdTemperature);
+            let coolThreshTempChar = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CoolingThresholdTemperature);
+            if (!heatThreshTempChar._events.get || !heatThreshTempChar._events.set) {
+                if (!heatThreshTempChar._events.get) {
+                    heatThreshTempChar.on("get", (callback) => {
                         console.log('heatingSetpoint: ', _accessory.context.deviceData.attributes.heatingSetpoint);
                         callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
                     });
                 }
-                if (!c._events.set) {
-                    c.on("set", (value, callback) => {
+                if (!heatThreshTempChar._events.set) {
+                    heatThreshTempChar.on("set", (value, callback) => {
                         // Convert the Celsius value to the appropriate unit for Smartthings
                         let temp = this.transforms.thermostatTempConversion(value, true);
                         this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setHeatingSetpoint", {
@@ -575,22 +518,22 @@ module.exports = class DeviceCharacteristics {
                         _accessory.context.deviceData.attributes.heatingSetpoint = temp;
                     });
                 }
-                this.accessories.storeCharacteristicItem("heatingSetpoint", _accessory.context.deviceData.deviceid, c);
+                this.accessories.storeCharacteristicItem("heatingSetpoint", _accessory.context.deviceData.deviceid, heatThreshTempChar);
+                this.accessories.storeCharacteristicItem("thermostatSetpoint", _accessory.context.deviceData.deviceid, heatThreshTempChar);
             } else {
-                c.updateValue(this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
+                heatThreshTempChar.updateValue(this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
             }
 
             // COOLING THRESHOLD TEMPERATURE
-            c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CoolingThresholdTemperature);
-            if (!c._events.get || !c._events.set) {
-                if (!c._events.get || !c._events.set) {
-                    c.on("get", (callback) => {
+            if (!coolThreshTempChar._events.get || !coolThreshTempChar._events.set) {
+                if (!coolThreshTempChar._events.get) {
+                    coolThreshTempChar.on("get", (callback) => {
                         console.log('coolingSetpoint: ', _accessory.context.deviceData.attributes.coolingSetpoint);
                         callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.coolingSetpoint));
                     });
                 }
-                if (!c._events.set) {
-                    c.on("set", (value, callback) => {
+                if (!coolThreshTempChar._events.set) {
+                    coolThreshTempChar.on("set", (value, callback) => {
                         // Convert the Celsius value to the appropriate unit for Smartthings
                         let temp = this.transforms.thermostatTempConversion(value, true);
                         this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setCoolingSetpoint", {
@@ -599,9 +542,10 @@ module.exports = class DeviceCharacteristics {
                         _accessory.context.deviceData.attributes.coolingSetpoint = temp;
                     });
                 }
-                this.accessories.storeCharacteristicItem("coolingSetpoint", _accessory.context.deviceData.deviceid, c);
+                this.accessories.storeCharacteristicItem("coolingSetpoint", _accessory.context.deviceData.deviceid, coolThreshTempChar);
+                this.accessories.storeCharacteristicItem("thermostatSetpoint", _accessory.context.deviceData.deviceid, coolThreshTempChar);
             } else {
-                c.updateValue(this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.coolingSetpoint));
+                coolThreshTempChar.updateValue(this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.coolingSetpoint));
             }
         }
         _accessory.context.deviceGroups.push("thermostat");
