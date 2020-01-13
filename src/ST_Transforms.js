@@ -172,24 +172,6 @@ module.exports = class Transforms {
                     default:
                         return Characteristic.TargetHeatingCoolingState.OFF;
                 }
-            case "supportedThermostatModes":
-                {
-                    let validModes = [];
-                    if (typeof val === "string") {
-                        if (val.includes("off"))
-                            validModes.push(Characteristic.TargetHeatingCoolingState.OFF);
-
-                        if (val.includes("heat") || val.includes("emergency heat"))
-                            validModes.push(Characteristic.TargetHeatingCoolingState.HEAT);
-
-                        if (val.includes("cool"))
-                            validModes.push(Characteristic.TargetHeatingCoolingState.COOL);
-
-                        if (val.includes("auto"))
-                            validModes.push(Characteristic.TargetHeatingCoolingState.AUTO);
-                    }
-                    return validModes;
-                }
             case "thermostatFanMode":
                 if (val === Characteristic.TargetFanState.MANUAL) {
                     return 'on';
@@ -343,6 +325,22 @@ module.exports = class Transforms {
                     return useCool ? cool : heat;
                 }
         }
+    }
+
+    thermostatSupportedModes(devData) {
+        let hasHeatSetpoint = (devData.attributes.heatingSetpoint !== undefined || devData.attributes.heatingSetpoint !== null);
+        let hasCoolSetpoint = (devData.attributes.coolingSetpoint !== undefined || devData.attributes.coolingSetpoint !== null);
+        let sModes = devData.attributes.supportedThermostatModes;
+        let validModes = [Characteristic.TargetHeatingCoolingState.OFF];
+        if (sModes.includes("heat") || sModes.includes("emergency heat") || hasHeatSetpoint)
+            validModes.push(Characteristic.TargetHeatingCoolingState.HEAT);
+
+        if (sModes.includes("cool") || hasCoolSetpoint)
+            validModes.push(Characteristic.TargetHeatingCoolingState.COOL);
+
+        if (sModes.includes("auto") || (hasCoolSetpoint && hasHeatSetpoint))
+            validModes.push(Characteristic.TargetHeatingCoolingState.AUTO);
+        return validModes;
     }
 
     thermostatTargetTemp_set(devData) {

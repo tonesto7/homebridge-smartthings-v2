@@ -402,11 +402,11 @@ module.exports = class DeviceCharacteristics {
 
     thermostat(_accessory, _service) {
         //TODO:  Still seeing an issue when setting mode from OFF to HEAT.  It's setting the temp to 40 but if I change to cool then back to heat it sets the correct value.
-
-        let curTempChar = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CurrentTemperature);
-        let curHeatCoolStateChar = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CurrentHeatingCoolingState);
-        let targetHeatCoolStateChar = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetHeatingCoolingState);
-        let targetTempChar = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetTemperature);
+        const tstatService = _accessory.getOrAddService(_service);
+        let curTempChar = tstatService.getCharacteristic(Characteristic.CurrentTemperature);
+        let curHeatCoolStateChar = tstatService.getCharacteristic(Characteristic.CurrentHeatingCoolingState);
+        let targetHeatCoolStateChar = tstatService.getCharacteristic(Characteristic.TargetHeatingCoolingState);
+        let targetTempChar = tstatService.getCharacteristic(Characteristic.TargetTemperature);
 
 
         // CURRENT HEATING/COOLING STATE
@@ -423,7 +423,7 @@ module.exports = class DeviceCharacteristics {
         // TARGET HEATING/COOLING STATE
         if (!targetHeatCoolStateChar._events.get || !targetHeatCoolStateChar._events.set) {
             targetHeatCoolStateChar.setProps({
-                validValues: this.transforms.transformAttributeState('supportedThermostatModes', _accessory.context.deviceData.attributes.supportedThermostatModes)
+                validValues: this.transforms.thermostatSupportedModes(_accessory.context.deviceData)
             });
             if (!targetHeatCoolStateChar._events.get) {
                 targetHeatCoolStateChar.on("get", (callback) => {
@@ -438,7 +438,7 @@ module.exports = class DeviceCharacteristics {
                         value1: state
                     });
                     _accessory.context.deviceData.attributes.thermostatMode = state;
-                    targetTempChar.updateValue(this.transforms.thermostatTargetTemp(_accessory.context.deviceData));
+                    // targetTempChar.updateValue(this.transforms.thermostatTargetTemp(_accessory.context.deviceData));
                 });
             }
             this.accessories.storeCharacteristicItem("thermostatMode", _accessory.context.deviceData.deviceid, targetHeatCoolStateChar);
@@ -454,7 +454,7 @@ module.exports = class DeviceCharacteristics {
         // CURRENT TEMPERATURE
         if (!curTempChar._events.get) {
             curTempChar.on("get", (callback) => {
-                targetTempChar.updateValue(this.transforms.thermostatTargetTemp(_accessory.context.deviceData));
+                // targetTempChar.updateValue(this.transforms.thermostatTargetTemp(_accessory.context.deviceData));
                 callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.temperature));
             });
             this.accessories.storeCharacteristicItem("temperature", _accessory.context.deviceData.deviceid, curTempChar);
@@ -490,17 +490,18 @@ module.exports = class DeviceCharacteristics {
             this.accessories.storeCharacteristicItem("thermostatSetpoint", _accessory.context.deviceData.deviceid, targetTempChar);
         } else {
             const targetTemp = this.transforms.thermostatTargetTemp(_accessory.context.deviceData);
-            targetTempChar.updateValue(targetTemp ? this.transforms.thermostatTempConversion(targetTemp) : "Unknown");
+            targetTempChar.updateValue(targetTemp ? this.transforms.thermostatTempConversion(targetTemp) : null);
         }
 
         // TEMPERATURE DISPLAY UNITS
-        let tempUnitChar = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TemperatureDisplayUnits);
+        let tempUnitChar = tstatService.getCharacteristic(Characteristic.TemperatureDisplayUnits);
         tempUnitChar.updateValue((this.platform.getTempUnit() === 'F') ? Characteristic.TemperatureDisplayUnits.FAHRENHEIT : Characteristic.TemperatureDisplayUnits.CELSIUS);
 
         // HEATING THRESHOLD TEMPERATURE
         if (targetHeatCoolStateChar.props.validValues.includes(3)) {
-            let heatThreshTempChar = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.HeatingThresholdTemperature);
-            let coolThreshTempChar = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.CoolingThresholdTemperature);
+            // console.log('test', targetHeatCoolStateChar.props);
+            let heatThreshTempChar = tstatService.getCharacteristic(Characteristic.HeatingThresholdTemperature);
+            let coolThreshTempChar = tstatService.getCharacteristic(Characteristic.CoolingThresholdTemperature);
             if (!heatThreshTempChar._events.get || !heatThreshTempChar._events.set) {
                 if (!heatThreshTempChar._events.get) {
                     heatThreshTempChar.on("get", (callback) => {
@@ -547,6 +548,9 @@ module.exports = class DeviceCharacteristics {
             } else {
                 coolThreshTempChar.updateValue(this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.coolingSetpoint));
             }
+        } else {
+            tstatService.removeCharacteristic(Characteristic.HeatingThresholdTemperature);
+            tstatService.removeCharacteristic(Characteristic.CoolingThresholdTemperature);
         }
         _accessory.context.deviceGroups.push("thermostat");
         return _accessory;

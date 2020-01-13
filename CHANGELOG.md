@@ -1,3 +1,6 @@
+## v2.1.14 - v2.1.15
+- [FIX] Thermostats should now update the state correctly and also auto mode is working again.
+
 ## v2.1.13
 - [NEW] Added Sentry library to help collect/report anonymous error/exception data (absolutely no person data is shared with the exception of maybe a device label in the logs).
 - [FIX] Thermostats should now update the state correctly.
