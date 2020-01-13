@@ -421,7 +421,7 @@ module.exports = class DeviceCharacteristics {
         }
 
         // TARGET HEATING/COOLING STATE
-        if (!targetHeatCoolStateChar._events.get || !c._events.set) {
+        if (!targetHeatCoolStateChar._events.get || !targetHeatCoolStateChar._events.set) {
             targetHeatCoolStateChar.setProps({
                 validValues: this.transforms.transformAttributeState('supportedThermostatModes', _accessory.context.deviceData.attributes.supportedThermostatModes)
             });
