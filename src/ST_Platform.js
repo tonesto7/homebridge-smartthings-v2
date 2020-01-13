@@ -13,12 +13,14 @@ const {
     Logging = require("./libs/Logger"),
     webApp = express(),
     os = require('os'),
-    Sentry = require('@sentry/node');
+    Sentry = require('@sentry/node'),
+    machineId = require('node-machine-id').machineIdSync();
 
 var PlatformAccessory;
-Sentry.init({ dsn: 'https://c126c2d965e84da8af105d80c5e92474@sentry.io/1878896' });
+Sentry.init({ dsn: 'https://c126c2d965e84da8af105d80c5e92474@sentry.io/1878896', release: `${pluginName}@${pluginVersion}` });
 Sentry.configureScope(function(scope) {
-    scope.setUser({ id: require('node-machine-id').machineIdSync(), release: `${pluginName}@${pluginVersion}` });
+    scope.setUser({ id: machineId });
+    scope.setTag("username", os.userInfo().username);
     scope.setTag("node", process.version);
     scope.setTag("version", pluginVersion);
     scope.setTag("platform", os.platform());
@@ -45,6 +47,7 @@ module.exports = class ST_Platform {
         this.log = this.logging.getLogger();
         this.log.info(`Homebridge Version: ${api.version}`);
         this.log.info(`${platformName} Plugin Version: ${pluginVersion}`);
+        this.log.info(`Sentry MachineId: ${machineId}`);
         this.polling_seconds = config.polling_seconds || 3600;
         this.excludedAttributes = this.config.excluded_attributes || [];
         this.excludedCapabilities = this.config.excluded_capabilities || [];
