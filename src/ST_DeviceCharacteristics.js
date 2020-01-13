@@ -479,19 +479,19 @@ module.exports = class DeviceCharacteristics {
             default:
                 // This should only refer to auto
                 // Choose closest target as single target
-                var high = _accessory.context.deviceData.attributes.coolingSetpoint;
-                var low = _accessory.context.deviceData.attributes.heatingSetpoint;
-                var cur = _accessory.context.deviceData.attributes.temperature;
-                targetTemp = Math.abs(high - cur) < Math.abs(cur - low) ? high : low;
-                // switch (_accessory.context.deviceData.attributes.thermostatOperatingState) {
-                //     case 'cooling':
-                //     case 'cool':
-                //         targetTemp = _accessory.context.deviceData.attributes.coolingSetpoint;
-                //         break;
-                //     default:
-                //         targetTemp = _accessory.context.deviceData.attributes.heatingSetpoint;
-                //         break;
-                // }
+                // var high = _accessory.context.deviceData.attributes.coolingSetpoint;
+                // var low = _accessory.context.deviceData.attributes.heatingSetpoint;
+                // var cur = _accessory.context.deviceData.attributes.temperature;
+                // targetTemp = Math.abs(high - cur) < Math.abs(cur - low) ? high : low;
+                switch (_accessory.context.deviceData.attributes.thermostatOperatingState) {
+                    case 'cooling':
+                    case 'cool':
+                        targetTemp = _accessory.context.deviceData.attributes.coolingSetpoint;
+                        break;
+                    default:
+                        targetTemp = _accessory.context.deviceData.attributes.heatingSetpoint;
+                        break;
+                }
                 break;
         }
 
@@ -507,43 +507,39 @@ module.exports = class DeviceCharacteristics {
                 c.on("set", (value, callback) => {
                     // Convert the Celsius value to the appropriate unit for Smartthings
                     let temp = this.transforms.thermostatTempConversion(value, true);
+                    let cmdName;
+                    let attrName;
                     switch (_accessory.context.deviceData.attributes.thermostatMode) {
                         case "cool":
-                            this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setCoolingSetpoint", {
-                                value1: temp
-                            });
-                            _accessory.context.deviceData.attributes.coolingSetpoint = temp;
-                            _accessory.context.deviceData.attributes.thermostatSetpoint = temp;
+                            cmdName = "setCoolingSetpoint";
+                            attrName = "coolingSetpoint";
                             break;
                         case "emergency heat":
                         case "heat":
-                            this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setHeatingSetpoint", {
-                                value1: temp
-                            });
-                            _accessory.context.deviceData.attributes.heatingSetpoint = temp;
-                            _accessory.context.deviceData.attributes.thermostatSetpoint = temp;
+                            cmdName = "setHeatingSetpoint";
+                            attrName = "heatingSetpoint";
                             break;
                         default:
                             // This should only refer to auto
                             // Choose closest target as single target
                             var high = _accessory.context.deviceData.attributes.coolingSetpoint;
                             var low = _accessory.context.deviceData.attributes.heatingSetpoint;
-                            var cur = _accessory.context.deviceDatathat.device.attributes.temperature;
+                            var cur = _accessory.context.deviceData.attributes.temperature;
                             var isHighTemp = Math.abs(high - cur) < Math.abs(cur - low);
-                            var cmdName = (isHighTemp) ? "setCoolingSetpoint" : "setHeatingSetpoint";
-                            var attName = (isHighTemp) ? "coolingSetpoint" : "heatingSetpoint";
-
-                            this.client.sendDeviceCommand(callback, _accessory.context.deviceData, cmdName, {
-                                value1: temp
-                            });
-                            _accessory.context.deviceData.attributes.thermostatSetpoint = temp;
-                            _accessory.context.deviceData.attributes[attName] = temp;
+                            cmdName = (isHighTemp) ? "setCoolingSetpoint" : "setHeatingSetpoint";
+                            attrName = (isHighTemp) ? "coolingSetpoint" : "heatingSetpoint";
+                    }
+                    if (cmdName && attrName && temp) {
+                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, cmdName, {
+                            value1: temp
+                        });
+                        _accessory.context.deviceData.attributes[attrName] = temp;
                     }
                 });
             }
             this.accessories.storeCharacteristicItem("coolingSetpoint", _accessory.context.deviceData.deviceid, c);
             this.accessories.storeCharacteristicItem("heatingSetpoint", _accessory.context.deviceData.deviceid, c);
-            this.accessories.storeCharacteristicItem("thermostatSetpoint", _accessory.context.deviceData.deviceid, c);
+            // this.accessories.storeCharacteristicItem("thermostatSetpoint", _accessory.context.deviceData.deviceid, c);
         } else {
             c.updateValue(targetTemp ? this.transforms.thermostatTempConversion(targetTemp) : "Unknown");
         }
