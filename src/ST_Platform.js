@@ -14,20 +14,11 @@ const {
     webApp = express(),
     os = require('os'),
     Sentry = require('@sentry/node'),
-    machineId = require('node-machine-id').machineIdSync();
+    machineId = require('node-machine-id').machineIdSync(),
+    portFinderSync = require('portfinder-sync');
 
 var PlatformAccessory;
-Sentry.init({ dsn: 'https://c126c2d965e84da8af105d80c5e92474@sentry.io/1878896', release: `${pluginName}@${pluginVersion}` });
-Sentry.configureScope(function(scope) {
-    scope.setUser({ id: machineId });
-    scope.setTag("username", os.userInfo().username);
-    scope.setTag("node", process.version);
-    scope.setTag("version", pluginVersion);
-    scope.setTag("platform", os.platform());
-    scope.setTag("type", os.type());
-    scope.setTag("arch", os.arch());
-    scope.setTag("release", os.release());
-});
+
 module.exports = class ST_Platform {
     constructor(log, config, api) {
         this.config = config;
@@ -40,8 +31,20 @@ module.exports = class ST_Platform {
             log(`${platformName} Plugin is not Configured | Skipping...`);
             return;
         }
+        Sentry.init({ dsn: 'https://c126c2d965e84da8af105d80c5e92474@sentry.io/1878896', release: `${pluginName}@${pluginVersion}`, attachStacktrace: true });
+        Sentry.configureScope(function(scope) {
+            scope.setUser({ id: machineId });
+            scope.setTag("username", os.userInfo().username);
+            scope.setTag("node", process.version);
+            scope.setTag("version", pluginVersion);
+            scope.setTag("platform", os.platform());
+            scope.setTag("type", os.type());
+            scope.setTag("arch", os.arch());
+            scope.setTag("release", os.release());
+        });
         this.Sentry = Sentry;
         this.ok2Run = true;
+        this.direct_port = this.findDirectPort();
         this.logConfig = this.getLogConfig();
         this.logging = new Logging(this, this.config["name"], this.logConfig);
         this.log = this.logging.getLogger();
@@ -81,13 +84,20 @@ module.exports = class ST_Platform {
         } : { debug: false, showChanges: true, hideTimestamp: false, hideNamePrefix: false };
     }
 
+    findDirectPort() {
+        let port = this.config.direct_port || 8000;
+        if (port)
+            port = portFinderSync.getPort(port);
+        return this.direct_port = port;
+    }
+
     getConfigItems() {
         return {
             app_url: this.config.app_url,
             app_id: this.config.app_id,
             access_token: this.config.access_token,
             update_seconds: this.config.update_seconds || 30,
-            direct_port: this.config.direct_port || 8000,
+            direct_port: this.direct_port,
             direct_ip: this.config.direct_ip || this.myUtils.getIPAddress(),
             debug: (this.config.debug === true),
             local_commands: (this.config.local_commands === true),
@@ -96,7 +106,7 @@ module.exports = class ST_Platform {
     }
 
     updateTempUnit(unit) {
-        this.log.notice(`setting temperature_unit to (${unit})`);
+        this.log.notice(`Temperature Unit is Now: (${unit})`);
         this.temperature_unit = unit;
     }
 
@@ -108,7 +118,7 @@ module.exports = class ST_Platform {
         this.log.info(`Fetching ${platformName} Devices. NOTICE: This may take a moment if you have a large number of device data is being loaded!`);
         setInterval(this.refreshDevices.bind(this), this.polling_seconds * 1000);
         let that = this;
-        this.refreshDevices()
+        this.refreshDevices('First Launch')
             .then(() => {
                 that.WebServerInit(that)
                     .catch(err => that.log.error("WebServerInit Error: ", err))
@@ -122,12 +132,12 @@ module.exports = class ST_Platform {
             });
     }
 
-    refreshDevices() {
+    refreshDevices(src = undefined) {
         let that = this;
         let starttime = new Date();
         return new Promise((resolve, reject) => {
             try {
-                that.log.debug("Refreshing All Device Data");
+                that.log.good(`Refreshing All Device Data${src ? ' | Source: (' + src + ')' : ""}`);
                 this.client.getDevices()
                     .catch(err => {
                         that.log.error('getDevices Exception:', err);
@@ -319,8 +329,8 @@ module.exports = class ST_Platform {
                 webApp.post("/refreshDevices", (req, res) => {
                     let body = JSON.parse(JSON.stringify(req.body));
                     if (body && that.isValidRequestor(body.access_token, body.app_id, 'refreshDevices')) {
-                        that.log.info(`Received request from ${platformName} to refresh devices`);
-                        that.refreshDevices();
+                        that.log.good(`Received request from ${platformName} to refresh devices`);
+                        that.refreshDevices("ST Requested");
                         res.send({
                             status: "OK"
                         });
