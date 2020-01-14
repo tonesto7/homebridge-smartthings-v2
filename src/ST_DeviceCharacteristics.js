@@ -457,6 +457,7 @@ module.exports = class DeviceCharacteristics {
                 // targetTempChar.updateValue(this.transforms.thermostatTargetTemp(_accessory.context.deviceData));
                 callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.temperature));
             });
+            curTempChar.setProps({ minStep: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5 });
             this.accessories.storeCharacteristicItem("temperature", _accessory.context.deviceData.deviceid, curTempChar);
             this.accessories.storeCharacteristicItem("thermostatSetpoint", _accessory.context.deviceData.deviceid, targetTempChar);
         } else {
@@ -485,6 +486,7 @@ module.exports = class DeviceCharacteristics {
                     }
                 });
             }
+            targetTempChar.setProps({ minStep: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5 });
             this.accessories.storeCharacteristicItem("coolingSetpoint", _accessory.context.deviceData.deviceid, targetTempChar);
             this.accessories.storeCharacteristicItem("heatingSetpoint", _accessory.context.deviceData.deviceid, targetTempChar);
             this.accessories.storeCharacteristicItem("thermostatSetpoint", _accessory.context.deviceData.deviceid, targetTempChar);
@@ -505,7 +507,7 @@ module.exports = class DeviceCharacteristics {
             if (!heatThreshTempChar._events.get || !heatThreshTempChar._events.set) {
                 if (!heatThreshTempChar._events.get) {
                     heatThreshTempChar.on("get", (callback) => {
-                        console.log('heatingSetpoint: ', _accessory.context.deviceData.attributes.heatingSetpoint);
+                        // console.log('heatingSetpoint: ', _accessory.context.deviceData.attributes.heatingSetpoint);
                         callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.heatingSetpoint));
                     });
                 }
@@ -519,6 +521,7 @@ module.exports = class DeviceCharacteristics {
                         _accessory.context.deviceData.attributes.heatingSetpoint = temp;
                     });
                 }
+                heatThreshTempChar.setProps({ minStep: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5 });
                 this.accessories.storeCharacteristicItem("heatingSetpoint", _accessory.context.deviceData.deviceid, heatThreshTempChar);
                 this.accessories.storeCharacteristicItem("thermostatSetpoint", _accessory.context.deviceData.deviceid, heatThreshTempChar);
             } else {
@@ -529,7 +532,7 @@ module.exports = class DeviceCharacteristics {
             if (!coolThreshTempChar._events.get || !coolThreshTempChar._events.set) {
                 if (!coolThreshTempChar._events.get) {
                     coolThreshTempChar.on("get", (callback) => {
-                        console.log('coolingSetpoint: ', _accessory.context.deviceData.attributes.coolingSetpoint);
+                        // console.log('coolingSetpoint: ', _accessory.context.deviceData.attributes.coolingSetpoint);
                         callback(null, this.transforms.thermostatTempConversion(_accessory.context.deviceData.attributes.coolingSetpoint));
                     });
                 }
@@ -543,6 +546,7 @@ module.exports = class DeviceCharacteristics {
                         _accessory.context.deviceData.attributes.coolingSetpoint = temp;
                     });
                 }
+                coolThreshTempChar.setProps({ minStep: (this.platform.getTempUnit() === 'F') ? 1.0 : 0.5 });
                 this.accessories.storeCharacteristicItem("coolingSetpoint", _accessory.context.deviceData.deviceid, coolThreshTempChar);
                 this.accessories.storeCharacteristicItem("thermostatSetpoint", _accessory.context.deviceData.deviceid, coolThreshTempChar);
             } else {
