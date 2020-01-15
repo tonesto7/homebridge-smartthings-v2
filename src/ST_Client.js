@@ -19,10 +19,29 @@ module.exports = class ST_Client {
             app_port: appURL.port || 443,
             app_path: `${(appURL.path || "/api/smartapps/installations/")}${this.configItems.app_id}/`
         };
+        this.localErrCnt = 0;
+        this.localDisabled = false;
     }
 
     sendAsLocalCmd() {
         return (this.useLocal === true && this.hubIp !== undefined);
+    }
+
+    localHubErr(hasErr) {
+        if (hasErr) {
+            if (this.useLocal && !this.localDisabled) {
+                this.log.error(`Unable to reach your SmartThing Hub Locally... You will not receive device events!!!`);
+                this.useLocal = false;
+                this.localDisabled = true;
+            }
+        } else {
+            if (this.localDisabled) {
+                this.useLocal = true;
+                this.localDisabled = false;
+                this.log.good(`Now able to reach local Hub... Restoring Local Commands!!!`);
+                this.sendStartDirect();
+            }
+        }
     }
 
     updateGlobals(hubIp, useLocal = false) {
@@ -100,24 +119,32 @@ module.exports = class ST_Client {
         }
         return new Promise((resolve, reject) => {
             that.log.notice(`Sending Device Command: ${cmd}${vals ? ' | Value: ' + JSON.stringify(vals) : ''} | Name: (${devData.name}) | DeviceID: (${devData.deviceid}) | SendToLocalHub: (${sendLocal})`);
-            rp(config)
-                .catch((err) => {
-                    that.log.error('sendDeviceCommand Error:', err.message);
-                    that.platform.Sentry.captureException(err);
-                    if (callback) {
-                        callback();
-                        callback = undefined;
-                    };
-                    reject(err);
-                })
-                .then((body) => {
-                    this.log.debug(`sendDeviceCommand Resp: ${JSON.stringify(body)}`);
-                    if (callback) {
-                        callback();
-                        callback = undefined;
-                    };
-                    resolve(body);
-                });
+            try {
+                rp(config)
+                    .catch((err) => {
+                        that.log.error('sendDeviceCommand Error:', err.message);
+                        if (callback) {
+                            callback();
+                            callback = undefined;
+                        };
+                        if (err.message.startsWith('Error: connect ETIMEDOUT ')) {
+                            that.localHubErr(true);
+                        }
+                        that.platform.Sentry.captureException(err);
+                        // reject(err);
+                    })
+                    .then((body) => {
+                        this.log.debug(`sendDeviceCommand Resp: ${JSON.stringify(body)}`);
+                        if (callback) {
+                            callback();
+                            callback = undefined;
+                        }
+                        that.localHubErr(false);
+                        resolve(body);
+                    });
+            } catch (err) {
+                reject(err);
+            }
         });
     }
 
@@ -172,21 +199,29 @@ module.exports = class ST_Client {
             config.uri = `http://${this.hubIp}:39500/event`;
             delete config.qs;
         }
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             that.log.info(`Sending StartDirect Request to ${platformDesc} | SendToLocalHub: (${sendLocal})`);
-            rp(config)
-                .then((body) => {
-                    // that.log.info('sendStartDirect Resp:', body);
-                    if (body) {
-                        this.log.debug(`sendStartDirect Resp:' ${JSON.stringify(body)}`);
-                        resolve(body);
-                    } else { resolve(null); }
-                })
-                .catch((err) => {
-                    that.log.error("sendStartDirect Error: ", err.message);
-                    that.platform.Sentry.captureException(err);
-                    resolve(undefined);
-                });
+            try {
+                rp(config)
+                    .catch((err) => {
+                        that.log.error("sendStartDirect Error: ", err.message);
+                        if (err.message.startsWith('Error: connect ETIMEDOUT ')) {
+                            that.localHubErr(true);
+                        }
+                        // reject(err);
+                        that.platform.Sentry.captureException(err);
+                    })
+                    .then((body) => {
+                        // that.log.info('sendStartDirect Resp:', body);
+                        if (body) {
+                            this.log.debug(`sendStartDirect Resp: ${JSON.stringify(body)}`);
+                            resolve(body);
+                            that.localHubErr(false);
+                        } else { resolve(null); }
+                    });
+            } catch (err) {
+                reject(err);
+            }
         });
     }
 };

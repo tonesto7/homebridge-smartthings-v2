@@ -37,11 +37,11 @@
         },
         "direct_port": {
             "title": "Direct Port",
-            "description": "This is the port that the plugin will listen on for traffic from your hub. Make sure your firewall allows incoming traffic on this port from your hub's IP address.",
+            "description": "This is the port that the plugin will listen on for traffic from your hub. Make sure your firewall allows incoming traffic on this port from your hub's IP address. (This is now a dynamic port selection)",
             "type": "integer",
             "maximum": 65535,
             "default": 8000,
-            "required": true
+            "required": false
         },
         "local_commands": {
             "title": "Enable Local Commands?",

@@ -1,3 +1,10 @@
+## v2.1.17
+- [FIX] Fixed the cannot read property of 'includes' and '_events' errors.
+- [FIX] Fixed some rare issues with requestPromises on device commands.
+- [NEW] Direct port is now selected automatically using the direct_port as the start point for available port detection.
+- [NEW] Logs now alert you when your local ST hub endpoint can't be reached.
+- [UPDATE] Modified the point when the Sentry IO Error collector is loaded so it doesn't collect other plugin exceptions.
+
 ## v2.1.14 - v2.1.16
 - [FIX] Thermostats should now update the state correctly and also auto mode is working again.
 
@@ -45,5 +52,6 @@
 - [NEW] I used all of the issues from my existing plugin to repair this new version.
 - [NEW] Many, many other bug fixes for devices, commands and many other items.
 - [NEW] ***Important NOTICE:***
+-
 **Due to the changes in the plugin API you can not directly update the plugin, you will need to add as a new accessory and setup your devices/automations/scenes again.
 On a positive note, you can use the same SmartApp instance though as long as you update to the latest code.**
