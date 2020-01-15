@@ -22,7 +22,7 @@ module.exports = class ST_Accessories {
         this.comparator = this.comparator.bind(this);
         this.transforms = new Transforms(this, Characteristic);
         this.serviceTypes = new ServiceTypes(this, Service);
-        this.device_types = new DeviceTypes(this, Characteristic);
+        this.device_types = new DeviceTypes(this, Characteristic, Service);
         this._accessories = {};
         this._attributeLookup = {};
     }
@@ -121,6 +121,9 @@ module.exports = class ST_Accessories {
                     switch (change.attribute) {
                         case 'thermostatSetpoint':
                             char.getValue();
+                            break;
+                        case 'button':
+
                             break;
                         default:
                             char.updateValue(this.transforms.transformAttributeState(change.attribute, change.value, char.displayName));

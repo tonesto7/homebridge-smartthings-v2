@@ -4,8 +4,8 @@
  *  Copyright 2018, 2019, 2020 Anthony Santilli
  */
 
-String appVersion()                     { return "2.1.1" }
-String appModified()                    { return "01-09-2020" }
+String appVersion()                     { return "2.1.2" }
+String appModified()                     { return "01-14-2020" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
@@ -47,7 +47,8 @@ preferences {
 private Map ignoreLists() {
     return [
         commands: ["indicatorWhenOn", "indicatorWhenOff", "ping", "refresh", "indicatorNever", "configure", "poll", "reset"],
-        attributes: ['DeviceWatch-Enroll', 'DeviceWatch-Status', "checkInterval", "LchildVer", "FchildVer", "LchildCurr", "FchildCurr", "lightStatus", "lastFanMode", "lightLevel", "coolingSetpointRange", "heatingSetpointRange", "thermostatSetpointRange"],
+        attributes: ['DeviceWatch-Enroll', 'DeviceWatch-Status', "checkInterval", "LchildVer", "FchildVer", "LchildCurr", "FchildCurr", "lightStatus", "lastFanMode", "lightLevel",
+            "coolingSetpointRange", "heatingSetpointRange", "thermostatSetpointRange", "energy", "power"],
         evt_attributes: [
             'DeviceWatch-DeviceStatus', "DeviceWatch-Enroll", 'checkInterval', 'devTypeVer', 'dayPowerAvg', 'apiStatus', 'yearCost', 'yearUsage','monthUsage', 'monthEst', 'weekCost', 'todayUsage',
             'maxCodeLength', 'maxCodes', 'readingUpdated', 'maxEnergyReading', 'monthCost', 'maxPowerReading', 'minPowerReading', 'monthCost', 'weekUsage', 'minEnergyReading',
@@ -56,7 +57,7 @@ private Map ignoreLists() {
             'speed', 'verticalAccuracyMetric', 'altitude', 'indicatorStatus', 'todayCost', 'longitude', 'distance', 'previousPlace','closestPlace', 'places', 'minCodeLength',
             'arrivingAtPlace', 'lastUpdatedDt', 'scheduleType', 'zoneStartDate', 'zoneElapsed', 'zoneDuration', 'watering', 'eventTime', 'eventSummary', 'endOffset', 'startOffset',
             'closeTime', 'endMsgTime', 'endMsg', 'openTime', 'startMsgTime', 'startMsg', 'calName', "deleteInfo", "eventTitle", "floor", "sleeping", "powerSource", "batteryStatus",
-            "LchildVer", "FchildVer", "LchildCurr", "FchildCurr", "lightStatus", "lastFanMode", "lightLevel", "coolingSetpointRange", "heatingSetpointRange", "thermostatSetpointRange"
+            "LchildVer", "FchildVer", "LchildCurr", "FchildCurr", "lightStatus", "lastFanMode", "lightLevel", "coolingSetpointRange", "heatingSetpointRange", "thermostatSetpointRange", "energy", "power"
         ],
         capabilities: ["Health Check", "Ultraviolet Index", "Indicator"]
     ]
@@ -232,13 +233,13 @@ def capFilterPage() {
             input "removeBattery", "capability.battery", title: "Remove Battery from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("battery")
             input "removeButton", "capability.button", title: "Remove Buttons from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("button")
             input "removeContact", "capability.contactSensor", title: "Remove Contact from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("contact")
-            input "removeEnergy", "capability.energyMeter", title: "Remove Energy Meter from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("power")
+            // input "removeEnergy", "capability.energyMeter", title: "Remove Energy Meter from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("power")
             input "removeHumidity", "capability.relativeHumidityMeasurement", title: "Remove Humidity from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("humidity")
             input "removeIlluminance", "capability.illuminanceMeasurement", title: "Remove Illuminance from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("illuminance")
             input "removeLevel", "capability.switchLevel", title: "Remove Level from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("speed_knob")
             input "removeLock", "capability.lock", title: "Remove Lock from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("lock")
             input "removeMotion", "capability.motionSensor", title: "Remove Motion from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("motion")
-            input "removePower", "capability.powerMeter", title: "Remove Power Meter from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("power")
+            // input "removePower", "capability.powerMeter", title: "Remove Power Meter from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("power")
             input "removePresence", "capability.presenceSensor", title: "Remove Presence from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("presence")
             input "removeSwitch", "capability.switch", title: "Remove Switch from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("switch")
             input "removeTamper", "capability.tamperAlert", title: "Remove Tamper from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("tamper")
@@ -1017,7 +1018,7 @@ def registerChangeHandler(devices, showlog=false) {
         List theAtts = device?.supportedAttributes?.collect { it?.name as String }?.unique()
         if(showlog) { log.debug "atts: ${theAtts}" }
         theAtts?.each {att ->
-            if(!(ignoreLists().evt_attributes?.contains(att))) {
+            if(!(ignoreLists()?.evt_attributes?.contains(att))) {
                 if(settings?.noTemp && att == "temperature" && (device?.hasAttribute("contact") || device?.hasAttribute("water"))) {
                     Boolean skipAtt = true
                     if(settings?.sensorAllowTemp) {
@@ -1096,7 +1097,9 @@ def changeHandler(evt) {
             }
             break
         default:
-            sendItems?.push([evtSource: src, evtDeviceName: deviceName, evtDeviceId: deviceid, evtAttr: attr, evtValue: value, evtUnit: evt?.unit ?: "", evtDate: dt])
+            def evtData = null
+            if(attr == "button") { evtData = parseJson(evt?.data) }
+            sendItems?.push([evtSource: src, evtDeviceName: deviceName, evtDeviceId: deviceid, evtAttr: attr, evtValue: value, evtUnit: evt?.unit ?: "", evtDate: dt, evtData: evtData])
             break
     }
 
@@ -1124,13 +1127,14 @@ def changeHandler(evt) {
                         unitStr = "${send?.evtUnit}"
                         break
                 }
-                log.debug "Sending${" ${send?.evtSource}" ?: ""} Event (${send?.evtDeviceName} | ${send?.evtAttr.toUpperCase()}: ${send?.evtValue}${unitStr}) to Homebridge at (${state?.pluginDetails?.directIP}:${state?.pluginDetails?.directPort})"
+                log.debug "Sending${" ${send?.evtSource}" ?: ""} Event (${send?.evtDeviceName} | ${send?.evtAttr.toUpperCase()}: ${send?.evtValue}${unitStr}) ${send?.evtData ? "Data: ${send?.evtData}" : ""} to Homebridge at (${state?.pluginDetails?.directIP}:${state?.pluginDetails?.directPort})"
             }
             sendHttpPost("update", [
                 change_name: send?.evtDeviceName,
                 change_device: send?.evtDeviceId,
                 change_attribute: send?.evtAttr,
                 change_value: send?.evtValue,
+                change_data: send?.evtData,
                 change_date: send?.evtDate,
                 app_id: app?.getId(),
                 access_token: atomicState?.accessToken
