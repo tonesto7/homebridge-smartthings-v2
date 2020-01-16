@@ -77,7 +77,7 @@ def mainPage() {
     return dynamicPage(name: "mainPage", nextPage: (isInst ? "confirmPage" : ""), install: !isInst, uninstall: true) {
         appInfoSect()
         section("Define Specific Categories:") {
-            paragraph "Each category below will adjust the device attributes to make sure they are recognized as the desired device type under HomeKit", state: "complete"
+            paragraph "Each category below will adjust the device attributes to make sure they are recognized as the desired device type under HomeKit.\nNOTICE: Don't select the same devices used here in the Select Your Devices Input below.", state: "complete"
             Boolean conf = (lightList || buttonList || fanList || fan3SpdList || fan4SpdList || speakerList || shadesList)
             Integer fansize = (fanList?.size() ?: 0) + (fan3SpdList?.size() ?: 0) + (fan4SpdList?.size() ?: 0)
             String desc = "Tap to configure"
@@ -129,8 +129,8 @@ def mainPage() {
         }
         section("Plugin Options & Review:") {
             paragraph "Turn off if you are having issues sending commands"
-            input "sendCmdViaHubaction", "bool", title: "Send HomeKit Commands Locally?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("command2")
-            input "temp_unit", "enum", title: "Temperature Unit?", required: true, defaultValue: location?.temperatureScale, options: ["F":"Fahrenheit", "C":"Celcius"], submitOnChange: true, image: getAppImg("command2")
+            input "sendCmdViaHubaction", "bool", title: "Send HomeKit Commands Locally?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("command")
+            input "temp_unit", "enum", title: "Temperature Unit?", required: true, defaultValue: location?.temperatureScale, options: ["F":"Fahrenheit", "C":"Celcius"], submitOnChange: true, image: getAppImg("command")
             Integer devCnt = getDeviceCnt()
             href url: getAppEndpointUrl("config"), style: "embedded", required: false, title: "Render the platform data for Homebridge config.json", description: "Tap, select, copy, then click \"Done\"", state: "complete", image: getAppImg("info")
             if(devCnt > 148) {
@@ -149,11 +149,11 @@ def mainPage() {
         }
         if(devMode()) {
             section("Dev Mode Options") {
-                input "sendViaNgrok", "bool", title: "Communicate with Plugin via Ngrok Http?", defaultValue: false, submitOnChange: true, image: getAppImg("command2")
+                input "sendViaNgrok", "bool", title: "Communicate with Plugin via Ngrok Http?", defaultValue: false, submitOnChange: true, image: getAppImg("command")
                 if(sendViaNgrok) { input "ngrokHttpUrl", "text", title: "Enter the ngrok code from the url", required: true, submitOnChange: true }
             }
             section("Other Settings:") {
-                input "restartService", "bool", title: "Restart Homebridge plugin when you press Save?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("reset2")
+                input "restartService", "bool", title: "Restart Homebridge plugin when you press Save?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("reset")
             }
         }
         clearTestDeviceItems()
@@ -193,6 +193,19 @@ def settingsPage() {
             input "showEventLogs", "bool", title: "Show Events in Live Logs?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("debug")
             input "showDebugLogs", "bool", title: "Debug Logging?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("debug")
         }
+        section("Reset Token:") {
+            paragraph title: "What This?", "This will allow you to clear you existing and auth_token and force a new one to be created"
+            input "resetAppToken", "bool", title: "Revoke and Recreate Access Token?", defaultValue: false, submitOnChange: true, image: getAppImg("reset")
+            if(settings?.resetAppToken) { settingUpdate("resetAppToken", "false", "bool"); resetAppToken() }
+        }
+    }
+}
+
+private resetAppToken() {
+    log.warn "resetAppToken | Current Access Token Removed..."
+    state.remove("accessToken")
+    if(getAccessToken()) {
+        log.info "resetAppToken | New Access Token Created..."
     }
 }
 
