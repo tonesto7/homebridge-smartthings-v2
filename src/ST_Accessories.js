@@ -128,12 +128,14 @@ module.exports = class ST_Accessories {
                             char.getValue();
                             break;
                         case 'button':
-                            if (change.data && change.data.buttonNumber) {
-                                this.emitter.emit(`button_${change.data.buttonNumber}_${change.deviceid}`, change.data.buttonNumber, change.value);
-                            } else {
-                                char.updateValue(this.transforms.transformAttributeState(change.attribute, change.value, char.displayName));
+                            {
+                                let value = change.value;
+                                if (change.data && change.data.buttonNumber) {
+                                    value = `${value}:${change.data.buttonNumber}`;
+                                }
+                                char.updateValue(this.transforms.transformAttributeState(change.attribute, value, char.displayName));
+                                break;
                             }
-                            break;
                         default:
                             char.updateValue(this.transforms.transformAttributeState(change.attribute, change.value, char.displayName));
                             break;
@@ -213,14 +215,15 @@ module.exports = class ST_Accessories {
 
     getOrAddServiceByName(service, dName, sType) {
         let svc = this.services.find(s => s.displayName === dName) || undefined;
-        if (!svc) {
+        // console.log(svc);
+        if (svc) {
+            console.log('service found');
+            return svc;
+        } else {
             svc = new service(dName, sType);
             console.log('service not found adding new one...');
-            this.services.push(svc);
-        } else {
-            console.log('service found');
+            // this.services.push(svc);
         }
-        return svc;
     }
 
     getOrAddCharacteristic(service, characteristic) {

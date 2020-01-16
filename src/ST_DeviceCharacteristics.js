@@ -175,41 +175,36 @@ module.exports = class DeviceCharacteristics {
     }
 
     button(_accessory, _service) {
-        // let that = this;
-        // let validValues = this.transforms.transformAttributeState('supportedButtonValues', _accessory.context.deviceData.attributes.supportedButtonValues) || [0, 2];
-        // const btnCnt = _accessory.context.deviceData.attributes.numberOfButtons || 1;
-        // _accessory.services = [];
-        // console.log('btnCnt: ', btnCnt);
-        // if (btnCnt >= 1) {
-        //     for (let btn = 1; btn <= btnCnt; btn++) {
-        //         const svc = _accessory.getOrAddServiceByName(_service, `${_accessory.name} ${btn}`, btn);
-        //         console.log(svc);
-        //         // _accessory.services.push(svc);
-        //         this.accessories._buttonMap[`${_accessory.context.deviceData.deviceid}_${btn}`] = svc;
-        //         let c = svc.getCharacteristic(Characteristic.ProgrammableSwitchEvent);
-        //         c.setProps({
-        //             validValues: validValues
-        //         });
-        //         c.eventOnlyCharacteristic = false;
-        //         if (!c._events.get) {
-        //             c.on("get", (callback) => {
-        //                 this.value = -1;
-        //                 callback(null, that.transforms.transformAttributeState('button', _accessory.context.deviceData.attributes.button));
-        //             });
-        //         }
-        //         this.accessories.storeCharacteristicItem("button", _accessory.context.deviceData.deviceid, c);
-        //         svc.getCharacteristic(Characteristic.ServiceLabelIndex).setValue(btn);
-        //         this.emitter.on(`button_${btn}_${_accessory.context.deviceData.deviceid}`, (btnNum, val) => {
-        //             console.log('Button:', _accessory.context.name, ' | Number: ', btnNum, '(' + val + ')');
-        //             let s = this.accessories._buttonMap[`${_accessory.context.deviceData.deviceid}_${btnNum}`];
-        //             if (s) {
-        //                 s.getCharacteristic(Characteristic.ProgrammableSwitchEvent).updateValue(that.transforms.transformAttributeState('button', val));
-        //             }
-        //         });
-        //         // console.log(_accessory.services);
-        //     }
-        //     _accessory.context.deviceGroups.push("button");
-        // }
+        let that = this;
+        let validValues = this.transforms.transformAttributeState('supportedButtonValues', _accessory.context.deviceData.attributes.supportedButtonValues) || [0, 2];
+        const btnCnt = _accessory.context.deviceData.attributes.numberOfButtons || 1;
+        // _accessory.remove(services);
+        console.log(_accessory.services);
+        console.log('btnCnt: ', btnCnt);
+        if (btnCnt >= 1) {
+            for (let bNum = 1; bNum <= btnCnt; bNum++) {
+                const svc = _accessory.getOrAddServiceByName(_service, `${_accessory.context.deviceData.deviceid}_${bNum}`, bNum);
+                // console.log(svc);
+                // _accessory.services.push(svc);
+                this.accessories._buttonMap[`${_accessory.context.deviceData.deviceid}_${bNum}`] = svc;
+                let c = svc.getCharacteristic(Characteristic.ProgrammableSwitchEvent);
+                c.setProps({
+                    validValues: validValues
+                });
+                c.eventOnlyCharacteristic = false;
+                if (!c._events.get) {
+                    c.on("get", (callback) => {
+                        this.value = -1;
+                        console.log(this.value);
+                        callback(null, that.transforms.transformAttributeState('button', _accessory.context.deviceData.attributes.button));
+                    });
+                }
+                this.accessories.storeCharacteristicItem("button", _accessory.context.deviceData.deviceid, c);
+                svc.getCharacteristic(Characteristic.ServiceLabelIndex).setValue(bNum);
+                // console.log(_accessory.services);
+            }
+            _accessory.context.deviceGroups.push("button");
+        }
         return _accessory;
     }
 
