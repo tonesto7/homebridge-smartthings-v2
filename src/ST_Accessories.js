@@ -3,7 +3,9 @@ const knownCapabilities = require("./libs/Constants").knownCapabilities,
     _ = require("lodash"),
     ServiceTypes = require('./ST_ServiceTypes'),
     Transforms = require('./ST_Transforms'),
-    DeviceTypes = require('./ST_DeviceCharacteristics');
+    DeviceTypes = require('./ST_DeviceCharacteristics'),
+    events = require('events');
+
 var Service, Characteristic;
 
 module.exports = class ST_Accessories {
@@ -15,6 +17,7 @@ module.exports = class ST_Accessories {
         this.log = platform.log;
         this.hap = platform.hap;
         this.uuid = platform.uuid;
+        this.emitter = new events.EventEmitter();
         Service = platform.Service;
         Characteristic = platform.Characteristic;
         this.CommunityTypes = require("./libs/CommunityTypes")(Service, Characteristic);
@@ -24,6 +27,7 @@ module.exports = class ST_Accessories {
         this.serviceTypes = new ServiceTypes(this, Service);
         this.device_types = new DeviceTypes(this, Characteristic, Service);
         this._accessories = {};
+        this._buttonMap = {};
         this._attributeLookup = {};
     }
 
@@ -47,6 +51,7 @@ module.exports = class ST_Accessories {
         try {
             accessory.context.uuid = accessory.UUID || this.uuid.generate(`smartthings_v2_${accessory.deviceid}`);
             accessory.getOrAddService = this.getOrAddService.bind(accessory);
+            accessory.getOrAddServiceByName = this.getOrAddServiceByName.bind(accessory);
             accessory.getOrAddCharacteristic = this.getOrAddCharacteristic.bind(accessory);
             accessory.hasCapability = this.hasCapability.bind(accessory);
             accessory.getCapabilities = this.getCapabilities.bind(accessory);
@@ -61,7 +66,7 @@ module.exports = class ST_Accessories {
             accessory.manageGetSetCharacteristic = this.device_types.manageGetSetCharacteristic.bind(accessory);
             return this.configureCharacteristics(accessory);
         } catch (err) {
-            this.log.error(`initializeAccessory (fromCache: ${fromCache}) Error: ${err}`);
+            this.log.error(`initializeAccessory (fromCache: ${fromCache}) Error:`, err);
             this.mainPlatform.Sentry.captureException(err);
             // console.error(err);
             return accessory;
@@ -123,7 +128,11 @@ module.exports = class ST_Accessories {
                             char.getValue();
                             break;
                         case 'button':
-
+                            if (change.data && change.data.buttonNumber) {
+                                this.emitter.emit(`button_${change.data.buttonNumber}_${change.deviceid}`, change.data.buttonNumber, change.value);
+                            } else {
+                                char.updateValue(this.transforms.transformAttributeState(change.attribute, change.value, char.displayName));
+                            }
                             break;
                         default:
                             char.updateValue(this.transforms.transformAttributeState(change.attribute, change.value, char.displayName));
@@ -200,6 +209,18 @@ module.exports = class ST_Accessories {
 
     getOrAddService(svc) {
         return (this.getService(svc) || this.addService(svc));
+    }
+
+    getOrAddServiceByName(service, dName, sType) {
+        let svc = this.services.find(s => s.displayName === dName) || undefined;
+        if (!svc) {
+            svc = new service(dName, sType);
+            console.log('service not found adding new one...');
+            this.services.push(svc);
+        } else {
+            console.log('service found');
+        }
+        return svc;
     }
 
     getOrAddCharacteristic(service, characteristic) {

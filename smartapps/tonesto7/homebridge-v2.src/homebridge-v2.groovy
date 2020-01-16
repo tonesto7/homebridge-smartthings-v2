@@ -5,7 +5,7 @@
  */
 
 String appVersion()                     { return "2.1.2" }
-String appModified()                     { return "01-14-2020" }
+String appModified()                    { return "01-15-2020" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
@@ -1302,7 +1302,7 @@ def appInfoSect() {
     section() {
         String str = "Version: v${appVersion()}"
         str += state?.pluginDetails?.version ? "\nPlugin: v${state?.pluginDetails?.version}" : ""
-        str += (state?.pluginDetails?.version && state?.pluginUpdates) ? " (${(state?.pluginUpdates?.hasUpdate == true) ? "Update Available: v${state?.pluginUpdates?.newVersion}" : "Up-to-Date"})" : ""
+        str += (state?.pluginDetails?.version && state?.pluginUpdates) ? ((state?.pluginUpdates?.hasUpdate == true) ? "\nUpdate Available: (v${state?.pluginUpdates?.newVersion})" : "") : ""
         href "changeLogPage", title: "${app?.name}", description: str, image: appIconUrl()
         Map minUpdMap = getMinVerUpdsRequired()
         List codeUpdItems = codeUpdateItems(true)
