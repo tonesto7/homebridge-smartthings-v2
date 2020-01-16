@@ -128,14 +128,12 @@ module.exports = class ST_Accessories {
                             char.getValue();
                             break;
                         case 'button':
-                            {
-                                let value = change.value;
-                                if (change.data && change.data.buttonNumber) {
-                                    value = `${value}:${change.data.buttonNumber}`;
-                                }
-                                char.updateValue(this.transforms.transformAttributeState(change.attribute, value, char.displayName));
-                                break;
+                            // console.log(characteristics);
+                            var btnNum = (change.data && change.data.buttonNumber) ? change.data.buttonNumber : 1;
+                            if (btnNum && accessory.buttonEvent !== undefined) {
+                                accessory.buttonEvent(btnNum, change.value, change.deviceid, this._buttonMap);
                             }
+                            break;
                         default:
                             char.updateValue(this.transforms.transformAttributeState(change.attribute, change.value, char.displayName));
                             break;
@@ -214,15 +212,14 @@ module.exports = class ST_Accessories {
     }
 
     getOrAddServiceByName(service, dName, sType) {
-        let svc = this.services.find(s => s.displayName === dName) || undefined;
-        // console.log(svc);
+        let svc = this.services.find(s => s.displayName === dName);
         if (svc) {
-            console.log('service found');
+            // console.log('service found');
             return svc;
         } else {
-            svc = new service(dName, sType);
-            console.log('service not found adding new one...');
-            // this.services.push(svc);
+            // console.log('service not found adding new one...');
+            svc = this.addService(new service(dName, sType));
+            return svc;
         }
     }
 

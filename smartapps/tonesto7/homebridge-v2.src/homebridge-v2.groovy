@@ -4,8 +4,8 @@
  *  Copyright 2018, 2019, 2020 Anthony Santilli
  */
 
-String appVersion()                     { return "2.1.2" }
-String appModified()                    { return "01-15-2020" }
+String appVersion()                     { return "2.2.0" }
+String appModified()                    { return "01-16-2020" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }

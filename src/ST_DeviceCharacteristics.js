@@ -138,15 +138,6 @@ module.exports = class DeviceCharacteristics {
         return _accessory;
     }
 
-    createButtonService(buttonIndex, btnName, props) {
-        const svc = new Service.StatelessProgrammableSwitch(this.name + ' ' + btnName, btnName);
-        // this.serviceList.push(service);
-        this.buttonMap['' + buttonIndex] = svc;
-        svc.getCharacteristic(Characteristic.ProgrammableSwitchEvent).setProps(props);
-        svc.getCharacteristic(Characteristic.ServiceLabelIndex).setValue(buttonIndex);
-        return svc;
-    };
-
     air_quality(_accessory, _service) {
         let c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.AirQuality);
         if (!c._events.get) {
@@ -178,34 +169,38 @@ module.exports = class DeviceCharacteristics {
         let that = this;
         let validValues = this.transforms.transformAttributeState('supportedButtonValues', _accessory.context.deviceData.attributes.supportedButtonValues) || [0, 2];
         const btnCnt = _accessory.context.deviceData.attributes.numberOfButtons || 1;
-        // _accessory.remove(services);
-        console.log(_accessory.services);
-        console.log('btnCnt: ', btnCnt);
+        // console.log('btnCnt: ', btnCnt);
         if (btnCnt >= 1) {
             for (let bNum = 1; bNum <= btnCnt; bNum++) {
                 const svc = _accessory.getOrAddServiceByName(_service, `${_accessory.context.deviceData.deviceid}_${bNum}`, bNum);
-                // console.log(svc);
-                // _accessory.services.push(svc);
-                this.accessories._buttonMap[`${_accessory.context.deviceData.deviceid}_${bNum}`] = svc;
                 let c = svc.getCharacteristic(Characteristic.ProgrammableSwitchEvent);
                 c.setProps({
                     validValues: validValues
                 });
                 c.eventOnlyCharacteristic = false;
                 if (!c._events.get) {
+                    that.accessories._buttonMap[`${_accessory.context.deviceData.deviceid}_${bNum}`] = svc;
                     c.on("get", (callback) => {
                         this.value = -1;
-                        console.log(this.value);
                         callback(null, that.transforms.transformAttributeState('button', _accessory.context.deviceData.attributes.button));
                     });
+                    _accessory.buttonEvent = this.buttonEvent.bind(_accessory);
+                    this.accessories.storeCharacteristicItem("button", _accessory.context.deviceData.deviceid, c);
                 }
-                this.accessories.storeCharacteristicItem("button", _accessory.context.deviceData.deviceid, c);
                 svc.getCharacteristic(Characteristic.ServiceLabelIndex).setValue(bNum);
-                // console.log(_accessory.services);
             }
             _accessory.context.deviceGroups.push("button");
         }
         return _accessory;
+    }
+
+    buttonEvent(btnNum, btnVal, devId, btnMap) {
+        console.log('Button Press Event... | Button Number: (' + btnNum + ') | Button Value: ' + btnVal);
+        let bSvc = btnMap[`${devId}_${btnNum}`];
+        // console.log(bSvc);
+        if (bSvc) {
+            bSvc.getCharacteristic(Characteristic.ProgrammableSwitchEvent).getValue();
+        }
     }
 
     carbon_dioxide(_accessory, _service) {
