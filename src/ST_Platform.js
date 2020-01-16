@@ -202,7 +202,7 @@ module.exports = class ST_Platform {
         let cachedAccessory = this.SmartThingsAccessories.getAccessoryFromCache(device);
         device.excludedCapabilities = this.excludedCapabilities[device.deviceid] || [];
         cachedAccessory.context.deviceData = device;
-        this.log.info(`Loading Existing Device (${device.name}) | (${device.deviceid})`);
+        this.log.debug(`Loading Existing Device (${device.name}) | (${device.deviceid})`);
         cachedAccessory = this.SmartThingsAccessories.initializeAccessory(cachedAccessory);
         this.SmartThingsAccessories.addAccessoryToCache(cachedAccessory);
     }
@@ -216,7 +216,7 @@ module.exports = class ST_Platform {
 
     configureAccessory(accessory) {
         if (!this.ok2Run) return;
-        this.log.info(`Configure Cached Accessory: ${accessory.displayName}, UUID: ${accessory.UUID}`);
+        this.log.debug(`Configure Cached Accessory: ${accessory.displayName}, UUID: ${accessory.UUID}`);
         let cachedAccessory = this.SmartThingsAccessories.initializeAccessory(accessory, true);
         this.SmartThingsAccessories.addAccessoryToCache(cachedAccessory);
     }
@@ -379,6 +379,7 @@ module.exports = class ST_Platform {
                                 deviceid: body.change_device,
                                 attribute: body.change_attribute,
                                 value: body.change_value,
+                                data: body.change_data,
                                 date: body.change_date
                             };
                             that.SmartThingsAccessories.processDeviceAttributeUpdate(newChange)

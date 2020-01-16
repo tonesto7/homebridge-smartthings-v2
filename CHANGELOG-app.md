@@ -1,6 +1,11 @@
 
 # Changelog
 
+## v2.2.0
+- [UPDATE] Added support for passing the pressed button number when provided.
+- [FIX] Other minor bugfixes and optimizations.
+- [REMOVE] Support for Energy and Power capabilities removed (for now).
+
 ## v2.1.1
 - [UPDATE] The app now validates the appId on all local commands made to ST app so if you have more than one instance of the homebridge smartapp it doesn't start sending events to wrong plugin.
 

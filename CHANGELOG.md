@@ -1,9 +1,14 @@
-## v2.1.17
+## v2.2.0
+- [UPDATE] Button logic now generates the push/held actions for every button available on the remote now.  Meaning you can select the parent remote now and have it show actions for each button on the remote. NOTE: I've noticed that I need to open the home app once after adding the buttons to create the event connection.
 - [FIX] Fixed the cannot read property of 'includes' and '_events' errors.
 - [FIX] Fixed some rare issues with requestPromises on device commands.
-- [NEW] Direct port is now selected automatically using the direct_port as the start point for available port detection.
+- [FIX] Lot's of other minor cleanup.
+- [NEW] Direct port is now selected automatically using the direct_port config value as the start point for available port detection.
 - [NEW] Logs now alert you when your local ST hub endpoint can't be reached.
-- [UPDATE] Modified the point when the Sentry IO Error collector is loaded so it doesn't collect other plugin exceptions.
+- [UPDATE] Modified the point when the Sentry IO Error collector is loaded so it doesn't collect other plugin exceptions.replace
+- [UPDATE] Updated Sentry.IO library to v5.11.1.
+- [UPDATE] Changed the plugin to not list every single device loaded from cache and every device updated in the logs.  They are only visible when debug option is enabled.
+- [REMOVE] Support for Energy and Power capabilities removed (for now).
 
 ## v2.1.14 - v2.1.16
 - [FIX] Thermostats should now update the state correctly and also auto mode is working again.
@@ -53,5 +58,5 @@
 - [NEW] Many, many other bug fixes for devices, commands and many other items.
 - [NEW] ***Important NOTICE:***
 -
-**Due to the changes in the plugin API you can not directly update the plugin, you will need to add as a new accessory and setup your devices/automations/scenes again.
+**Due to the changes in the plugin API you can not directly update the plugin from v1, you will need to add as a new accessory and setup your devices/automations/scenes again.
 On a positive note, you can use the same SmartApp instance though as long as you update to the latest code.**
