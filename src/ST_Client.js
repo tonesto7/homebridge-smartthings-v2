@@ -50,6 +50,28 @@ module.exports = class ST_Client {
         this.useLocal = (useLocal === true);
     }
 
+    handleError(src, err, allowLocal = false) {
+        switch (err.statusCode) {
+            case 401:
+                this.log.error(`${src} Error | SmartThings Token Error: ${err.error.error} | Message: ${err.error.error_description}`);
+                break;
+            case 403:
+                this.log.error(`${src} Error | SmartThings Authentication Error: ${err.error.error} | Message: ${err.error.error_description}`);
+                break;
+            default:
+                if (err.message.startsWith('getaddrinfo EAI_AGAIN')) {
+                    this.log.error(`${src} Error | Possible Internet/Network/DNS Error | Unable to reach the uri | Message ${err.message}`);
+                } else if (allowLocal && err.message.startsWith('Error: connect ETIMEDOUT ')) {
+                    this.localHubErr(true);
+                } else {
+                    console.error(err);
+                    this.log.error(`${src} Error: ${err.error.error} | Message: ${err.error.error_description}`);
+                    this.platform.Sentry.captureException(err);
+                }
+                break;
+        }
+    }
+
     getDevices() {
         let that = this;
         return new Promise((resolve) => {
@@ -61,8 +83,7 @@ module.exports = class ST_Client {
                     json: true
                 })
                 .catch((err) => {
-                    that.log.error("getDevices Error: ", err.message);
-                    that.platform.Sentry.captureException(err);
+                    this.handleError('getDevices', err);
                     resolve(undefined);
                 })
                 .then((body) => {
@@ -82,8 +103,7 @@ module.exports = class ST_Client {
                     json: true
                 })
                 .catch((err) => {
-                    that.log.error("getDevice Error: ", err.message);
-                    that.platform.Sentry.captureException(err);
+                    that.handleError('getDevice', err);
                     resolve(undefined);
                 })
                 .then((body) => {
@@ -117,24 +137,20 @@ module.exports = class ST_Client {
                 values: vals
             };
         }
-        return new Promise((resolve, reject) => {
-            that.log.notice(`Sending Device Command: ${cmd}${vals ? ' | Value: ' + JSON.stringify(vals) : ''} | Name: (${devData.name}) | DeviceID: (${devData.deviceid}) | SendToLocalHub: (${sendLocal})`);
+        return new Promise((resolve) => {
             try {
+                that.log.notice(`Sending Device Command: ${cmd}${vals ? ' | Value: ' + JSON.stringify(vals) : ''} | Name: (${devData.name}) | DeviceID: (${devData.deviceid}) | SendToLocalHub: (${sendLocal})`);
                 rp(config)
                     .catch((err) => {
-                        that.log.error('sendDeviceCommand Error:', err.message);
+                        that.handleError('sendDeviceCommand', err, true);
                         if (callback) {
                             callback();
                             callback = undefined;
                         };
-                        if (err.message.startsWith('Error: connect ETIMEDOUT ')) {
-                            that.localHubErr(true);
-                        }
-                        that.platform.Sentry.captureException(err);
-                        // reject(err);
+                        resolve(undefined);
                     })
                     .then((body) => {
-                        this.log.debug(`sendDeviceCommand Resp: ${JSON.stringify(body)}`);
+                        this.log.debug(`sendDeviceCommand | Response: ${JSON.stringify(body)}`);
                         if (callback) {
                             callback();
                             callback = undefined;
@@ -143,13 +159,13 @@ module.exports = class ST_Client {
                         resolve(body);
                     });
             } catch (err) {
-                reject(err);
+                resolve(undefined);
             }
         });
     }
 
     sendUpdateStatus(hasUpdate, newVersion = null) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             this.log.notice(`Sending Plugin Status to SmartThings | UpdateAvailable: ${hasUpdate}${newVersion ?  ' | newVersion: ' + newVersion : ''}`);
             rp({
                     method: 'POST',
@@ -161,9 +177,8 @@ module.exports = class ST_Client {
                     json: true
                 })
                 .catch((err) => {
-                    this.log.error('sendUpdateStatus Error:', err.message);
-                    this.platform.Sentry.captureException(err);
-                    reject(undefined);
+                    this.handleError('sendUpdateStatus', err, true);
+                    resolve(undefined);
                 })
                 .then((body) => {
                     // console.log(body);
@@ -199,17 +214,13 @@ module.exports = class ST_Client {
             config.uri = `http://${this.hubIp}:39500/event`;
             delete config.qs;
         }
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             that.log.info(`Sending StartDirect Request to ${platformDesc} | SendToLocalHub: (${sendLocal})`);
             try {
                 rp(config)
                     .catch((err) => {
-                        that.log.error("sendStartDirect Error: ", err.message);
-                        if (err.message.startsWith('Error: connect ETIMEDOUT ')) {
-                            that.localHubErr(true);
-                        }
-                        // reject(err);
-                        that.platform.Sentry.captureException(err);
+                        that.handleError("sendStartDirect", err, true);
+                        resolve(undefined);
                     })
                     .then((body) => {
                         // that.log.info('sendStartDirect Resp:', body);
@@ -220,7 +231,7 @@ module.exports = class ST_Client {
                         } else { resolve(null); }
                     });
             } catch (err) {
-                reject(err);
+                resolve(err);
             }
         });
     }

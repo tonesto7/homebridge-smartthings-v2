@@ -86,7 +86,7 @@ module.exports = class ST_Accessories {
             .getOrAddService(Service.AccessoryInformation)
             .setCharacteristic(Characteristic.FirmwareRevision, accessory.context.deviceData.firmwareVersion)
             .setCharacteristic(Characteristic.Manufacturer, accessory.context.deviceData.manufacturerName)
-            .setCharacteristic(Characteristic.Model, `${this.myUtils.toTitleCase(accessory.context.deviceData.modelName)}`)
+            .setCharacteristic(Characteristic.Model, accessory.context.deviceData.modelName ? `${this.myUtils.toTitleCase(accessory.context.deviceData.modelName)}` : 'Unknown')
             .setCharacteristic(Characteristic.Name, accessory.context.deviceData.name)
             .setCharacteristic(Characteristic.HardwareRevision, pluginVersion);
         accessory.servicesToKeep.push(Service.AccessoryInformation.UUID);
@@ -200,7 +200,7 @@ module.exports = class ST_Accessories {
     }
 
     hasDeviceFlag(flag) {
-        return Object.keys(this.context.deviceData.deviceflags).includes(flag) || false;
+        return (this.context && this.context.deviceData && this.context.deviceData.deviceflags && Object.keys(this.context.deviceData.deviceflags).includes(flag)) || false;
     }
 
     updateDeviceAttr(attr, val) {

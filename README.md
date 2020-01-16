@@ -5,7 +5,7 @@ V2 of this plugin is a complete rewrite of the homebridge-smartthings-tonesto7 p
 
 [![npm version](https://badge.fury.io/js/homebridge-smartthings-v2.svg)](https://badge.fury.io/js/homebridge-smartthings-v2)
 
-**```Latest SmartApp Version: 2.1.1```**
+**```Latest SmartApp Version: 2.2.0```**
 
 ## Credits
 Big thanks for @Areson for his help/motivation in rewriting this.
@@ -123,7 +123,8 @@ _Note to users updating from homebridge-smartthings-tonesto7: You can continue t
       "app_url": "https://graph.api.smartthings.com:443/api/smartapps/installations/",
       "app_id": "ffc2dd6e-6fa5-48a9-b274-35c4185ed9ac",
       "access_token": "1888d2bc-7792-1114-9f32-e4724e388a26",
-      "direct": true,
+      "communityUserName": "tonesto7",
+      "direct_ip": "10.0.0.15",
       "direct_port": 8000,
       "local_commands": true,
       "temperature_unit": "F",
@@ -153,6 +154,9 @@ _Note to users updating from homebridge-smartthings-tonesto7: You can continue t
 
  * <p><code>app_url</code> & <code>app_id</code> & <code>access_token</code>  <small style="color: orange; font-weight: 600;"><i>Required</i></small><br>
     To get this information, open Homebridge (SmartThings) SmartApp in your SmartThings Classic Mobile App, and tap on "View Configuration Data for Homebridge"<br><small style="color: yellow;"><b>Notice:</b> The app_url in the example will be different for you.</small></p>
+
+ * <p><code>communityUserName</code>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: ``</i></small><br>
+    Only needed when you are having issues with the plugin and you want me to be able to identify your reported exception errors.</p>
 
  * <p><code>direct_ip</code>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `First available IP on your computer`</i></small><br>
     Most installations won't need this, but if for any reason it can't identify your ip address correctly, use this setting to force the IP presented to SmartThings for the hub to send to.</p>

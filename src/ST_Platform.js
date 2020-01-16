@@ -32,7 +32,7 @@ module.exports = class ST_Platform {
             return;
         }
         Sentry.init({ dsn: 'https://c126c2d965e84da8af105d80c5e92474@sentry.io/1878896', release: `${pluginName}@${pluginVersion}`, attachStacktrace: true });
-        Sentry.configureScope(function(scope) {
+        Sentry.configureScope((scope) => {
             scope.setUser({ id: machineId });
             scope.setTag("username", os.userInfo().username);
             scope.setTag("node", process.version);
@@ -41,6 +41,7 @@ module.exports = class ST_Platform {
             scope.setTag("type", os.type());
             scope.setTag("arch", os.arch());
             scope.setTag("release", os.release());
+            scope.setTag("CommunityUser", config.communityUserName || "Unknown");
         });
         this.Sentry = Sentry;
         this.ok2Run = true;
