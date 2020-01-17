@@ -72,6 +72,13 @@
                 "required": false,
                 "default": false
             },
+            "disableErrorReporting": {
+                "title": "Disable Error Reporting?",
+                "description": "This will disable the Sentry Error Reporting system.",
+                "type": "boolean",
+                "required": false,
+                "default": false
+            },
             "logConfig": {
                 "type": "object",
                 "properties": {
