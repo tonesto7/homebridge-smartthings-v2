@@ -1,10 +1,13 @@
 ## v2.2.0
-- [UPDATE] Button logic now generates the push/held actions for every button available on the remote now.  Meaning you can select the parent remote now and have it show actions for each button on the remote. NOTE: I've noticed that I need to open the home app once after adding the buttons to create the event connection.
+- [UPDATE] Button logic now generates the push/held actions for every button available on the remote now.  Meaning you can select the parent remote and have it show actions for each button on the remote. NOTE: I've noticed that I need to open the home app once after adding the buttons to create the event connection.
+- [FIX] Buttons should now work 100% again. Sorry about the issues.
 - [FIX] Fixed the cannot read property of 'includes' and '_events' errors.
 - [FIX] Fixed some rare issues with requestPromises on device commands.
 - [FIX] Lot's of other minor cleanup.
 - [NEW] Direct port is now selected automatically using the direct_port config value as the start point for available port detection.
 - [NEW] Logs now alert you when your local ST hub endpoint can't be reached.
+- [NEW] Added a new config item to define your ST Community username in the error reporting so if you want me to be able to review your issues.
+- [NEW] Added config item to allow you to disable error reporting.
 - [UPDATE] Modified the point when the Sentry IO Error collector is loaded so it doesn't collect other plugin exceptions.replace
 - [UPDATE] Updated Sentry.IO library to v5.11.1.
 - [UPDATE] Changed the plugin to not list every single device loaded from cache and every device updated in the logs.  They are only visible when debug option is enabled.

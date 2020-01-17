@@ -31,19 +31,7 @@ module.exports = class ST_Platform {
             log(`${platformName} Plugin is not Configured | Skipping...`);
             return;
         }
-        Sentry.init({ dsn: 'https://c126c2d965e84da8af105d80c5e92474@sentry.io/1878896', release: `${pluginName}@${pluginVersion}`, attachStacktrace: true });
-        Sentry.configureScope((scope) => {
-            scope.setUser({ id: machineId });
-            scope.setTag("username", os.userInfo().username);
-            scope.setTag("node", process.version);
-            scope.setTag("version", pluginVersion);
-            scope.setTag("platform", os.platform());
-            scope.setTag("type", os.type());
-            scope.setTag("arch", os.arch());
-            scope.setTag("release", os.release());
-            scope.setTag("CommunityUser", config.communityUserName || "Unknown");
-        });
-        this.Sentry = Sentry;
+        this.Sentry = this.initializeErrorReporting(config);
         this.ok2Run = true;
         this.direct_port = this.findDirectPort();
         this.logConfig = this.getLogConfig();
@@ -69,6 +57,34 @@ module.exports = class ST_Platform {
             .then((res) => {
                 this.client.sendUpdateStatus(res);
             });
+    }
+
+    initializeErrorReporting(cfg) {
+        if (cfg.disableErrorReporting !== false) {
+            Sentry.init({ dsn: 'https://c126c2d965e84da8af105d80c5e92474@sentry.io/1878896', release: `${pluginName}@${pluginVersion}`, attachStacktrace: true });
+            Sentry.configureScope((scope) => {
+                scope.setUser({ id: machineId });
+                scope.setTag("username", os.userInfo().username);
+                scope.setTag("node", process.version);
+                scope.setTag("version", pluginVersion);
+                scope.setTag("platform", os.platform());
+                scope.setTag("type", os.type());
+                scope.setTag("arch", os.arch());
+                scope.setTag("release", os.release());
+                scope.setTag("CommunityUser", cfg.communityUserName || "Unknown");
+            });
+            Sentry.Integrations.Dedupe;
+            Sentry.Integrations.ExtraErrorData;
+            return Sentry;
+        } else {
+            return undefined;
+        }
+    }
+
+    sentryErrorEvent(err) {
+        if (this.configItems.disableErrorReporting && this.Sentry) {
+            this.Sentry.captureException(err);
+        }
     }
 
     getLogConfig() {
@@ -102,7 +118,8 @@ module.exports = class ST_Platform {
             direct_ip: this.config.direct_ip || this.myUtils.getIPAddress(),
             debug: (this.config.debug === true),
             local_commands: (this.config.local_commands === true),
-            validateTokenId: (this.config.validateTokenId === true)
+            validateTokenId: (this.config.validateTokenId === true),
+            disableErrorReporting: (this.config.disableErrorReporting !== false)
         };
     }
 
@@ -129,7 +146,7 @@ module.exports = class ST_Platform {
             })
             .catch(err => {
                 that.log.error(`didFinishLaunching | refreshDevices Exception:`, err);
-                this.Sentry.captureException(err);
+                this.sentryErrorEvent(err);
             });
     }
 
@@ -142,7 +159,7 @@ module.exports = class ST_Platform {
                 this.client.getDevices()
                     .catch(err => {
                         that.log.error('getDevices Exception:', err);
-                        this.Sentry.captureException(err);
+                        this.sentryErrorEvent(err);
                         reject(err.message);
                     })
                     .then(resp => {
@@ -175,7 +192,7 @@ module.exports = class ST_Platform {
 
             } catch (ex) {
                 this.log.error("refreshDevices Error: ", ex);
-                this.Sentry.captureException(ex);
+                this.sentryErrorEvent(ex);
                 resolve(false);
             }
         });
@@ -408,7 +425,7 @@ module.exports = class ST_Platform {
                 });
             } catch (ex) {
                 that.log.error('WebServerInit Exception: ', ex.message);
-                this.Sentry.captureException(ex);
+                this.sentryErrorEvent(ex);
                 resolve({
                     status: ex.message
                 });

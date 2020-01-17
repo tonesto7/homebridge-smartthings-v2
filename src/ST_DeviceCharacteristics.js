@@ -1,11 +1,10 @@
 // const debounce = require('debounce-promise');
-var Characteristic, CommunityTypes, Service, accClass;
+var Characteristic, CommunityTypes, accClass;
 
 module.exports = class DeviceCharacteristics {
-    constructor(accessories, char, srvc) {
+    constructor(accessories, char) {
         this.platform = accessories.mainPlatform;
         Characteristic = char;
-        Service = srvc;
         CommunityTypes = accessories.CommunityTypes;
         accClass = accessories;
         this.log = accessories.log;

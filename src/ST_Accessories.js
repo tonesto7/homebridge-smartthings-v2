@@ -25,7 +25,7 @@ module.exports = class ST_Accessories {
         this.comparator = this.comparator.bind(this);
         this.transforms = new Transforms(this, Characteristic);
         this.serviceTypes = new ServiceTypes(this, Service);
-        this.device_types = new DeviceTypes(this, Characteristic, Service);
+        this.device_types = new DeviceTypes(this, Characteristic);
         this._accessories = {};
         this._buttonMap = {};
         this._attributeLookup = {};
@@ -67,7 +67,7 @@ module.exports = class ST_Accessories {
             return this.configureCharacteristics(accessory);
         } catch (err) {
             this.log.error(`initializeAccessory (fromCache: ${fromCache}) Error:`, err);
-            this.mainPlatform.Sentry.captureException(err);
+            this.mainPlatform.sentryErrorEvent(err);
             // console.error(err);
             return accessory;
         }

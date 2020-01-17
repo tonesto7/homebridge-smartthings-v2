@@ -62,33 +62,31 @@ module.exports = class Transforms {
                     default:
                         return null;
                 }
-            case "supportButtonValues":
-                {
-                    let validValues = [];
-                    if (typeof val === "string") {
-                        for (const v of JSON.parse(val)) {
-                            switch (v) {
-                                case "pushed":
-                                    validValues.push(Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS);
-                                    continue;
-                                case "held":
-                                    validValues.push(Characteristic.ProgrammableSwitchEvent.LONG_PRESS);
-                                    continue;
-                                case "double":
-                                    validValues.push(Characteristic.ProgrammableSwitchEvent.DOUBLE_PRESS);
-                                    continue;
-                                default:
-                                    validValues.push(Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS);
-                                    validValues.push(Characteristic.ProgrammableSwitchEvent.LONG_PRESS);
-                                    continue;
-                            }
+            case "supportedButtonValues":
+                var validValues = [];
+                if (typeof val === "string") {
+                    for (const v of JSON.parse(val)) {
+                        switch (v) {
+                            case "pushed":
+                                validValues.push(Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS);
+                                continue;
+                            case "double":
+                                validValues.push(Characteristic.ProgrammableSwitchEvent.DOUBLE_PRESS);
+                                continue;
+                            case "held":
+                                validValues.push(Characteristic.ProgrammableSwitchEvent.LONG_PRESS);
+                                continue;
+                            default:
+                                validValues.push(Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS);
+                                validValues.push(Characteristic.ProgrammableSwitchEvent.LONG_PRESS);
+                                continue;
                         }
-                    } else {
-                        validValues.push(Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS);
-                        validValues.push(Characteristic.ProgrammableSwitchEvent.LONG_PRESS);
                     }
-                    return validValues;
+                } else {
+                    validValues.push(Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS);
+                    validValues.push(Characteristic.ProgrammableSwitchEvent.LONG_PRESS);
                 }
+                return validValues;
             case "fanState":
                 return (val === "off") ? Characteristic.CurrentFanState.IDLE : Characteristic.CurrentFanState.BLOWING_AIR;
             case "valve":

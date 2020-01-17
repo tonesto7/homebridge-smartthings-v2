@@ -298,7 +298,7 @@ def donationPage() {
 def confirmPage() {
     return dynamicPage(name: "confirmPage", title: "Confirmation Page", install: true, uninstall:true) {
         section() {
-            paragraph "Restarting the service is no longer required to apply any device changes under homekit.\n\nThe service will refresh your devices shortly after Pressing Done/Save.", state: "complete", image: getAppImg("info")
+            paragraph "Restarting the service is no longer required to apply any device changes under homekit.\n\nThe service will refresh your devices about 15-20 seconds after Pressing Done/Save.", state: "complete", image: getAppImg("info")
         }
     }
 }

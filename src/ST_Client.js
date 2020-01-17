@@ -66,7 +66,7 @@ module.exports = class ST_Client {
                 } else {
                     console.error(err);
                     this.log.error(`${src} Error: ${err.error.error} | Message: ${err.error.error_description}`);
-                    this.platform.Sentry.captureException(err);
+                    this.platform.sentryErrorEvent(err);
                 }
                 break;
         }
