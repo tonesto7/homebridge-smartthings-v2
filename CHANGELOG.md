@@ -1,3 +1,6 @@
+## v2.2.1
+- [FIX] Minor tweaks to support shades fixes should now work.
+
 ## v2.2.0
 - [UPDATE] Button logic now generates the push/held actions for every button available on the remote now.  Meaning you can select the parent remote and have it show actions for each button on the remote. NOTE: I've noticed that I need to open the home app once after adding the buttons to create the event connection.
 - [FIX] Buttons should now work 100% again. Sorry about the issues.

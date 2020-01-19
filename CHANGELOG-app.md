@@ -1,6 +1,9 @@
 
 # Changelog
 
+## v2.2.1
+- [FIX] Resolved the issue with Window Shades not working.
+
 ## v2.2.0
 - [UPDATE] Added support for passing the pressed button number when provided.
 - [FIX] Other minor bugfixes and optimizations.
