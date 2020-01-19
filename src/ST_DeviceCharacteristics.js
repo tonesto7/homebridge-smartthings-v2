@@ -646,7 +646,6 @@ module.exports = class DeviceCharacteristics {
             if (!c._events.set) {
                 c.on("set", async(value, callback) => {
                     if (_accessory.hasCommand('close') && value <= 2) {
-                        // setLevel: 0, not responding on spring fashion blinds
                         await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "close");
                     } else {
                         let v = value;
@@ -662,10 +661,9 @@ module.exports = class DeviceCharacteristics {
         } else {
             c.updateValue(this.transforms.transformAttributeState('level', _accessory.context.deviceData.attributes.level));
         }
-        // _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.PositionState, 'windowShade');
-        _accessory.getOrAddService(_service).getCharacteristic(Characteristic.PositionState).updateValue(1);
+        _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.PositionState, 'windowShade');
         _accessory.getOrAddService(_service).getCharacteristic(Characteristic.ObstructionDetected).updateValue(false);
-        _accessory.getOrAddService(_service).getCharacteristic(Characteristic.HoldPosition).updateValue(true);
+        _accessory.getOrAddService(_service).getCharacteristic(Characteristic.HoldPosition).updateValue(false);
         _accessory.context.deviceGroups.push("window_shade");
         return _accessory;
     }
