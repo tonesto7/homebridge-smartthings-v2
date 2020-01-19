@@ -40,7 +40,7 @@ module.exports = class ServiceTypes {
             virtual_mode: Service.Switch,
             virtual_routine: Service.Switch,
             water_sensor: Service.LeakSensor,
-            window_covering: Service.WindowCovering
+            window_shade: Service.WindowCovering
         };
     }
 
@@ -86,9 +86,29 @@ class ServiceTest {
     }
 }
 
+//TODO: Build out the access into capabilitiy map { hasSwitch: true, hasWater: false, hasPower: false }
+//TODO: Use those to help filter out the ServiceTest items below instead of a long line of accessory.hasCapability and hasAttribute.
+//TODO: or break each comparision item into a promise.all type logic.
+
 // NOTE: These Tests are executed in order which is important
 const serviceTests = [
-    new ServiceTest("window_shade", accessory => (accessory.hasCapability('Switch Level') && !accessory.hasCapability('Speaker') && !(accessory.hasCapability('Fan') || accessory.hasCapability('Fan Light') || accessory.hasCapability('Fan Speed') || accessory.hasCapability('Fan Control') || accessory.hasCommand('setFanSpeed') || accessory.hasCommand('lowSpeed') || accessory.hasAttribute('fanSpeed') || accessory.hasCapability('custom.airPurifierOperationMode')) && accessory.hasCapability('Window Shade') && (accessory.hasCommand('levelOpenClose') || accessory.hasCommand('presetPosition'))), true),
+    new ServiceTest("window_shade", accessory => (
+        (
+            accessory.hasCapability('Window Shade') ||
+            accessory.hasCapability('WindowShade')
+        ) &&
+        !(
+            accessory.hasCapability('Speaker') ||
+            accessory.hasCapability('Fan') ||
+            accessory.hasCapability('Fan Light') ||
+            accessory.hasCapability('Fan Speed') ||
+            accessory.hasCapability('Fan Control') ||
+            accessory.hasCommand('setFanSpeed') ||
+            accessory.hasCommand('lowSpeed') ||
+            accessory.hasAttribute('fanSpeed') ||
+            accessory.hasCapability('custom.airPurifierOperationMode')
+        )
+    ), true),
     new ServiceTest("light", accessory => (accessory.hasCapability('Switch Level') && (accessory.hasCapability('LightBulb') || accessory.hasCapability('Fan Light') || accessory.hasCapability('Bulb') || accessory.context.deviceData.name.includes('light') || accessory.hasAttribute('saturation') || accessory.hasAttribute('hue') || accessory.hasAttribute('colorTemperature') || accessory.hasCapability("Color Control"))), true),
     new ServiceTest("air_purifier", accessory => accessory.hasCapability('custom.airPurifierOperationMode')),
     new ServiceTest("garage_door", accessory => accessory.hasCapability("Garage Door Control")),

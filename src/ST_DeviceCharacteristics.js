@@ -95,11 +95,7 @@ module.exports = class DeviceCharacteristics {
             }
             if (!c.events.set) {
                 c.on('set', async(value, callback) => {
-                    if (value) {
-                        await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, 'on');
-                    } else {
-                        await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, 'off');
-                    }
+                    await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, value ? 'on' : 'off');
                 });
             }
             c.getValue();
@@ -243,7 +239,7 @@ module.exports = class DeviceCharacteristics {
     fan(_accessory, _service) {
         if (_accessory.hasAttribute('switch')) {
             _accessory.manageGetSetCharacteristic(_service, _accessory, Characteristic.Active, 'switch');
-            _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.CurrentFanState, 'switch', { get: { altAttr: "fanState" } });
+            _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.CurrentFanState, 'switch', { get_altAttr: "fanState" });
         } else {
             _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.CurrentFanState);
             _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.Active);
@@ -262,9 +258,7 @@ module.exports = class DeviceCharacteristics {
     garage_door(_accessory, _service) {
         _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.CurrentDoorState, 'door');
         _accessory.manageGetSetCharacteristic(_service, _accessory, Characteristic.TargetDoorState, 'door');
-        if (!_accessory.hasCharacteristic(_service, Characteristic.ObstructionDetected)) {
-            _accessory.getOrAddService(_service).setCharacteristic(Characteristic.ObstructionDetected, false);
-        }
+        _accessory.getOrAddService(_service).getCharacteristic(Characteristic.ObstructionDetected).updateValue(false);
         return _accessory;
     }
 
@@ -598,8 +592,9 @@ module.exports = class DeviceCharacteristics {
                     }
                 });
             this.accessories.storeCharacteristicItem("switch", _accessory.context.deviceData.deviceid, c);
+        } else {
+            c.updateValue(this.transforms.transformAttributeState('switch', _accessory.context.deviceData.attributes.switch));
         }
-        c.updateValue(this.transforms.transformAttributeState('switch', _accessory.context.deviceData.attributes.switch));
         _accessory.context.deviceGroups.push("virtual_mode");
         return _accessory;
     }
@@ -623,8 +618,9 @@ module.exports = class DeviceCharacteristics {
                     }
                 });
             this.accessories.storeCharacteristicItem("switch", _accessory.context.deviceData.deviceid, c);
+        } else {
+            c.updateValue(this.transforms.transformAttributeState('switch', _accessory.context.deviceData.attributes.switch));
         }
-        c.updateValue(this.transforms.transformAttributeState('switch', _accessory.context.deviceData.attributes.switch));
         _accessory.context.deviceGroups.push("virtual_routine");
         return _accessory;
     }
@@ -638,10 +634,8 @@ module.exports = class DeviceCharacteristics {
         return _accessory;
     }
 
-    window_covering(_accessory, _service) {
-        _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.CurrentPosition, 'level');
-        _accessory.getOrAddService(_service).setCharacteristic(Characteristic.PositionState, Characteristic.PositionState.STOPPED);
-
+    window_shade(_accessory, _service) {
+        _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.CurrentPosition, 'level', { props: { steps: 10 } });
         let c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetPosition);
         if (!c._events.get || !c._events.set) {
             if (!c._events.get) {
@@ -651,19 +645,27 @@ module.exports = class DeviceCharacteristics {
             }
             if (!c._events.set) {
                 c.on("set", async(value, callback) => {
-                    if (_accessory.hasCommand('close') && value === 0) {
+                    if (_accessory.hasCommand('close') && value <= 2) {
                         // setLevel: 0, not responding on spring fashion blinds
                         await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "close");
                     } else {
+                        let v = value;
+                        if (value <= 2) v = 0;
+                        if (value >= 98) v = 100;
                         await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setLevel", {
-                            value1: value
+                            value1: v
                         });
                     }
                 });
             }
             this.accessories.storeCharacteristicItem("level", _accessory.context.deviceData.deviceid, c);
+        } else {
+            c.updateValue(this.transforms.transformAttributeState('level', _accessory.context.deviceData.attributes.level));
         }
-        c.updateValue(this.transforms.transformAttributeState('level', _accessory.context.deviceData.attributes.level, 'Target Position'));
+        // _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.PositionState, 'windowShade');
+        _accessory.getOrAddService(_service).getCharacteristic(Characteristic.PositionState).updateValue(1);
+        _accessory.getOrAddService(_service).getCharacteristic(Characteristic.ObstructionDetected).updateValue(false);
+        _accessory.getOrAddService(_service).getCharacteristic(Characteristic.HoldPosition).updateValue(true);
         _accessory.context.deviceGroups.push("window_shade");
         return _accessory;
     }
