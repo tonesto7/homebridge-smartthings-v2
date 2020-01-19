@@ -177,6 +177,27 @@ module.exports = class Transforms {
                     return 'auto';
                 }
 
+            case "windowShade":
+                /* Options
+                    open
+                    closed
+                    partially open
+                    unknown
+                    opening
+                    closing
+                */
+                var o;
+                if (val === 'opening') {
+                    o = Characteristic.PositionState.STOPPED;
+                    // o = Characteristic.PositionState.INCREASING;
+                } else if (val === 'closing') {
+                    o = Characteristic.PositionState.STOPPED;
+                    // o = Characteristic.PositionState.DECREASING;
+                } else {
+                    o = Characteristic.PositionState.STOPPED;
+                }
+                console.log('transform windowShade: ', o);
+                return o;
             case "alarmSystemStatus":
                 return this.convertAlarmState(val);
             default:

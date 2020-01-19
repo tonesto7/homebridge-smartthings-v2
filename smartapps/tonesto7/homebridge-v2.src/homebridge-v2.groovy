@@ -5,7 +5,7 @@
  */
 
 String appVersion()                     { return "2.2.0" }
-String appModified()                    { return "01-16-2020" }
+String appModified()                     { return "01-17-2020" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
@@ -59,7 +59,7 @@ private Map ignoreLists() {
             'closeTime', 'endMsgTime', 'endMsg', 'openTime', 'startMsgTime', 'startMsg', 'calName', "deleteInfo", "eventTitle", "floor", "sleeping", "powerSource", "batteryStatus",
             "LchildVer", "FchildVer", "LchildCurr", "FchildCurr", "lightStatus", "lastFanMode", "lightLevel", "coolingSetpointRange", "heatingSetpointRange", "thermostatSetpointRange", "energy", "power"
         ],
-        capabilities: ["Health Check", "Ultraviolet Index", "Indicator"]
+        capabilities: ["Health Check", "Ultraviolet Index", "Indicator", "Window Shade Preset"]
     ]
 }
 
@@ -310,7 +310,7 @@ def deviceDebugPage() {
             if(!debug_switch && !debug_other)
                 input "debug_sensor", "capability.sensor", title: "Sensors: ", multiple: false, submitOnChange: true, required: false, image: getAppImg("sensors")
             if(!debug_sensor && !debug_other)
-                input "debug_switch", "capability.switch", title: "Switches: ", multiple: false, submitOnChange: true, required: false, image: getAppImg("switch")
+                input "debug_switch", "capability.actuator", title: "Switches: ", multiple: false, submitOnChange: true, required: false, image: getAppImg("switch")
             if(!debug_switch && !debug_sensor)
                 input "debug_other", "capability.refresh", title: "Others Devices: ", multiple: false, submitOnChange: true, required: false, image: getAppImg("devices2")
             if(debug_other || debug_sensor || debug_switch) {
@@ -864,7 +864,7 @@ def deviceCapabilityList(device) {
         items["Speaker"] = 1
     }
     if(settings?.shadesList?.find { it?.id == device?.id }) {
-        items["WindowShade"] = 1
+        items["Window Shade"] = 1
     }
     if(settings?.noTemp && items["Temperature Measurement"] && (items["Contact Sensor"] || items["Water Sensor"])) {
         Boolean remTemp = true
