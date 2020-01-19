@@ -102,9 +102,11 @@ module.exports = class ST_Accessories {
         let svcTypes = this.serviceTypes.getServiceTypes(accessory);
         if (svcTypes) {
             svcTypes.forEach((svc) => {
-                this.log.debug(accessory.name, ' | ', svc.name);
-                accessory.servicesToKeep.push(svc.type.UUID);
-                this.device_types[svc.name](accessory, svc.type);
+                if (svc.name && svc.type) {
+                    this.log.debug(accessory.name, ' | ', svc.name);
+                    accessory.servicesToKeep.push(svc.type.UUID);
+                    this.device_types[svc.name](accessory, svc.type);
+                }
             });
         } else {
             throw "Unable to determine the service type of " + accessory.deviceid;
