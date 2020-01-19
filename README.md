@@ -77,7 +77,7 @@ _Note to users updating from homebridge-smartthings-tonesto7: You can continue t
    * Click <u><b>```App Settings```</b></u>
    * Scroll down to the OAuth section and click <u><b>```Enable OAuth in Smartapp```</b></u>
    * Click <u><b>```Update```</b></u> at the bottom.
-
+   * (If you are upgrading from a previous version of this project, OAuth will likely already be enabled, and you can safely disregard this step)
 <br>
 
 ## 2. SmartApp Configuration
