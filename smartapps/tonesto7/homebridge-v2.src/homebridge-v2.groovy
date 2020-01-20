@@ -4,14 +4,14 @@
  *  Copyright 2018, 2019, 2020 Anthony Santilli
  */
 
-String appVersion()                     { return "2.2.1" }
-String appModified()                     { return "01-18-2020" }
+String appVersion()                     { return "2.2.2" }
+String appModified()                    { return "01-20-2020" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
 String appIconUrl()                     { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/${branch()}/images/hb_tonesto7@2x.png" }
 String getAppImg(imgName, ext=".png")   { return "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/${branch()}/images/${imgName}${ext}" }
-Map minVersions()                       { return [plugin: 210] }
+Map minVersions()                       { return [plugin: 221] }
 
 definition(
     name: "Homebridge v2",
@@ -106,6 +106,8 @@ def mainPage() {
             href "deviceSelectPage", title: "Select your Devices", required: false, image: getAppImg("devices"), state: (conf ? "complete" : null), description: desc
         }
 
+        inputDupeValidation()
+
         section("Capability Filtering:") {
             Boolean conf = (removeBattery || removeButton || removeContact || removeEnergy || removeHumidity || removeIlluminance || removeLevel || removeLock || removeMotion || removePower || removePresence ||
             removeSwitch || removeTamper || removeTemp || removeValve)
@@ -163,6 +165,7 @@ def mainPage() {
 def defineDevicesPage() {
     return dynamicPage(name: "defineDevicesPage", title: "", install: false, uninstall: false) {
         section("Define Specific Categories:") {
+            paragraph "NOTE: Please do not select a device here and then again in another input below."
             paragraph "Each category below will adjust the device attributes to make sure they are recognized as the desired device type under HomeKit", state: "complete"
             input "lightList", "capability.switch", title: "Lights: (${lightList ? lightList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("light_on")
             input "buttonList", "capability.button", title: "Buttons: (${buttonList ? buttonList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("button")
@@ -206,6 +209,73 @@ private resetAppToken() {
     state.remove("accessToken")
     if(getAccessToken()) {
         log.info "resetAppToken | New Access Token Created..."
+    }
+}
+
+private resetCapFilters() {
+    List items = settings?.each?.findAll { it?.key?.startsWith("remove") }?.collect { it?.key as String }
+    if(items?.size()) {
+        items?.each { item->
+            settingRemove(item)
+        }
+    }
+}
+
+private inputDupeValidation() {
+    Map clnUp = [d: [:], o: [:]]
+    Map items = [
+        d: ["fanList": "Fans", "fan3SpdList": "Fans (3-Speed)", "fan4SpdList": "Fans (4-Speed)", "buttonList": "Buttons", "lightList": "Lights", "shadesList": "Window Shadse", "speakerList": "Speakers"],
+        o: ["deviceList": "Other", "sensorList": "Sensor", "switchList": "Switch"]
+    ]
+    items?.d?.each { k, v->
+        List priItems = (settings?."${k}"?.size()) ? settings?."${k}"?.collect { it?.getLabel() } : null
+        if(priItems) {
+            items?.d?.each { k2, v2->
+                List secItems = (settings?."${k2}"?.size()) ? settings?."${k2}"?.collect { it?.getLabel() } : null
+                if(k != k2 && secItems) {
+                    secItems?.retainAll(priItems)
+                    if(secItems?.size()) {
+                        clnUp?.d[k2] = clnUp?.d[k2] ?: []
+                        clnUp?.d[k2] = (clnUp?.d[k2] + secItems)?.unique()
+                    }
+                }
+            }
+
+            items?.o?.each { k2, v2->
+                List secItems = (settings?."${k2}"?.size()) ? settings?."${k2}"?.collect { it?.getLabel() } : null
+                if(secItems) {
+                    secItems?.retainAll(priItems)
+                    if(secItems?.size()) {
+                        clnUp?.o[k2] = clnUp?.o[k2] ?: []
+                        clnUp?.o[k2] = (clnUp?.o[k2] + secItems)?.unique()
+                    }
+                }
+            }
+        }
+    }
+    String out = ""
+    Boolean show = false
+    Boolean first = true
+    if(clnUp?.d?.size()) {
+        show=true
+        clnUp?.d?.each { k,v->
+            out += "${first ? "" : "\n"}${items?.d[k]}:\n "
+            out += v?.join("\n ") + "\n"
+            first = false
+        }
+    }
+    if(clnUp?.o?.size()) {
+        show=true
+        clnUp?.o?.each { k,v->
+            out += "${first ? "" : "\n"}${items?.o[k]}:\n "
+            out += v?.join("\n ") + "\n"
+            first = false
+        }
+    }
+    if(show && out) {
+        section("Duplicate Device Validation:") {
+            paragraph title: "Duplicate Devices Found in these Inputs:", out + "\nPlease remove these duplicate items!", required: true, state: null
+        }
     }
 }
 
@@ -258,6 +328,10 @@ def capFilterPage() {
             input "removeTamper", "capability.tamperAlert", title: "Remove Tamper from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("tamper")
             input "removeTemp", "capability.temperatureMeasurement", title: "Remove Temperature from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("temperature")
             input "removeValve", "capability.valve", title: "Remove Valve from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("valve")
+        }
+        section("Filter Reset:", hideable: true, hidden: true) {
+            input "resetCapFilters", "bool", title: "Clear All Selected Removal Filters?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("reset")
+            if(settings?.resetCapFilters) { settingUpdate("resetCapFilters", "false", "bool"); resetCapFilters() }
         }
     }
 }
