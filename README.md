@@ -1,13 +1,14 @@
 # homebridge-smartthings-v2
 [![npm](https://img.shields.io/npm/v/homebridge-smartthings-v2?style=for-the-badge)](https://www.npmjs.com/package/homebridge-smartthings-v2)
 [![npm](https://img.shields.io/npm/dt/homebridge-smartthings-v2?style=for-the-badge)](https://www.npmjs.com/package/homebridge-smartthings-v2)
+![npm](https://img.shields.io/npm/dw/homebridge-smartthings-v2?style=for-the-badge)
 [![GitHub issues](https://img.shields.io/github/issues/tonesto7/homebridge-smartthings-v2?style=for-the-badge)](https://github.com/tonesto7/homebridge-smartthings-v2/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/tonesto7/homebridge-smartthings-v2?style=for-the-badge)](https://github.com/tonesto7/homebridge-smartthings-v2/pulls)
 
 ## About
 V2 of this plugin is a complete rewrite of the homebridge-smartthings-tonesto7 plugin using modern Javascript structure using classes, promises, arrow functions.
 
-**```Latest SmartApp Version: 2.2.1```**
+![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/tonesto7/homebridge-smartthings-v2?label=Latest%20SmartApp%20Version&sort=semver&style=for-the-badge)
 
 ## Credits
 Big thanks for @Areson for his help/motivation in rewriting this.
