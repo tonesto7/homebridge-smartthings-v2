@@ -134,9 +134,7 @@ module.exports = class ST_Client {
             config.body = {
                 deviceid: devData.deviceid,
                 command: cmd,
-                values: vals,
-                evtSource: `Homebridge_${platformName}_${this.configItems.app_id}`,
-                evtType: 'hkCommand'
+                values: vals
             };
         }
         return new Promise((resolve) => {
