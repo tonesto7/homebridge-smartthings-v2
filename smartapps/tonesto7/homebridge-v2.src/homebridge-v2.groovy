@@ -747,13 +747,15 @@ def lanEventHandler(evt) {
     // log.trace "lanStreamEvtHandler..."
     def msg = parseLanMessage(evt?.description as String)
     Map headerMap = msg?.headers
-    // log.trace "lanEventHandler... | headers: ${headerMap}"
+    log.trace "lanEventHandler... | headers: ${headerMap}"
     try {
         Map msgData = [:]
         if (headerMap?.size()) {
             String evtSrc = headerMap?.evtSource ?: null
+            log.debug "evtSrc: ${evtSrc}"
+            log.debug "msg: ${msg?.body}"
             if (evtSrc && evtSrc?.startsWith("Homebridge_${pluginName()}")) {
-                // log.debug "evtSource: (${evtSrc}) | app: (Homebridge_${pluginName()}_${app?.getId()})"
+                log.debug "evtSource: (${evtSrc}) | app: (Homebridge_${pluginName()}_${app?.getId()})"
                 if(evtSrc != "Homebridge_${pluginName()}_${app?.getId()}") {
                     if(showDebugLogs) log.warn "Recieved Local Homebridge Command | Unfortunately it wasn't meant for this APPID..."
                     return
