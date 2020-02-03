@@ -1,4 +1,5 @@
 // const debounce = require('debounce-promise');
+const throttle_debounce = require('throttle-debounce');
 var Characteristic, CommunityTypes, accClass;
 
 module.exports = class DeviceCharacteristics {
@@ -57,14 +58,16 @@ module.exports = class DeviceCharacteristics {
                 });
             }
             if (!c._events.set) {
-                c.on("set", async(value, callback) => {
+                c.on("set", (value, callback) => {
                     let cmdName = accClass.transforms.transformCommandName(opts.set_altAttr || attr, value);
                     let cmdVal = accClass.transforms.transformCommandValue(opts.set_altAttr || attr, value);
-                    if (opts.cmdHasVal === true) {
-                        await accClass.client.sendDeviceCommand(callback, this.context.deviceData, cmdName, { value1: cmdVal });
-                    } else {
-                        await accClass.client.sendDeviceCommand(callback, this.context.deviceData, cmdVal);
-                    }
+                    throttle_debounce.debounce(200, true, async() => {
+                        if (opts.cmdHasVal === true) {
+                            await accClass.client.sendDeviceCommand(callback, this.context.deviceData, cmdName, { value1: cmdVal });
+                        } else {
+                            await accClass.client.sendDeviceCommand(callback, this.context.deviceData, cmdVal);
+                        }
+                    });
                     if (opts.updAttrVal) this.context.deviceData.attributes[attr] = accClass.transforms.transformAttributeState(opts.set_altAttr || attr, this.context.deviceData.attributes[opts.set_altValAttr || attr], c.displayName);
                 });
                 if (opts.props && Object.keys(opts.props).length) c.setProps(opts.props);
@@ -94,8 +97,10 @@ module.exports = class DeviceCharacteristics {
                 });
             }
             if (!c.events.set) {
-                c.on('set', async(value, callback) => {
-                    await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, value ? 'on' : 'off');
+                c.on('set', (value, callback) => {
+                    throttle_debounce.debounce(200, true, async() => {
+                        await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, value ? 'on' : 'off');
+                    });
                 });
             }
             c.getValue();
@@ -121,9 +126,11 @@ module.exports = class DeviceCharacteristics {
                 });
             }
             if (!c.events.set) {
-                c.on('set', async(value, callback) => {
-                    await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, 'setFanMode', {
-                        value1: this.transforms.transformCommandValue('fanMode', value)
+                c.on('set', (value, callback) => {
+                    throttle_debounce.debounce(200, true, async() => {
+                        await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, 'setFanMode', {
+                            value1: this.transforms.transformCommandValue('fanMode', value)
+                        });
                     });
                 });
             }
@@ -366,12 +373,14 @@ module.exports = class DeviceCharacteristics {
                     if (isSonos) {
                         if (value > 0 && value !== lastVolumeWriteValue) {
                             lastVolumeWriteValue = value;
-                            sonosVolumeTimeout = this.accessories.clearAndSetTimeout(sonosVolumeTimeout, async() => {
-                                this.log.debug(`Existing volume: ${_accessory.context.deviceData.attributes.volume}, set to ${lastVolumeWriteValue}`);
+                            // sonosVolumeTimeout = this.accessories.clearAndSetTimeout(sonosVolumeTimeout, () => {
+                            this.log.debug(`Existing volume: ${_accessory.context.deviceData.attributes.volume}, set to ${lastVolumeWriteValue}`);
+                            throttle_debounce.throttle(1000, true, async() => {
                                 await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setVolume", {
                                     value1: lastVolumeWriteValue
                                 });
-                            }, 1000);
+                            });
+                            // }, 1000);
                         }
                     }
                     if (value > 0) {

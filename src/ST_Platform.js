@@ -264,7 +264,7 @@ module.exports = class ST_Platform {
                 that.log.info("WebServer Initiated...");
 
                 // Start the HTTP Server
-                webApp.listen(that.configItems.direct_port, '0.0.0.0', () => {
+                webApp.listen(that.configItems.direct_port, () => {
                     that.log.info(`Direct Connect Active | Listening at ${ip}:${that.configItems.direct_port}`);
                 });
 
@@ -300,23 +300,23 @@ module.exports = class ST_Platform {
                     that.log.info(`${platformName} Debug Option Request(${req.query.option})...`);
                     if (req.query && req.query.option) {
                         let accs = this.SmartThingsAccessories.getAllAccessoriesFromCache();
-                        let accsKeys = Object.keys(accs);
+                        // let accsKeys = Object.keys(accs);
                         // console.log(accsKeys);
                         switch (req.query.option) {
                             case 'allAccData':
                                 res.send(JSON.stringify(accs));
                                 break;
-                            case 'accServices':
-                                var o = accsKeys.forEach(s => s.services.forEach(s1 => s1.UUID));
-                                res.send(JSON.stringify(o));
-                                break;
-                            case 'accCharacteristics':
-                                var o = accsKeys.forEach(s => s.services.forEach(s1 => s1.characteristics.forEach(c => c.displayName)));
-                                res.send(JSON.stringify(o));
-                                break;
-                            case 'accContext':
-                                res.send(JSON.stringify(this.SmartThingsAccessories.getAllAccessoriesFromCache()));
-                                break;
+                                // case 'accServices':
+                                //     var o = accsKeys.forEach(s => s.services.forEach(s1 => s1.UUID));
+                                //     res.send(JSON.stringify(o));
+                                //     break;
+                                // case 'accCharacteristics':
+                                //     var o = accsKeys.forEach(s => s.services.forEach(s1 => s1.characteristics.forEach(c => c.displayName)));
+                                //     res.send(JSON.stringify(o));
+                                //     break;
+                                // case 'accContext':
+                                //     res.send(JSON.stringify(this.SmartThingsAccessories.getAllAccessoriesFromCache()));
+                                //     break;
                             default:
                                 res.send(`Error: Invalid Option Parameter Received | Option: ${req.query.option}`);
                                 break;

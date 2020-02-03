@@ -5,7 +5,7 @@
  */
 
 String appVersion()                     { return "2.2.2" }
-String appModified()                    { return "01-20-2020" }
+String appModified()                    { return "02-20-2020" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
@@ -745,41 +745,41 @@ def CommandReply(statusOut, messageOut) {
 
 def lanEventHandler(evt) {
     // log.trace "lanStreamEvtHandler..."
-    def msg = parseLanMessage(evt?.description as String)
-    Map headerMap = msg?.headers
-    log.trace "lanEventHandler... | headers: ${headerMap}"
+    def map = stringToMap(evt?.stringValue)
+    def headers = getHttpHeaders(map?.headers);
+    def slurper = new groovy.json.JsonSlurper()
+    def body = slurper?.parseText(new String(map?.body?.decodeBase64()))
+    log.debug "headers: $headers"
+    log.debug "body: $body"
+    // def msg = parseLanMessage(evt?.description as String)
+    // Map headerMap = msg?.headers
+    // log.trace "lanEventHandler... | headers: ${headerMap}"
     try {
         Map msgData = [:]
-        if (headerMap?.size()) {
-            String evtSrc = headerMap?.evtSource ?: null
-            // log.debug "evtSrc: ${evtSrc}"
-            // log.debug "msg: ${msg?.body}"
-            if (evtSrc && evtSrc?.startsWith("Homebridge_${pluginName()}")) {
+        if (headers?.size()) {
+            if (headers?.evtSource && headers?.evtSource?.startsWith("Homebridge_${pluginName()}")) {
                 // log.debug "evtSource: (${evtSrc}) | app: (Homebridge_${pluginName()}_${app?.getId()})"
-                if(evtSrc != "Homebridge_${pluginName()}_${app?.getId()}") {
-                    if(showDebugLogs) log.warn "Recieved Local Homebridge Command | Unfortunately it wasn't meant for this APPID..."
+                if(headers?.evtSource != "Homebridge_${pluginName()}_${app?.getId()}") {
+                    if(showDebugLogs) log.warn "Received Local Homebridge Command | Unfortunately it wasn't meant for this APPID..."
                     return
                 }
-                if (msg?.body != null) {
-                    def slurper = new groovy.json.JsonSlurper()
-                    msgData = slurper?.parseText(msg?.body as String)
-                    // log.debug "msgData: $msgData"
-                    if(headerMap?.evtType) {
-                        switch(headerMap?.evtType) {
+                if (body != null) {
+                    if(headers?.evtType) {
+                        switch(headers?.evtType) {
                             case "hkCommand":
                                 // log.trace "hkCommand($msgData)"
-                                def val1 = msgData?.values?.value1 ?: null
-                                def val2 = msgData?.values?.value2 ?: null
-                                processCmd(msgData?.deviceid, msgData?.command, val1, val2, true)
+                                def val1 = body?.values?.value1 ?: null
+                                def val2 = body?.values?.value2 ?: null
+                                processCmd(body?.deviceid, body?.command, val1, val2, true)
                                 break
                             case "enableDirect":
                                 // log.trace "enableDirect($msgData)"
                                 state?.pluginDetails = [
-                                    directIP: msgData?.ip,
-                                    directPort: msgData?.port,
-                                    version: msgData?.version ?: null
+                                    directIP: body?.ip,
+                                    directPort: body?.port,
+                                    version: body?.version ?: null
                                 ]
-                                updCodeVerMap("plugin", msgData?.version ?: null)
+                                updCodeVerMap("plugin", body?.version ?: null)
                                 activateDirectUpdates(true)
                                 break
                         }
@@ -790,6 +790,15 @@ def lanEventHandler(evt) {
     } catch (ex) {
         log.error "lanEventHandler Exception:", ex
     }
+}
+
+private getHttpHeaders(headers) {
+  def obj = [:]
+  new String(headers.decodeBase64()).split("\r\n").each {param ->
+    def nameAndValue = param.split(":")
+    obj[nameAndValue[0]] = (nameAndValue.length == 1) ? "" : nameAndValue[1].trim()
+  }
+  return obj
 }
 
 def deviceCommand() {
