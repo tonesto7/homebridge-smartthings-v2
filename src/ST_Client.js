@@ -4,6 +4,7 @@ const {
     pluginVersion
 } = require("./libs/Constants"),
     rp = require("request-promise-native"),
+    axios = require('axios').default,
     url = require("url");
 
 module.exports = class ST_Client {
@@ -51,12 +52,12 @@ module.exports = class ST_Client {
     }
 
     handleError(src, err, allowLocal = false) {
-        switch (err.statusCode) {
+        switch (err.status) {
             case 401:
-                this.log.error(`${src} Error | SmartThings Token Error: ${err.error.error} | Message: ${err.error.error_description}`);
+                this.log.error(`${src} Error | SmartThings Token Error: ${err.response} | Message: ${err.message}`);
                 break;
             case 403:
-                this.log.error(`${src} Error | SmartThings Authentication Error: ${err.error.error} | Message: ${err.error.error_description}`);
+                this.log.error(`${src} Error | SmartThings Authentication Error: ${err.response} | Message: ${err.message}`);
                 break;
             default:
                 if (err.message.startsWith('getaddrinfo EAI_AGAIN')) {
@@ -65,7 +66,7 @@ module.exports = class ST_Client {
                     this.localHubErr(true);
                 } else {
                     console.error(err);
-                    this.log.error(`${src} Error: ${err.error.error} | Message: ${err.error.error_description}`);
+                    this.log.error(`${src} Error: ${err.response} | Message: ${err.message}`);
                     this.platform.sentryErrorEvent(err);
                 }
                 break;
@@ -75,19 +76,20 @@ module.exports = class ST_Client {
     getDevices() {
         let that = this;
         return new Promise((resolve) => {
-            rp({
-                    uri: `${that.configItems.app_url}${that.configItems.app_id}/devices`,
-                    qs: {
+            axios({
+                    method: 'get',
+                    url: `${that.configItems.app_url}${that.configItems.app_id}/devices`,
+                    params: {
                         access_token: that.configItems.access_token
                     },
-                    json: true
+                    timeout: 10000
+                })
+                .then((response) => {
+                    resolve(response.data);
                 })
                 .catch((err) => {
                     this.handleError('getDevices', err);
                     resolve(undefined);
-                })
-                .then((body) => {
-                    resolve(body);
                 });
         });
     }
@@ -95,19 +97,20 @@ module.exports = class ST_Client {
     getDevice(deviceid) {
         let that = this;
         return new Promise((resolve) => {
-            rp({
-                    uri: `${that.configItems.app_url}${that.configItems.app_id}/${deviceid}/query`,
-                    qs: {
+            axios({
+                    method: 'get',
+                    url: `${that.configItems.app_url}${that.configItems.app_id}/${deviceid}/query`,
+                    params: {
                         access_token: that.configItems.access_token
                     },
-                    json: true
+                    timeout: 10000
+                })
+                .then((response) => {
+                    resolve(response.data);
                 })
                 .catch((err) => {
-                    that.handleError('getDevice', err);
+                    this.handleError('getDevice', err);
                     resolve(undefined);
-                })
-                .then((body) => {
-                    resolve(body);
                 });
         });
     }
@@ -116,22 +119,22 @@ module.exports = class ST_Client {
         let that = this;
         let sendLocal = this.sendAsLocalCmd();
         let config = {
-            method: 'POST',
-            uri: `${this.configItems.app_url}${this.configItems.app_id}/${devData.deviceid}/command/${cmd}`,
-            qs: {
+            method: 'post',
+            url: `${this.configItems.app_url}${this.configItems.app_id}/${devData.deviceid}/command/${cmd}`,
+            params: {
                 access_token: this.configItems.access_token
             },
             headers: {
                 evtSource: `Homebridge_${platformName}_${this.configItems.app_id}`,
                 evtType: 'hkCommand'
             },
-            body: vals,
-            json: true
+            data: vals,
+            timeout: 10000
         };
         if (sendLocal) {
-            config.uri = `http://${this.hubIp}:39500/event`;
-            delete config.qs;
-            config.body = {
+            config.url = `http://${this.hubIp}:39500/event`;
+            delete config.params;
+            config.data = {
                 deviceid: devData.deviceid,
                 command: cmd,
                 values: vals
@@ -140,7 +143,16 @@ module.exports = class ST_Client {
         return new Promise((resolve) => {
             try {
                 that.log.notice(`Sending Device Command: ${cmd}${vals ? ' | Value: ' + JSON.stringify(vals) : ''} | Name: (${devData.name}) | DeviceID: (${devData.deviceid}) | SendToLocalHub: (${sendLocal})`);
-                rp(config)
+                axios(config)
+                    .then((response) => {
+                        this.log.debug(`sendDeviceCommand | Response: ${JSON.stringify(response.data)}`);
+                        if (callback) {
+                            callback();
+                            callback = undefined;
+                        }
+                        that.localHubErr(false);
+                        resolve(response.data);
+                    })
                     .catch((err) => {
                         that.handleError('sendDeviceCommand', err, true);
                         if (callback) {
@@ -148,16 +160,8 @@ module.exports = class ST_Client {
                             callback = undefined;
                         };
                         resolve(undefined);
-                    })
-                    .then((body) => {
-                        this.log.debug(`sendDeviceCommand | Response: ${JSON.stringify(body)}`);
-                        if (callback) {
-                            callback();
-                            callback = undefined;
-                        }
-                        that.localHubErr(false);
-                        resolve(body);
                     });
+
             } catch (err) {
                 resolve(undefined);
             }
@@ -167,26 +171,27 @@ module.exports = class ST_Client {
     sendUpdateStatus(hasUpdate, newVersion = null) {
         return new Promise((resolve) => {
             this.log.notice(`Sending Plugin Status to SmartThings | UpdateAvailable: ${hasUpdate}${newVersion ?  ' | newVersion: ' + newVersion : ''}`);
-            rp({
-                    method: 'POST',
-                    uri: `${this.configItems.app_url}${this.configItems.app_id}/pluginStatus`,
-                    qs: {
+            axios({
+                    method: 'post',
+                    url: `${this.configItems.app_url}${this.configItems.app_id}/pluginStatus`,
+                    params: {
                         access_token: this.configItems.access_token
                     },
-                    body: { hasUpdate: hasUpdate, newVersion: newVersion, version: pluginVersion },
-                    json: true
+                    data: { hasUpdate: hasUpdate, newVersion: newVersion, version: pluginVersion },
+                    timeout: 10000
+                })
+                .then((response) => {
+                    // console.log(response.data);
+                    if (response.data) {
+                        this.log.debug(`sendUpdateStatus Resp: ${JSON.stringify(response.data)}`);
+                        resolve(response.data);
+                    } else { resolve(null); }
                 })
                 .catch((err) => {
                     this.handleError('sendUpdateStatus', err, true);
                     resolve(undefined);
-                })
-                .then((body) => {
-                    // console.log(body);
-                    if (body) {
-                        this.log.debug(`sendUpdateStatus Resp: ${JSON.stringify(body)}`);
-                        resolve(body);
-                    } else { resolve(null); }
                 });
+
         });
     }
 
@@ -194,42 +199,43 @@ module.exports = class ST_Client {
         let that = this;
         let sendLocal = this.sendAsLocalCmd();
         let config = {
-            method: 'POST',
-            uri: `${this.configItems.app_url}${this.configItems.app_id}/startDirect/${this.configItems.direct_ip}/${this.configItems.direct_port}/${pluginVersion}`,
-            qs: {
+            method: 'post',
+            url: `${this.configItems.app_url}${this.configItems.app_id}/startDirect/${this.configItems.direct_ip}/${this.configItems.direct_port}/${pluginVersion}`,
+            params: {
                 access_token: this.configItems.access_token
             },
             headers: {
                 evtSource: `Homebridge_${platformName}_${this.configItems.app_id}`,
                 evtType: 'enableDirect'
             },
-            body: {
+            data: {
                 ip: that.configItems.direct_ip,
                 port: that.configItems.direct_port,
                 version: pluginVersion
             },
-            json: true
+            timeout: 10000
         };
         if (sendLocal) {
-            config.uri = `http://${this.hubIp}:39500/event`;
-            delete config.qs;
+            config.url = `http://${this.hubIp}:39500/event`;
+            delete config.params;
         }
         return new Promise((resolve) => {
             that.log.info(`Sending StartDirect Request to ${platformDesc} | SendToLocalHub: (${sendLocal})`);
             try {
-                rp(config)
+                axios(config)
+                    .then((response) => {
+                        // that.log.info('sendStartDirect Resp:', body);
+                        if (response.data) {
+                            this.log.debug(`sendStartDirect Resp: ${JSON.stringify(response.data)}`);
+                            resolve(response.data);
+                            that.localHubErr(false);
+                        } else { resolve(null); }
+                    })
                     .catch((err) => {
                         that.handleError("sendStartDirect", err, true);
                         resolve(undefined);
-                    })
-                    .then((body) => {
-                        // that.log.info('sendStartDirect Resp:', body);
-                        if (body) {
-                            this.log.debug(`sendStartDirect Resp: ${JSON.stringify(body)}`);
-                            resolve(body);
-                            that.localHubErr(false);
-                        } else { resolve(null); }
                     });
+
             } catch (err) {
                 resolve(err);
             }

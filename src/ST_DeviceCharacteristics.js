@@ -58,16 +58,16 @@ module.exports = class DeviceCharacteristics {
                 });
             }
             if (!c._events.set) {
-                c.on("set", (value, callback) => {
+                c.on("set", async(value, callback) => {
                     let cmdName = accClass.transforms.transformCommandName(opts.set_altAttr || attr, value);
                     let cmdVal = accClass.transforms.transformCommandValue(opts.set_altAttr || attr, value);
-                    throttle_debounce.debounce(200, true, async() => {
-                        if (opts.cmdHasVal === true) {
-                            await accClass.client.sendDeviceCommand(callback, this.context.deviceData, cmdName, { value1: cmdVal });
-                        } else {
-                            await accClass.client.sendDeviceCommand(callback, this.context.deviceData, cmdVal);
-                        }
-                    });
+                    // throttle_debounce.debounce(200, true, async() => {
+                    if (opts.cmdHasVal === true) {
+                        await accClass.client.sendDeviceCommand(callback, this.context.deviceData, cmdName, { value1: cmdVal });
+                    } else {
+                        await accClass.client.sendDeviceCommand(callback, this.context.deviceData, cmdVal);
+                    }
+                    // });
                     if (opts.updAttrVal) this.context.deviceData.attributes[attr] = accClass.transforms.transformAttributeState(opts.set_altAttr || attr, this.context.deviceData.attributes[opts.set_altValAttr || attr], c.displayName);
                 });
                 if (opts.props && Object.keys(opts.props).length) c.setProps(opts.props);
@@ -360,7 +360,7 @@ module.exports = class DeviceCharacteristics {
         let isSonos = (_accessory.context.deviceData.manufacturerName === "Sonos");
         let lvlAttr = (isSonos || _accessory.hasAttribute('volume')) ? 'volume' : _accessory.hasAttribute('level') ? 'level' : undefined;
         let c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.Volume);
-        let sonosVolumeTimeout = null;
+        // let sonosVolumeTimeout = null;
         let lastVolumeWriteValue = null;
         if (!c._events.get || !c._events.set) {
             if (!c._events.get) {
@@ -369,25 +369,25 @@ module.exports = class DeviceCharacteristics {
                 });
             }
             if (!c._events.set) {
-                c.on("set", async(value, callback) => {
-                    if (isSonos) {
-                        if (value > 0 && value !== lastVolumeWriteValue) {
-                            lastVolumeWriteValue = value;
-                            // sonosVolumeTimeout = this.accessories.clearAndSetTimeout(sonosVolumeTimeout, () => {
-                            this.log.debug(`Existing volume: ${_accessory.context.deviceData.attributes.volume}, set to ${lastVolumeWriteValue}`);
-                            throttle_debounce.throttle(1000, true, async() => {
+                c.on("set", (value, callback) => {
+                    throttle_debounce.throttle(1000, false, async() => {
+                        if (isSonos) {
+                            if (value > 0 && value !== lastVolumeWriteValue) {
+                                lastVolumeWriteValue = value;
+                                // sonosVolumeTimeout = this.accessories.clearAndSetTimeout(sonosVolumeTimeout, () => {
+                                this.log.debug(`Existing volume: ${_accessory.context.deviceData.attributes.volume}, set to ${lastVolumeWriteValue}`);
                                 await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setVolume", {
                                     value1: lastVolumeWriteValue
                                 });
-                            });
-                            // }, 1000);
+                                // }, 1000);
+                            }
                         }
-                    }
-                    if (value > 0) {
-                        await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, this.accessories.transformCommandName(lvlAttr, value), {
-                            value1: this.transforms.transformAttributeState(lvlAttr, value)
-                        });
-                    }
+                        if (value > 0) {
+                            await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, this.accessories.transformCommandName(lvlAttr, value), {
+                                value1: this.transforms.transformAttributeState(lvlAttr, value)
+                            });
+                        }
+                    }, false);
                 });
             }
             this.accessories.storeCharacteristicItem("volume", _accessory.context.deviceData.deviceid, c);
@@ -455,8 +455,10 @@ module.exports = class DeviceCharacteristics {
             if (!targetHeatCoolStateChar._events.set) {
                 targetHeatCoolStateChar.on("set", async(value, callback) => {
                     let state = this.transforms.transformCommandValue('thermostatMode', value);
-                    await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, this.transforms.transformCommandName('thermostatMode', value), {
-                        value1: state
+                    throttle_debounce.debounce(200, true, async() => {
+                        await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, this.transforms.transformCommandName('thermostatMode', value), {
+                            value1: state
+                        });
                     });
                     _accessory.context.deviceData.attributes.thermostatMode = state;
                     // targetTempChar.updateValue(this.transforms.thermostatTargetTemp(_accessory.context.deviceData));
@@ -494,15 +496,17 @@ module.exports = class DeviceCharacteristics {
                 });
             }
             if (!targetTempChar._events.set) {
-                targetTempChar.on("set", async(value, callback) => {
+                targetTempChar.on("set", (value, callback) => {
                     // Convert the Celsius value to the appropriate unit for Smartthings
                     let temp = this.transforms.thermostatTempConversion(value, true);
                     const targetObj = this.transforms.thermostatTargetTemp_set(_accessory.context.deviceData);
                     if (targetObj && targetObj.cmdName && targetObj.attrName && temp) {
-                        await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, targetObj.cmdName, {
-                            value1: temp
-                        });
-                        _accessory.context.deviceData.attributes[targetObj.attrName] = temp;
+                        throttle_debounce.throttle(1000, false, async() => {
+                            await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, targetObj.cmdName, {
+                                value1: temp
+                            });
+                            _accessory.context.deviceData.attributes[targetObj.attrName] = temp;
+                        }, false);
                     }
                 });
             }
@@ -531,13 +535,15 @@ module.exports = class DeviceCharacteristics {
                     });
                 }
                 if (!heatThreshTempChar._events.set) {
-                    heatThreshTempChar.on("set", async(value, callback) => {
+                    heatThreshTempChar.on("set", (value, callback) => {
                         // Convert the Celsius value to the appropriate unit for Smartthings
                         let temp = this.transforms.thermostatTempConversion(value, true);
-                        await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setHeatingSetpoint", {
-                            value1: temp
-                        });
-                        _accessory.context.deviceData.attributes.heatingSetpoint = temp;
+                        throttle_debounce.throttle(1000, false, async() => {
+                            await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setHeatingSetpoint", {
+                                value1: temp
+                            });
+                            _accessory.context.deviceData.attributes.heatingSetpoint = temp;
+                        }, false);
                     });
                 }
                 this.accessories.storeCharacteristicItem("heatingSetpoint", _accessory.context.deviceData.deviceid, heatThreshTempChar);
@@ -557,11 +563,13 @@ module.exports = class DeviceCharacteristics {
                 if (!coolThreshTempChar._events.set) {
                     coolThreshTempChar.on("set", async(value, callback) => {
                         // Convert the Celsius value to the appropriate unit for Smartthings
-                        let temp = this.transforms.thermostatTempConversion(value, true);
-                        await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setCoolingSetpoint", {
-                            value1: temp
-                        });
-                        _accessory.context.deviceData.attributes.coolingSetpoint = temp;
+                        throttle_debounce.throttle(1000, false, async() => {
+                            let temp = this.transforms.thermostatTempConversion(value, true);
+                            await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setCoolingSetpoint", {
+                                value1: temp
+                            });
+                            _accessory.context.deviceData.attributes.coolingSetpoint = temp;
+                        }, false);
                     });
                 }
                 this.accessories.storeCharacteristicItem("coolingSetpoint", _accessory.context.deviceData.deviceid, coolThreshTempChar);
@@ -595,10 +603,12 @@ module.exports = class DeviceCharacteristics {
                     callback(null, this.transforms.transformAttributeState('switch', _accessory.context.deviceData.attributes.switch));
                 });
             if (!c._events.set)
-                c.on("set", async(value, callback) => {
-                    if (value && (_accessory.context.deviceData.attributes.switch === "off")) {
-                        await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "mode");
-                    }
+                c.on("set", (value, callback) => {
+                    throttle_debounce.debounce(200, true, async() => {
+                        if (value && (_accessory.context.deviceData.attributes.switch === "off")) {
+                            await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "mode");
+                        }
+                    });
                 });
             this.accessories.storeCharacteristicItem("switch", _accessory.context.deviceData.deviceid, c);
         } else {
@@ -616,15 +626,17 @@ module.exports = class DeviceCharacteristics {
                     callback(null, false);
                 });
             if (!c._events.set)
-                c.on("set", async(value, callback) => {
-                    if (value) {
-                        await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "routine");
-                        setTimeout(() => {
-                            console.log("routineOff...");
-                            _accessory.context.deviceData.attributes.switch = "off";
-                            c.updateValue(false);
-                        }, 1000);
-                    }
+                c.on("set", (value, callback) => {
+                    throttle_debounce.debounce(200, true, async() => {
+                        if (value) {
+                            await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "routine");
+                            setTimeout(() => {
+                                console.log("routineOff...");
+                                _accessory.context.deviceData.attributes.switch = "off";
+                                c.updateValue(false);
+                            }, 1000);
+                        }
+                    });
                 });
             this.accessories.storeCharacteristicItem("switch", _accessory.context.deviceData.deviceid, c);
         } else {
@@ -653,17 +665,19 @@ module.exports = class DeviceCharacteristics {
                 });
             }
             if (!c._events.set) {
-                c.on("set", async(value, callback) => {
-                    if (_accessory.hasCommand('close') && value <= 2) {
-                        await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "close");
-                    } else {
-                        let v = value;
-                        if (value <= 2) v = 0;
-                        if (value >= 98) v = 100;
-                        await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setLevel", {
-                            value1: v
-                        });
-                    }
+                c.on("set", (value, callback) => {
+                    throttle_debounce.throttle(200, false, async() => {
+                        if (_accessory.hasCommand('close') && value <= 2) {
+                            await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "close");
+                        } else {
+                            let v = value;
+                            if (value <= 2) v = 0;
+                            if (value >= 98) v = 100;
+                            await this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setLevel", {
+                                value1: v
+                            });
+                        }
+                    }, false);
                 });
             }
             this.accessories.storeCharacteristicItem("level", _accessory.context.deviceData.deviceid, c);

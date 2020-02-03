@@ -1,6 +1,6 @@
 {
     "dependencies": {
-        "@sentry/node": "^5.11.2",
+        "@sentry/node": "^5.12.0",
         "body-parser": "^1.19.0",
         "chalk": "^3.0.0",
         "compare-versions": "^3.5.1",
@@ -11,7 +11,7 @@
         "node-machine-id": "^1.1.12",
         "os": "0.1.1",
         "request": "^2.88.0",
-        "request-promise-native": "^1.0.8",
+        "axios": "^0.19.2",
         "winston": "^3.2.1",
         "winston-daily-rotate-file": "^4.4.2",
         "portfinder-sync": "^0.0.2",
