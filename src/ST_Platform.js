@@ -401,15 +401,24 @@ module.exports = class ST_Platform {
                             };
                             that.SmartThingsAccessories.processDeviceAttributeUpdate(newChange)
                                 .then((resp) => {
-                                    if (that.logConfig.showChanges)
+                                    if (that.logConfig.showChanges) {
                                         that.log.info(chalk `[{keyword('orange') Device Change Event}]: ({blueBright ${body.change_name}}) [{yellow.bold ${(body.change_attribute ? body.change_attribute.toUpperCase() : "unknown")}}] is {keyword('pink') ${body.change_value}}`);
+                                    }
                                     res.send({
-                                        status: resp ? "OK" : "Failed"
+                                        evtSource: `Homebridge_${platformName}_${this.configItems.app_id}`,
+                                        evtType: 'attrUpdStatus',
+                                        evtDevice: body.change_name,
+                                        evtAttr: body.change_attribute,
+                                        evtStatus: resp ? "OK" : "Failed"
                                     });
                                 });
                         } else {
                             res.send({
-                                status: "Failed"
+                                evtSource: `Homebridge_${platformName}_${this.configItems.app_id}`,
+                                evtType: 'attrUpdStatus',
+                                evtDevice: body.change_name,
+                                evtAttr: body.change_attribute,
+                                evtStatus: "Failed"
                             });
                         }
 

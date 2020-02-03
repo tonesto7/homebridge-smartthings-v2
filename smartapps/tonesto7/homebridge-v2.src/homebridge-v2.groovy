@@ -130,8 +130,8 @@ def mainPage() {
             input "addSecurityDevice", "bool", title: "Allow SHM Control in HomeKit?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("alarm_home")
         }
         section("Plugin Options & Review:") {
-            paragraph "Turn off if you are having issues sending commands"
-            input "sendCmdViaHubaction", "bool", title: "Send HomeKit Commands Locally?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("command")
+            // paragraph "Turn off if you are having issues sending commands"
+            // input "sendCmdViaHubaction", "bool", title: "Send HomeKit Commands Locally?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("command")
             input "temp_unit", "enum", title: "Temperature Unit?", required: true, defaultValue: location?.temperatureScale, options: ["F":"Fahrenheit", "C":"Celcius"], submitOnChange: true, image: getAppImg("command")
             Integer devCnt = getDeviceCnt()
             href url: getAppEndpointUrl("config"), style: "embedded", required: false, title: "Render the platform data for Homebridge config.json", description: "Tap, select, copy, then click \"Done\"", state: "complete", image: getAppImg("info")
@@ -733,7 +733,7 @@ def renderLocation() {
         temperature_scale: settings?.temp_unit ?: location?.temperatureScale,
         zip_code: location?.zipCode,
         hubIP: location?.hubs[0]?.localIP,
-        local_commands: (settings?.sendCmdViaHubaction != false),
+        local_commands: false,//(settings?.sendCmdViaHubaction != false),
         app_version: appVersion()
     ]
 }
@@ -743,46 +743,58 @@ def CommandReply(statusOut, messageOut) {
     render contentType: "application/json", data: replyJson
 }
 
+private getHttpHeaders(headers) {
+  def obj = [:]
+    new String(headers.decodeBase64()).split("\r\n")?.each {param ->
+    def nameAndValue = param.split(":")
+    obj[nameAndValue[0]] = (nameAndValue.length == 1) ? "" : nameAndValue[1].trim()
+  }
+  return obj
+}
+
 def lanEventHandler(evt) {
-    // log.trace "lanStreamEvtHandler..."
-    def map = stringToMap(evt?.stringValue)
-    def headers = getHttpHeaders(map?.headers);
-    def slurper = new groovy.json.JsonSlurper()
-    def body = slurper?.parseText(new String(map?.body?.decodeBase64()))
-    log.debug "headers: $headers"
-    log.debug "body: $body"
-    // def msg = parseLanMessage(evt?.description as String)
-    // Map headerMap = msg?.headers
-    // log.trace "lanEventHandler... | headers: ${headerMap}"
+    // log.trace "lanEventHandler..."
     try {
+        def evtData = parseLanMessage(evt?.description?.toString())
+        Map headers = evtData?.headers
+        def slurper = new groovy.json.JsonSlurper()
+        def body = evtData?.body ? slurper?.parseText(evtData?.body as String) : null
+        // log.trace "lanEventHandler... | headers: ${headerMap}"
+        log.debug "headers: $headers"
+        log.debug "body: $body"
         Map msgData = [:]
         if (headers?.size()) {
-            if (headers?.evtSource && headers?.evtSource?.startsWith("Homebridge_${pluginName()}")) {
+            String evtSrc = (headers?.evtsource || body?.evtsource) ? (headers?.evtsource ?: body?.evtsource) : null
+            if (evtSrc && evtSrc?.startsWith("Homebridge_${pluginName()}_${app?.getId()}")) {
+                String evtType = (headers?.evttype || body?.evttype) ? (headers?.evttype ?: body?.evttype) : null
+                log.debug "evtType: $evtType"
                 // log.debug "evtSource: (${evtSrc}) | app: (Homebridge_${pluginName()}_${app?.getId()})"
-                if(headers?.evtSource != "Homebridge_${pluginName()}_${app?.getId()}") {
-                    if(showDebugLogs) log.warn "Received Local Homebridge Command | Unfortunately it wasn't meant for this APPID..."
-                    return
-                }
-                if (body != null) {
-                    if(headers?.evtType) {
-                        switch(headers?.evtType) {
-                            case "hkCommand":
-                                // log.trace "hkCommand($msgData)"
-                                def val1 = body?.values?.value1 ?: null
-                                def val2 = body?.values?.value2 ?: null
-                                processCmd(body?.deviceid, body?.command, val1, val2, true)
-                                break
-                            case "enableDirect":
-                                // log.trace "enableDirect($msgData)"
-                                state?.pluginDetails = [
-                                    directIP: body?.ip,
-                                    directPort: body?.port,
-                                    version: body?.version ?: null
-                                ]
-                                updCodeVerMap("plugin", body?.version ?: null)
-                                activateDirectUpdates(true)
-                                break
-                        }
+                // if(headers?.evtSource != "Homebridge_${pluginName()}_${app?.getId()}") {
+                //     if(showDebugLogs) log.warn "Received Local Homebridge Command | Unfortunately it wasn't meant for this APPID..."
+                //     log.warn "Received Local Homebridge Command | Unfortunately it wasn't meant for this APPID..."
+                //     return
+                // }
+
+                if (body && evtType) {
+                    switch(evtType) {
+                        case "hkCommand":
+                            // log.trace "hkCommand($msgData)"
+                            def val1 = body?.values?.value1 ?: null
+                            def val2 = body?.values?.value2 ?: null
+                            processCmd(body?.deviceid, body?.command, val1, val2, true)
+                            break
+                        case "enableDirect":
+                            // log.trace "enableDirect($msgData)"
+                            state?.pluginDetails = [
+                                directIP: body?.ip,
+                                directPort: body?.port,
+                                version: body?.version ?: null
+                            ]
+                            updCodeVerMap("plugin", body?.version ?: null)
+                            activateDirectUpdates(true)
+                            break
+                        case "attrUpdStatus":
+                            if(body?.evtStatus && body?.evtStatus != "OK") { log.warn "Attribute Update Failed | Device: ${body?.evtDevice} | Attribute: ${body?.evtAttr}" }
                     }
                 }
             }
@@ -792,14 +804,7 @@ def lanEventHandler(evt) {
     }
 }
 
-private getHttpHeaders(headers) {
-  def obj = [:]
-  new String(headers.decodeBase64()).split("\r\n").each {param ->
-    def nameAndValue = param.split(":")
-    obj[nameAndValue[0]] = (nameAndValue.length == 1) ? "" : nameAndValue[1].trim()
-  }
-  return obj
-}
+
 
 def deviceCommand() {
     // log.info("Command Request: $params")
@@ -1344,7 +1349,7 @@ private updateServicePrefs(isLocal=false) {
     sendHttpPost("updateprefs", [
         app_id: app?.getId(),
         access_token: atomicState?.accessToken,
-        local_commands: (settings?.sendCmdViaHubaction != false),
+        local_commands: false, //(settings?.sendCmdViaHubaction != false),
         local_hub_ip: location?.hubs[0]?.localIP
     ])
 }

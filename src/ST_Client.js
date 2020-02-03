@@ -3,7 +3,6 @@ const {
     platformDesc,
     pluginVersion
 } = require("./libs/Constants"),
-    rp = require("request-promise-native"),
     axios = require('axios').default,
     url = require("url");
 
@@ -25,7 +24,8 @@ module.exports = class ST_Client {
     }
 
     sendAsLocalCmd() {
-        return (this.useLocal === true && this.hubIp !== undefined);
+        return false;
+        // return (this.useLocal === true && this.hubIp !== undefined);
     }
 
     localHubErr(hasErr) {
@@ -65,7 +65,7 @@ module.exports = class ST_Client {
                 } else if (allowLocal && err.message.startsWith('Error: connect ETIMEDOUT ')) {
                     this.localHubErr(true);
                 } else {
-                    console.error(err);
+                    // console.error(err);
                     this.log.error(`${src} Error: ${err.response} | Message: ${err.message}`);
                     this.platform.sentryErrorEvent(err);
                 }
@@ -125,8 +125,8 @@ module.exports = class ST_Client {
                 access_token: this.configItems.access_token
             },
             headers: {
-                evtSource: `Homebridge_${platformName}_${this.configItems.app_id}`,
-                evtType: 'hkCommand'
+                evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
+                evttype: 'hkCommand'
             },
             data: vals,
             timeout: 10000
@@ -137,7 +137,9 @@ module.exports = class ST_Client {
             config.data = {
                 deviceid: devData.deviceid,
                 command: cmd,
-                values: vals
+                values: vals,
+                evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
+                evttype: 'hkCommand'
             };
         }
         return new Promise((resolve) => {
@@ -145,13 +147,14 @@ module.exports = class ST_Client {
                 that.log.notice(`Sending Device Command: ${cmd}${vals ? ' | Value: ' + JSON.stringify(vals) : ''} | Name: (${devData.name}) | DeviceID: (${devData.deviceid}) | SendToLocalHub: (${sendLocal})`);
                 axios(config)
                     .then((response) => {
+                        // console.log('command response:', response.data);
                         this.log.debug(`sendDeviceCommand | Response: ${JSON.stringify(response.data)}`);
                         if (callback) {
                             callback();
                             callback = undefined;
                         }
                         that.localHubErr(false);
-                        resolve(response.data);
+                        resolve(true);
                     })
                     .catch((err) => {
                         that.handleError('sendDeviceCommand', err, true);
@@ -159,11 +162,11 @@ module.exports = class ST_Client {
                             callback();
                             callback = undefined;
                         };
-                        resolve(undefined);
+                        resolve(false);
                     });
 
             } catch (err) {
-                resolve(undefined);
+                resolve(false);
             }
         });
     }
@@ -205,13 +208,15 @@ module.exports = class ST_Client {
                 access_token: this.configItems.access_token
             },
             headers: {
-                evtSource: `Homebridge_${platformName}_${this.configItems.app_id}`,
-                evtType: 'enableDirect'
+                evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
+                evttype: 'enableDirect'
             },
             data: {
                 ip: that.configItems.direct_ip,
                 port: that.configItems.direct_port,
-                version: pluginVersion
+                version: pluginVersion,
+                evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
+                evttype: 'enableDirect'
             },
             timeout: 10000
         };

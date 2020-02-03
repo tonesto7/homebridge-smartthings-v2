@@ -142,8 +142,9 @@ module.exports = class ST_Accessories {
                     }
                 });
                 resolve(this.addAccessoryToCache(accessory));
+            } else {
+                resolve(false);
             }
-            resolve(false);
         });
     }
 
