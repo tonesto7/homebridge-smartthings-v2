@@ -78,7 +78,7 @@ def mainPage() {
         appInfoSect()
         section("Define Specific Categories:") {
             paragraph "Each category below will adjust the device attributes to make sure they are recognized as the desired device type under HomeKit.\nNOTICE: Don't select the same devices used here in the Select Your Devices Input below.", state: "complete"
-            Boolean conf = (lightList || buttonList || fanList || fan3SpdList || fan4SpdList || speakerList || shadesList)
+            Boolean conf = (lightList || buttonList || fanList || fan3SpdList || fan4SpdList || speakerList || shadesList || tstatHeatList)
             Integer fansize = (fanList?.size() ?: 0) + (fan3SpdList?.size() ?: 0) + (fan4SpdList?.size() ?: 0)
             String desc = "Tap to configure"
             if(conf) {
@@ -88,6 +88,7 @@ def mainPage() {
                 desc += (fanList || fan3SpdList || fan4SpdList) ? "(${fansize}) Fan Devices\n" : ""
                 desc += speakerList ? "(${speakerList?.size()}) Speaker Devices\n" : ""
                 desc += shadesList ? "(${shadesList?.size()}) Shade Devices\n" : ""
+                desc += tstatHeatList ? "(${tstatHeatList?.size()}) Tstat Heat Devices\n" : ""
                 desc += "\nTap to modify..."
             }
             href "defineDevicesPage", title: "Define Device Types", required: false, image: getAppImg("devices2"), state: (conf ? "complete" : null), description: desc
@@ -172,10 +173,13 @@ def defineDevicesPage() {
             input "speakerList", "capability.switch", title: "Speakers: (${speakerList ? speakerList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("media_player")
             input "shadesList", "capability.windowShade", title: "Window Shades: (${shadesList ? shadesList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("window_shade")
         }
-        section("Fan Categories") {
+        section("Fans") {
             input "fanList", "capability.switch", title: "Fans: (${fanList ? fanList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on")
             input "fan3SpdList", "capability.switch", title: "Fans (3 Speeds): (${fan3SpdList ? fan3SpdList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on")
             input "fan4SpdList", "capability.switch", title: "Fans (4 Speeds): (${fan4SpdList ? fan4SpdList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on")
+        }
+        section("Thermostats") {
+            input "tstatHeatList", "capability.thermostat", title: "Heat Only Thermostat: (${tstatHeatList ? tstatHeatList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("thermostat")
         }
     }
 }
@@ -224,7 +228,7 @@ private resetCapFilters() {
 private inputDupeValidation() {
     Map clnUp = [d: [:], o: [:]]
     Map items = [
-        d: ["fanList": "Fans", "fan3SpdList": "Fans (3-Speed)", "fan4SpdList": "Fans (4-Speed)", "buttonList": "Buttons", "lightList": "Lights", "shadesList": "Window Shadse", "speakerList": "Speakers"],
+        d: ["fanList": "Fans", "fan3SpdList": "Fans (3-Speed)", "fan4SpdList": "Fans (4-Speed)", "buttonList": "Buttons", "lightList": "Lights", "shadesList": "Window Shadse", "speakerList": "Speakers", "tstatHeatList": "Thermostat (Heat Only)"],
         o: ["deviceList": "Other", "sensorList": "Sensor", "switchList": "Switch"]
     ]
     items?.d?.each { k, v->
@@ -733,7 +737,7 @@ def renderLocation() {
         temperature_scale: settings?.temp_unit ?: location?.temperatureScale,
         zip_code: location?.zipCode,
         hubIP: location?.hubs[0]?.localIP,
-        local_commands: false,//(settings?.sendCmdViaHubaction != false),
+        local_commands: false, //(settings?.sendCmdViaHubaction != false),
         app_version: appVersion()
     ]
 }
@@ -760,21 +764,13 @@ def lanEventHandler(evt) {
         def slurper = new groovy.json.JsonSlurper()
         def body = evtData?.body ? slurper?.parseText(evtData?.body as String) : null
         // log.trace "lanEventHandler... | headers: ${headerMap}"
-        log.debug "headers: $headers"
-        log.debug "body: $body"
+        // log.debug "headers: $headers"
+        // log.debug "body: $body"
         Map msgData = [:]
         if (headers?.size()) {
             String evtSrc = (headers?.evtsource || body?.evtsource) ? (headers?.evtsource ?: body?.evtsource) : null
             if (evtSrc && evtSrc?.startsWith("Homebridge_${pluginName()}_${app?.getId()}")) {
                 String evtType = (headers?.evttype || body?.evttype) ? (headers?.evttype ?: body?.evttype) : null
-                log.debug "evtType: $evtType"
-                // log.debug "evtSource: (${evtSrc}) | app: (Homebridge_${pluginName()}_${app?.getId()})"
-                // if(headers?.evtSource != "Homebridge_${pluginName()}_${app?.getId()}") {
-                //     if(showDebugLogs) log.warn "Received Local Homebridge Command | Unfortunately it wasn't meant for this APPID..."
-                //     log.warn "Received Local Homebridge Command | Unfortunately it wasn't meant for this APPID..."
-                //     return
-                // }
-
                 if (body && evtType) {
                     switch(evtType) {
                         case "hkCommand":
@@ -794,7 +790,10 @@ def lanEventHandler(evt) {
                             activateDirectUpdates(true)
                             break
                         case "attrUpdStatus":
-                            if(body?.evtStatus && body?.evtStatus != "OK") { log.warn "Attribute Update Failed | Device: ${body?.evtDevice} | Attribute: ${body?.evtAttr}" }
+                            // if(body?.evtStatus && body?.evtStatus != "OK") { log.warn "Attribute Update Failed | Device: ${body?.evtDevice} | Attribute: ${body?.evtAttr}" }
+                            break
+                        default:
+                            break
                     }
                 }
             }
@@ -956,6 +955,9 @@ def deviceCapabilityList(device) {
     if(settings?.shadesList?.find { it?.id == device?.id }) {
         items["Window Shade"] = 1
     }
+    if(settings?.tstatHeatList?.find { it?.id == device?.id }) {
+        items?.remove("Thermostat Cooling Setpoint")
+    }
     if(settings?.noTemp && items["Temperature Measurement"] && (items["Contact Sensor"] || items["Water Sensor"])) {
         Boolean remTemp = true
         if(settings?.sensorAllowTemp) {
@@ -1092,7 +1094,7 @@ def registerDevices2() {
 
 def registerDevices3() {
     //This has to be done at startup because it takes too long for a normal command.
-    ["switchList": "Switch Devices", "shadesList": "Window Shade Devices"]?.each { k,v->
+    ["switchList": "Switch Devices", "shadesList": "Window Shade Devices", "tstatHeatList": "Thermostat (HeatOnly) Devices"]?.each { k,v->
         if(showDebugLogs) log.debug "Registering (${settings?."${k}"?.size() ?: 0}) ${v}"
         registerChangeHandler(settings?."${k}")
     }

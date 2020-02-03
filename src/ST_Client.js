@@ -5,12 +5,15 @@ const {
 } = require("./libs/Constants"),
     axios = require('axios').default,
     url = require("url");
+var timeouts = {};
+var debounce = require('awesome-debounce-promise');
+// const { throttle, debounce } = require('throttle-debounce');
 
 module.exports = class ST_Client {
     constructor(platform) {
         this.platform = platform;
         this.log = platform.log;
-        this.useLocal = platform.local_commands;
+        this.useLocal = false; //platform.local_commands;
         this.hubIp = platform.local_hub_ip;
         this.configItems = platform.getConfigItems();
         let appURL = url.parse(this.configItems.app_url);
@@ -24,8 +27,7 @@ module.exports = class ST_Client {
     }
 
     sendAsLocalCmd() {
-        return false;
-        // return (this.useLocal === true && this.hubIp !== undefined);
+        return (this.useLocal === true && this.hubIp !== undefined);
     }
 
     localHubErr(hasErr) {
@@ -48,7 +50,7 @@ module.exports = class ST_Client {
     updateGlobals(hubIp, useLocal = false) {
         this.log.notice(`Updating Global Values | HubIP: ${hubIp} | UseLocal: ${useLocal}`);
         this.hubIp = hubIp;
-        this.useLocal = (useLocal === true);
+        this.useLocal = false; //(useLocal === true);
     }
 
     handleError(src, err, allowLocal = false) {
@@ -115,34 +117,78 @@ module.exports = class ST_Client {
         });
     }
 
-    sendDeviceCommand(callback, devData, cmd, vals) {
-        let that = this;
-        let sendLocal = this.sendAsLocalCmd();
-        let config = {
-            method: 'post',
-            url: `${this.configItems.app_url}${this.configItems.app_id}/${devData.deviceid}/command/${cmd}`,
-            params: {
-                access_token: this.configItems.access_token
-            },
-            headers: {
-                evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
-                evttype: 'hkCommand'
-            },
-            data: vals,
-            timeout: 10000
-        };
-        if (sendLocal) {
-            config.url = `http://${this.hubIp}:39500/event`;
-            delete config.params;
-            config.data = {
-                deviceid: devData.deviceid,
-                command: cmd,
-                values: vals,
-                evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
-                evttype: 'hkCommand'
+    debounceWithId(func, wait, id, immediate = false) {
+        return function() {
+            var context = this,
+                args = arguments;
+            var later = () => {
+                timeouts[id] = null;
+                if (!immediate) func.apply(context, args);
             };
+            var callNow = immediate && !timeouts[id];
+            clearTimeout(timeouts[id]);
+            timeouts[id] = setTimeout(later, wait);
+            if (callNow) func.apply(context, args);
+        };
+    };
+
+    sendDeviceCommand(callback, devData, cmd, vals) {
+        switch (cmd) {
+            case "setLevel":
+            case "setVolume":
+                // debounce(
+                //     this.processDeviceCmd(callback, devData, cmd, vals),
+                //     1000, {
+                //         key: devData.deviceid + cmd,
+                //         accumulate: false,
+                //         leading: false
+                //     }
+                // );
+                this.debounceWithId(this.processDeviceCmd(callback, devData, cmd, vals), 1000, devData.deviceid + cmd, false);
+                break;
+            default:
+                this.debounceWithId(this.processDeviceCmd(callback, devData, cmd, vals), 200, devData.deviceid + cmd, true);
+                // debounce(
+                //     this.processDeviceCmd(callback, devData, cmd, vals),
+                //     200, {
+                //         key: devData.deviceid + cmd,
+                //         accumulate: false,
+                //         leading: true
+                //     }
+                // );
+                break;
         }
+        // this.processDeviceCmd(callback, devData, cmd, vals);
+    }
+
+    processDeviceCmd(callback, devData, cmd, vals) {
         return new Promise((resolve) => {
+            let that = this;
+            let sendLocal = this.sendAsLocalCmd();
+            let config = {
+                method: 'post',
+                url: `${this.configItems.app_url}${this.configItems.app_id}/${devData.deviceid}/command/${cmd}`,
+                params: {
+                    access_token: this.configItems.access_token
+                },
+                headers: {
+                    evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
+                    evttype: 'hkCommand'
+                },
+                data: vals,
+                timeout: 5000
+            };
+            if (sendLocal) {
+                config.url = `http://${this.hubIp}:39500/event`;
+                delete config.params;
+                config.data = {
+                    deviceid: devData.deviceid,
+                    command: cmd,
+                    values: vals,
+                    evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
+                    evttype: 'hkCommand'
+                };
+            }
             try {
                 that.log.notice(`Sending Device Command: ${cmd}${vals ? ' | Value: ' + JSON.stringify(vals) : ''} | Name: (${devData.name}) | DeviceID: (${devData.deviceid}) | SendToLocalHub: (${sendLocal})`);
                 axios(config)
@@ -240,7 +286,6 @@ module.exports = class ST_Client {
                         that.handleError("sendStartDirect", err, true);
                         resolve(undefined);
                     });
-
             } catch (err) {
                 resolve(err);
             }
