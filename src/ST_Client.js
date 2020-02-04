@@ -5,9 +5,7 @@ const {
 } = require("./libs/Constants"),
     axios = require('axios').default,
     url = require("url");
-var timeouts = {};
-var debounce = require('awesome-debounce-promise');
-// const { throttle, debounce } = require('throttle-debounce');
+var timers = {};
 
 module.exports = class ST_Client {
     constructor(platform) {
@@ -24,6 +22,7 @@ module.exports = class ST_Client {
         };
         this.localErrCnt = 0;
         this.localDisabled = false;
+
     }
 
     sendAsLocalCmd() {
@@ -117,78 +116,67 @@ module.exports = class ST_Client {
         });
     }
 
-    debounceWithId(func, wait, id, immediate = false) {
-        return function() {
-            var context = this,
-                args = arguments;
-            var later = () => {
-                timeouts[id] = null;
-                if (!immediate) func.apply(context, args);
-            };
-            var callNow = immediate && !timeouts[id];
-            clearTimeout(timeouts[id]);
-            timeouts[id] = setTimeout(later, wait);
-            if (callNow) func.apply(context, args);
-        };
-    };
-
     sendDeviceCommand(callback, devData, cmd, vals) {
+        let id = devData.deviceid + '_' + cmd;
+        let delay;
         switch (cmd) {
             case "setLevel":
             case "setVolume":
-                // debounce(
-                //     this.processDeviceCmd(callback, devData, cmd, vals),
-                //     1000, {
-                //         key: devData.deviceid + cmd,
-                //         accumulate: false,
-                //         leading: false
-                //     }
-                // );
-                this.debounceWithId(this.processDeviceCmd(callback, devData, cmd, vals), 1000, devData.deviceid + cmd, false);
+            case "setFanSpeed":
+            case "setSaturation":
+            case "setHue":
+            case "setColorTemperature":
+            case "setHeatingSetpoint":
+            case "setCoolingSetpoint":
+            case "setThermostatSetpoint":
+                delay = 1000;
+                break;
+            case "on":
+            case "off":
+            case "open":
+            case "close":
+                delay = 0;
                 break;
             default:
-                this.debounceWithId(this.processDeviceCmd(callback, devData, cmd, vals), 200, devData.deviceid + cmd, true);
-                // debounce(
-                //     this.processDeviceCmd(callback, devData, cmd, vals),
-                //     200, {
-                //         key: devData.deviceid + cmd,
-                //         accumulate: false,
-                //         leading: true
-                //     }
-                // );
+                delay = 200;
                 break;
         }
+        if (timers[id]) {
+            clearTimeout(timers[id]);
+            timers[id] = null;
+        }
+        timers[id] = setTimeout(this.processDeviceCmd(callback, devData, cmd, vals), delay);
         // this.processDeviceCmd(callback, devData, cmd, vals);
     }
 
     processDeviceCmd(callback, devData, cmd, vals) {
-        return new Promise((resolve) => {
-            let that = this;
-            let sendLocal = this.sendAsLocalCmd();
-            let config = {
-                method: 'post',
-                url: `${this.configItems.app_url}${this.configItems.app_id}/${devData.deviceid}/command/${cmd}`,
-                params: {
-                    access_token: this.configItems.access_token
-                },
-                headers: {
-                    evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
-                    evttype: 'hkCommand'
-                },
-                data: vals,
-                timeout: 5000
+        let that = this;
+        let sendLocal = this.sendAsLocalCmd();
+        let config = {
+            method: 'post',
+            url: `${this.configItems.app_url}${this.configItems.app_id}/${devData.deviceid}/command/${cmd}`,
+            params: {
+                access_token: this.configItems.access_token
+            },
+            headers: {
+                evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
+                evttype: 'hkCommand'
+            },
+            data: vals,
+            timeout: 5000
+        };
+        if (sendLocal) {
+            config.url = `http://${this.hubIp}:39500/event`;
+            delete config.params;
+            config.data = {
+                deviceid: devData.deviceid,
+                command: cmd,
+                values: vals,
+                evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
+                evttype: 'hkCommand'
             };
-            if (sendLocal) {
-                config.url = `http://${this.hubIp}:39500/event`;
-                delete config.params;
-                config.data = {
-                    deviceid: devData.deviceid,
-                    command: cmd,
-                    values: vals,
-                    evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
-                    evttype: 'hkCommand'
-                };
-            }
+        }
+        return () => {
             try {
                 that.log.notice(`Sending Device Command: ${cmd}${vals ? ' | Value: ' + JSON.stringify(vals) : ''} | Name: (${devData.name}) | DeviceID: (${devData.deviceid}) | SendToLocalHub: (${sendLocal})`);
                 axios(config)
@@ -200,7 +188,7 @@ module.exports = class ST_Client {
                             callback = undefined;
                         }
                         that.localHubErr(false);
-                        resolve(true);
+                        return true;
                     })
                     .catch((err) => {
                         that.handleError('sendDeviceCommand', err, true);
@@ -208,13 +196,12 @@ module.exports = class ST_Client {
                             callback();
                             callback = undefined;
                         };
-                        resolve(false);
+                        return false;
                     });
-
             } catch (err) {
-                resolve(false);
+                return false;
             }
-        });
+        };
     }
 
     sendUpdateStatus(hasUpdate, newVersion = null) {
@@ -240,7 +227,6 @@ module.exports = class ST_Client {
                     this.handleError('sendUpdateStatus', err, true);
                     resolve(undefined);
                 });
-
         });
     }
 
@@ -290,5 +276,11 @@ module.exports = class ST_Client {
                 resolve(err);
             }
         });
+    }
+
+    clearAndSetTimeout(id, wait, fn) {
+        if (this.timers[id]) clearTimeout(this.timers[id]);
+        this.timers[id] = setTimeout(fn, wait);
+        return this.timers[id];
     }
 };
