@@ -131,11 +131,11 @@ module.exports = class ST_Client {
             case "setHeatingSetpoint":
             case "setCoolingSetpoint":
             case "setThermostatSetpoint":
-                d = 2000;
+                d = 1500;
                 o.trailing = true;
                 break;
             case "setThermostatMode":
-                d = 500;
+                d = 1500;
                 o.trailing = true;
                 break;
             default:
@@ -143,9 +143,9 @@ module.exports = class ST_Client {
                 o.leading = true;
                 break;
         }
-        if (timers[id]) {
-            console.log('timerFnd | ' + id, ' | delay: ' + d);
+        if (timers[id] && timers[id] !== null) {
             timers[id].cancel();
+            console.log(`Existing Command Found | Command: ${cmd} | Vals: ${vals} | Executing in (${d}ms) | Id: ${id}`);
             timers[id] = null;
         }
         timers[id] = debounce(async() => {

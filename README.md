@@ -130,7 +130,6 @@ _Note to users updating from homebridge-smartthings-tonesto7: You can continue t
       "communityUserName": "tonesto7",
       "direct_ip": "10.0.0.15",
       "direct_port": 8000,
-      "local_commands": true,
       "temperature_unit": "F",
       "validateTokenId": false,
       "excluded_capabilities": {
@@ -169,9 +168,6 @@ _Note to users updating from homebridge-smartthings-tonesto7: You can continue t
    <code>direct_port</code>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `8000`</i></small><br>
    This is the port that homebridge-smartthings plugin will listen on for traffic from your hub. Make sure your firewall allows incoming traffic on this port from your hub's IP address.
    </p>
-
- * <p><code>local_commands</code>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `false`</i></small><br>
-    This will allow the service to send homekit commands to hub locally, this is also available under the SmartApp settings.</p>
 
  * <p><code>temperature_unit</code>  <small style="color: #f92672; font-weight: 600;"><i>Optional</i></small> | <small style="color: green; font-weight: 600;"><i>Default: `F`</i></small><br>
     This will allow you to define the temp unit to use.  This can also be set in the SmartApp</p>
