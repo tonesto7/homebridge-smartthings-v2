@@ -4,7 +4,8 @@ const {
     pluginVersion
 } = require("./libs/Constants"),
     axios = require('axios').default,
-    url = require("url");
+    url = require("url"),
+    debounce = require('lodash').debounce;
 var timers = {};
 
 module.exports = class ST_Client {
@@ -118,7 +119,8 @@ module.exports = class ST_Client {
 
     sendDeviceCommand(callback, devData, cmd, vals) {
         let id = devData.deviceid + '_' + cmd;
-        let delay;
+        let d;
+        let o = {};
         switch (cmd) {
             case "setLevel":
             case "setVolume":
@@ -129,54 +131,60 @@ module.exports = class ST_Client {
             case "setHeatingSetpoint":
             case "setCoolingSetpoint":
             case "setThermostatSetpoint":
-                delay = 1000;
+                d = 1000;
+                o.trailing = true;
                 break;
-            case "on":
-            case "off":
-            case "open":
-            case "close":
-                delay = 0;
+            case "setThermostatMode":
+                d = 500;
+                o.trailing = true;
                 break;
             default:
-                delay = 200;
+                d = 0;
+                o.leading = true;
                 break;
         }
         if (timers[id]) {
-            clearTimeout(timers[id]);
+            console.log('timerFnd:');
+            console.dir(timers[id]);
+            timers[id].cancel();
             timers[id] = null;
         }
-        timers[id] = setTimeout(this.processDeviceCmd(callback, devData, cmd, vals), delay);
-        // this.processDeviceCmd(callback, devData, cmd, vals);
+        timers[id] = debounce(async() => {
+            await this.processDeviceCmd(callback, devData, cmd, vals);
+        }, d, o);
+        console.dir(timers[id]);
+        timers[id]();
     }
 
     processDeviceCmd(callback, devData, cmd, vals) {
-        let that = this;
-        let sendLocal = this.sendAsLocalCmd();
-        let config = {
-            method: 'post',
-            url: `${this.configItems.app_url}${this.configItems.app_id}/${devData.deviceid}/command/${cmd}`,
-            params: {
-                access_token: this.configItems.access_token
-            },
-            headers: {
-                evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
-                evttype: 'hkCommand'
-            },
-            data: vals,
-            timeout: 5000
-        };
-        if (sendLocal) {
-            config.url = `http://${this.hubIp}:39500/event`;
-            delete config.params;
-            config.data = {
-                deviceid: devData.deviceid,
-                command: cmd,
-                values: vals,
-                evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
-                evttype: 'hkCommand'
+        return new Promise((resolve) => {
+            let that = this;
+            let sendLocal = this.sendAsLocalCmd();
+            let config = {
+                method: 'post',
+                url: `${this.configItems.app_url}${this.configItems.app_id}/${devData.deviceid}/command/${cmd}`,
+                params: {
+                    access_token: this.configItems.access_token
+                },
+                headers: {
+                    evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
+                    evttype: 'hkCommand'
+                },
+                data: vals,
+                timeout: 5000
             };
-        }
-        return () => {
+            if (sendLocal) {
+                config.url = `http://${this.hubIp}:39500/event`;
+                delete config.params;
+                config.data = {
+                    deviceid: devData.deviceid,
+                    command: cmd,
+                    values: vals,
+                    evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
+                    evttype: 'hkCommand'
+                };
+            }
+
             try {
                 that.log.notice(`Sending Device Command: ${cmd}${vals ? ' | Value: ' + JSON.stringify(vals) : ''} | Name: (${devData.name}) | DeviceID: (${devData.deviceid}) | SendToLocalHub: (${sendLocal})`);
                 axios(config)
@@ -188,7 +196,7 @@ module.exports = class ST_Client {
                             callback = undefined;
                         }
                         that.localHubErr(false);
-                        return true;
+                        resolve(true);
                     })
                     .catch((err) => {
                         that.handleError('sendDeviceCommand', err, true);
@@ -196,12 +204,12 @@ module.exports = class ST_Client {
                             callback();
                             callback = undefined;
                         };
-                        return false;
+                        resolve(false);
                     });
             } catch (err) {
-                return false;
+                resolve(false);
             }
-        };
+        });
     }
 
     sendUpdateStatus(hasUpdate, newVersion = null) {
@@ -276,11 +284,5 @@ module.exports = class ST_Client {
                 resolve(err);
             }
         });
-    }
-
-    clearAndSetTimeout(id, wait, fn) {
-        if (this.timers[id]) clearTimeout(this.timers[id]);
-        this.timers[id] = setTimeout(fn, wait);
-        return this.timers[id];
     }
 };
