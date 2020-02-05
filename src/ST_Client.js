@@ -131,7 +131,7 @@ module.exports = class ST_Client {
             case "setHeatingSetpoint":
             case "setCoolingSetpoint":
             case "setThermostatSetpoint":
-                d = 1000;
+                d = 2000;
                 o.trailing = true;
                 break;
             case "setThermostatMode":
@@ -144,15 +144,13 @@ module.exports = class ST_Client {
                 break;
         }
         if (timers[id]) {
-            console.log('timerFnd:');
-            console.dir(timers[id]);
+            console.log('timerFnd | ' + id, ' | delay: ' + d);
             timers[id].cancel();
             timers[id] = null;
         }
         timers[id] = debounce(async() => {
             await this.processDeviceCmd(callback, devData, cmd, vals);
         }, d, o);
-        console.dir(timers[id]);
         timers[id]();
     }
 

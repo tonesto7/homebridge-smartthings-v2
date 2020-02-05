@@ -128,6 +128,7 @@ def mainPage() {
         }
 
         section("Smart Home Monitor (SHM):") {
+            paragraph title:"NOTICE:", "This will not work with the New SmartThings Home Monitor (Under the new mobile app).  If you are using the new STHM please disable the setting below."
             input "addSecurityDevice", "bool", title: "Allow SHM Control in HomeKit?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("alarm_home")
         }
         section("Plugin Options & Review:") {
