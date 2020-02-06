@@ -4,14 +4,13 @@ const {
     pluginVersion
 } = require("./libs/Constants"),
     axios = require('axios').default,
-    url = require("url"),
-    debounce = require('lodash').debounce;
-var timers = {};
+    url = require("url");
 
 module.exports = class ST_Client {
     constructor(platform) {
         this.platform = platform;
         this.log = platform.log;
+        this.appEvts = platform.appEvts;
         this.useLocal = false; //platform.local_commands;
         this.hubIp = platform.local_hub_ip;
         this.configItems = platform.getConfigItems();
@@ -23,7 +22,19 @@ module.exports = class ST_Client {
         };
         this.localErrCnt = 0;
         this.localDisabled = false;
+        this.registerEvtListeners();
+    }
 
+    registerEvtListeners() {
+        this.appEvts.on("event:device_command", async(devData, cmd, vals) => {
+            await this.sendDeviceCommand(devData, cmd, vals);
+        });
+        this.appEvts.on("event:event:plugin_upd_status", async(res) => {
+            await this.sendUpdateStatus(res);
+        });
+        this.appEvts.on("event:event:plugin_start_direct", async() => {
+            await this.sendStartDirect();
+        });
     }
 
     sendAsLocalCmd() {
@@ -117,44 +128,7 @@ module.exports = class ST_Client {
         });
     }
 
-    sendDeviceCommand(callback, devData, cmd, vals) {
-        let id = devData.deviceid + '_' + cmd;
-        let d;
-        let o = {};
-        switch (cmd) {
-            case "setLevel":
-            case "setVolume":
-            case "setFanSpeed":
-            case "setSaturation":
-            case "setHue":
-            case "setColorTemperature":
-            case "setHeatingSetpoint":
-            case "setCoolingSetpoint":
-            case "setThermostatSetpoint":
-                d = 1500;
-                o.trailing = true;
-                break;
-            case "setThermostatMode":
-                d = 1500;
-                o.trailing = true;
-                break;
-            default:
-                d = 0;
-                o.leading = true;
-                break;
-        }
-        if (timers[id] && timers[id] !== null) {
-            timers[id].cancel();
-            console.log(`Existing Command Found | Command: ${cmd} | Vals: ${vals} | Executing in (${d}ms) | Id: ${id}`);
-            timers[id] = null;
-        }
-        timers[id] = debounce(async() => {
-            await this.processDeviceCmd(callback, devData, cmd, vals);
-        }, d, o);
-        timers[id]();
-    }
-
-    processDeviceCmd(callback, devData, cmd, vals) {
+    sendDeviceCommand(devData, cmd, vals) {
         return new Promise((resolve) => {
             let that = this;
             let sendLocal = this.sendAsLocalCmd();
@@ -189,19 +163,11 @@ module.exports = class ST_Client {
                     .then((response) => {
                         // console.log('command response:', response.data);
                         this.log.debug(`sendDeviceCommand | Response: ${JSON.stringify(response.data)}`);
-                        if (callback) {
-                            callback();
-                            callback = undefined;
-                        }
                         that.localHubErr(false);
                         resolve(true);
                     })
                     .catch((err) => {
                         that.handleError('sendDeviceCommand', err, true);
-                        if (callback) {
-                            callback();
-                            callback = undefined;
-                        };
                         resolve(false);
                     });
             } catch (err) {
@@ -238,31 +204,31 @@ module.exports = class ST_Client {
 
     sendStartDirect() {
         let that = this;
-        let sendLocal = this.sendAsLocalCmd();
-        let config = {
-            method: 'post',
-            url: `${this.configItems.app_url}${this.configItems.app_id}/startDirect/${this.configItems.direct_ip}/${this.configItems.direct_port}/${pluginVersion}`,
-            params: {
-                access_token: this.configItems.access_token
-            },
-            headers: {
-                evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
-                evttype: 'enableDirect'
-            },
-            data: {
-                ip: that.configItems.direct_ip,
-                port: that.configItems.direct_port,
-                version: pluginVersion,
-                evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
-                evttype: 'enableDirect'
-            },
-            timeout: 10000
-        };
-        if (sendLocal) {
-            config.url = `http://${this.hubIp}:39500/event`;
-            delete config.params;
-        }
         return new Promise((resolve) => {
+            let sendLocal = this.sendAsLocalCmd();
+            let config = {
+                method: 'post',
+                url: `${this.configItems.app_url}${this.configItems.app_id}/startDirect/${this.configItems.direct_ip}/${this.configItems.direct_port}/${pluginVersion}`,
+                params: {
+                    access_token: this.configItems.access_token
+                },
+                headers: {
+                    evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
+                    evttype: 'enableDirect'
+                },
+                data: {
+                    ip: that.configItems.direct_ip,
+                    port: that.configItems.direct_port,
+                    version: pluginVersion,
+                    evtsource: `Homebridge_${platformName}_${this.configItems.app_id}`,
+                    evttype: 'enableDirect'
+                },
+                timeout: 10000
+            };
+            if (sendLocal) {
+                config.url = `http://${this.hubIp}:39500/event`;
+                delete config.params;
+            }
             that.log.info(`Sending StartDirect Request to ${platformDesc} | SendToLocalHub: (${sendLocal})`);
             try {
                 axios(config)

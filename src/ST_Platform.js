@@ -4,6 +4,7 @@ const {
     platformDesc,
     pluginVersion
 } = require("./libs/Constants"),
+    events = require('events'),
     myUtils = require("./libs/MyUtils"),
     SmartThingsClient = require("./ST_Client"),
     SmartThingsAccessories = require("./ST_Accessories"),
@@ -35,6 +36,7 @@ module.exports = class ST_Platform {
         this.ok2Run = true;
         this.direct_port = this.findDirectPort();
         this.logConfig = this.getLogConfig();
+        this.appEvts = new events.EventEmitter();
         this.logging = new Logging(this, this.config["name"], this.logConfig);
         this.log = this.logging.getLogger();
         this.log.info(`Homebridge Version: ${api.version}`);
@@ -55,7 +57,7 @@ module.exports = class ST_Platform {
         this.homebridge.on("didFinishLaunching", this.didFinishLaunching.bind(this));
         this.myUtils.checkVersion()
             .then((res) => {
-                this.client.sendUpdateStatus(res);
+                this.appEvts.emit('event:plugin_upd_status', res);
             });
     }
 
@@ -141,7 +143,7 @@ module.exports = class ST_Platform {
                 that.WebServerInit(that)
                     .catch(err => that.log.error("WebServerInit Error: ", err))
                     .then(resp => {
-                        if (resp && resp.status === "OK") that.client.sendStartDirect();
+                        if (resp && resp.status === "OK") this.appEvts.emit('event:plugin_start_direct');;
                     });
             })
             .catch(err => {
@@ -402,7 +404,7 @@ module.exports = class ST_Platform {
                             that.SmartThingsAccessories.processDeviceAttributeUpdate(newChange)
                                 .then((resp) => {
                                     if (that.logConfig.showChanges) {
-                                        that.log.info(chalk `[{keyword('orange') Device Change Event}]: ({blueBright ${body.change_name}}) [{yellow.bold ${(body.change_attribute ? body.change_attribute.toUpperCase() : "unknown")}}] is {keyword('pink') ${body.change_value}}`);
+                                        that.log.info(chalk `[{keyword('orange') Device Event}]: ({blueBright ${body.change_name}}) [{yellow.bold ${(body.change_attribute ? body.change_attribute.toUpperCase() : "unknown")}}] is {keyword('pink') ${body.change_value}}`);
                                     }
                                     res.send({
                                         evtSource: `Homebridge_${platformName}_${this.configItems.app_id}`,

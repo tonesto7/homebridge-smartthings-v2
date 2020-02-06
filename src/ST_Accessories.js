@@ -3,21 +3,19 @@ const knownCapabilities = require("./libs/Constants").knownCapabilities,
     _ = require("lodash"),
     ServiceTypes = require('./ST_ServiceTypes'),
     Transforms = require('./ST_Transforms'),
-    DeviceTypes = require('./ST_DeviceCharacteristics'),
-    events = require('events');
-
-var Service, Characteristic;
+    DeviceTypes = require('./ST_DeviceCharacteristics');
+var Service, Characteristic, appEvts;
 
 module.exports = class ST_Accessories {
     constructor(platform) {
         this.mainPlatform = platform;
+        appEvts = platform.appEvts;
         this.logConfig = platform.logConfig;
         this.configItems = platform.getConfigItems();
         this.myUtils = platform.myUtils;
         this.log = platform.log;
         this.hap = platform.hap;
         this.uuid = platform.uuid;
-        this.emitter = new events.EventEmitter();
         Service = platform.Service;
         Characteristic = platform.Characteristic;
         this.CommunityTypes = require("./libs/CommunityTypes")(Service, Characteristic);
@@ -49,6 +47,8 @@ module.exports = class ST_Accessories {
             accessory.name = accessory.context.name;
         }
         try {
+            accessory.commandTimers = {};
+            accessory.commandTimersTS = {};
             accessory.context.uuid = accessory.UUID || this.uuid.generate(`smartthings_v2_${accessory.deviceid}`);
             accessory.getOrAddService = this.getOrAddService.bind(accessory);
             accessory.getOrAddServiceByName = this.getOrAddServiceByName.bind(accessory);
@@ -64,6 +64,7 @@ module.exports = class ST_Accessories {
             accessory.updateCharacteristicVal = this.updateCharacteristicVal.bind(accessory);
             accessory.manageGetCharacteristic = this.device_types.manageGetCharacteristic.bind(accessory);
             accessory.manageGetSetCharacteristic = this.device_types.manageGetSetCharacteristic.bind(accessory);
+            accessory.sendCommand = this.sendCommand.bind(accessory);
             return this.configureCharacteristics(accessory);
         } catch (err) {
             this.log.error(`initializeAccessory (fromCache: ${fromCache}) Error:`, err);
@@ -146,6 +147,65 @@ module.exports = class ST_Accessories {
                 resolve(false);
             }
         });
+    }
+
+    sendCommand(callback, acc, dev, cmd, vals) {
+        const id = `${cmd}`;
+        const ts = Date.now();
+        let d = 0;
+        let d2;
+        let o = {};
+        switch (cmd) {
+            case "setLevel":
+            case "setVolume":
+            case "setFanSpeed":
+            case "setSaturation":
+            case "setHue":
+            case "setColorTemperature":
+            case "setHeatingSetpoint":
+            case "setCoolingSetpoint":
+            case "setThermostatSetpoint":
+                d = 600;
+                d2 = 1000;
+                o.trailing = true;
+                break;
+            case "setThermostatMode":
+                d = 600;
+                d2 = 1000;
+                o.trailing = true;
+                break;
+            default:
+                o.leading = true;
+                break;
+        }
+
+        let lastTS = acc.commandTimersTS[id] ? ts - acc.commandTimersTS[id] : undefined;
+        if (acc.commandTimers[id] && acc.commandTimers[id] !== null) {
+            acc.commandTimers[id].cancel();
+            // clearTimeout(acc.commandTimers[id]);
+            acc.commandTimers[id] = null;
+            console.log('lastTS: ', lastTS, ' | now:', ts, ' | last: ', acc.commandTimersTS[id]);
+            console.log(`Existing Command Found | Command: ${cmd} | Vals: ${vals} | Executing in (${d}ms) | Last Cmd: (${lastTS}ms) | Id: ${id} `);
+            if (lastTS && lastTS < d) {
+                d = d2 || 0;
+            }
+        }
+        //TODO: Create a custom execution mechanism
+        // acc.commandTimers[id] = setTimeout(() => {
+        //     appEvts.emit('event:device_command', dev, cmd, vals);
+        // }, d);
+
+        acc.commandTimers[id] = _.debounce(async() => {
+            acc.commandTimersTS[id] = ts;
+            // acc.commandTimers[id] = null;
+            appEvts.emit('event:device_command', dev, cmd, vals);
+        }, d, o);
+        acc.commandTimers[id]();
+
+        if (callback) {
+            callback();
+            callback = undefined;
+        }
     }
 
     log_change(attr, char, acc, chgObj) {

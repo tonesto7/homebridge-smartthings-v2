@@ -3,6 +3,7 @@ var Characteristic, CommunityTypes, accClass;
 module.exports = class DeviceCharacteristics {
     constructor(accessories, char) {
         this.platform = accessories.mainPlatform;
+        // this.appEvts = accessories.mainPlatform.appEvts;
         Characteristic = char;
         CommunityTypes = accessories.CommunityTypes;
         accClass = accessories;
@@ -13,7 +14,6 @@ module.exports = class DeviceCharacteristics {
         this.myUtils = accessories.myUtils;
         this.transforms = accessories.transforms;
         this.homebridge = accessories.homebridge;
-        this.emitter = accessories.emitter;
     }
 
     manageGetCharacteristic(svc, acc, char, attr, opts = {}) {
@@ -60,9 +60,9 @@ module.exports = class DeviceCharacteristics {
                     let cmdName = accClass.transforms.transformCommandName(opts.set_altAttr || attr, value);
                     let cmdVal = accClass.transforms.transformCommandValue(opts.set_altAttr || attr, value);
                     if (opts.cmdHasVal === true) {
-                        accClass.client.sendDeviceCommand(callback, this.context.deviceData, cmdName, { value1: cmdVal });
+                        acc.sendCommand(callback, acc, this.context.deviceData, cmdName, { value1: cmdVal });
                     } else {
-                        accClass.client.sendDeviceCommand(callback, this.context.deviceData, cmdVal);
+                        acc.sendCommand(callback, acc, this.context.deviceData, cmdVal);
                     }
                     if (opts.updAttrVal) this.context.deviceData.attributes[attr] = accClass.transforms.transformAttributeState(opts.set_altAttr || attr, this.context.deviceData.attributes[opts.set_altValAttr || attr], c.displayName);
                 });
@@ -94,7 +94,7 @@ module.exports = class DeviceCharacteristics {
             }
             if (!c.events.set) {
                 c.on('set', (value, callback) => {
-                    this.client.sendDeviceCommand(callback, _accessory.context.deviceData, value ? 'on' : 'off');
+                    _accessory.sendCommand(callback, _accessory, _accessory.context.deviceData, value ? 'on' : 'off');
                 });
             }
             c.getValue();
@@ -121,7 +121,7 @@ module.exports = class DeviceCharacteristics {
             }
             if (!c.events.set) {
                 c.on('set', (value, callback) => {
-                    this.client.sendDeviceCommand(callback, _accessory.context.deviceData, 'setFanMode', {
+                    _accessory.sendCommand(callback, _accessory, _accessory.context.deviceData, 'setFanMode', {
                         value1: this.transforms.transformCommandValue('fanMode', value)
                     });
                 });
@@ -352,7 +352,6 @@ module.exports = class DeviceCharacteristics {
         let isSonos = (_accessory.context.deviceData.manufacturerName === "Sonos");
         let lvlAttr = (isSonos || _accessory.hasAttribute('volume')) ? 'volume' : _accessory.hasAttribute('level') ? 'level' : undefined;
         let c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.Volume);
-        let sonosVolumeTimeout = null;
         let lastVolumeWriteValue = null;
         if (!c._events.get || !c._events.set) {
             if (!c._events.get) {
@@ -365,16 +364,14 @@ module.exports = class DeviceCharacteristics {
                     if (isSonos) {
                         if (value > 0 && value !== lastVolumeWriteValue) {
                             lastVolumeWriteValue = value;
-                            sonosVolumeTimeout = this.accessories.clearAndSetTimeout(sonosVolumeTimeout, () => {
-                                this.log.debug(`Existing volume: ${_accessory.context.deviceData.attributes.volume}, set to ${lastVolumeWriteValue}`);
-                                this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setVolume", {
-                                    value1: lastVolumeWriteValue
-                                });
-                            }, 1000);
+                            this.log.debug(`Existing volume: ${_accessory.context.deviceData.attributes.volume}, set to ${lastVolumeWriteValue}`);
+                            _accessory.sendCommand(callback, _accessory, _accessory.context.deviceData, "setVolume", {
+                                value1: lastVolumeWriteValue
+                            });
                         }
                     }
                     if (value > 0) {
-                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, this.accessories.transformCommandName(lvlAttr, value), {
+                        _accessory.sendCommand(callback, _accessory, _accessory.context.deviceData, this.accessories.transformCommandName(lvlAttr, value), {
                             value1: this.transforms.transformAttributeState(lvlAttr, value)
                         });
                     }
@@ -445,7 +442,7 @@ module.exports = class DeviceCharacteristics {
             if (!targetHeatCoolStateChar._events.set) {
                 targetHeatCoolStateChar.on("set", async(value, callback) => {
                     let state = this.transforms.transformCommandValue('thermostatMode', value);
-                    this.client.sendDeviceCommand(callback, _accessory.context.deviceData, this.transforms.transformCommandName('thermostatMode', value), {
+                    _accessory.sendCommand(callback, _accessory, _accessory.context.deviceData, this.transforms.transformCommandName('thermostatMode', value), {
                         value1: state
                     });
                     _accessory.context.deviceData.attributes.thermostatMode = state;
@@ -489,7 +486,7 @@ module.exports = class DeviceCharacteristics {
                     let temp = this.transforms.thermostatTempConversion(value, true);
                     const targetObj = this.transforms.thermostatTargetTemp_set(_accessory.context.deviceData);
                     if (targetObj && targetObj.cmdName && targetObj.attrName && temp) {
-                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, targetObj.cmdName, {
+                        _accessory.sendCommand(callback, _accessory, _accessory.context.deviceData, targetObj.cmdName, {
                             value1: temp
                         });
                         _accessory.context.deviceData.attributes[targetObj.attrName] = temp;
@@ -524,7 +521,7 @@ module.exports = class DeviceCharacteristics {
                     heatThreshTempChar.on("set", (value, callback) => {
                         // Convert the Celsius value to the appropriate unit for Smartthings
                         let temp = this.transforms.thermostatTempConversion(value, true);
-                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setHeatingSetpoint", {
+                        _accessory.sendCommand(callback, _accessory, _accessory.context.deviceData, "setHeatingSetpoint", {
                             value1: temp
                         });
                         _accessory.context.deviceData.attributes.heatingSetpoint = temp;
@@ -548,7 +545,7 @@ module.exports = class DeviceCharacteristics {
                     coolThreshTempChar.on("set", (value, callback) => {
                         // Convert the Celsius value to the appropriate unit for Smartthings
                         let temp = this.transforms.thermostatTempConversion(value, true);
-                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setCoolingSetpoint", {
+                        _accessory.sendCommand(callback, _accessory, _accessory.context.deviceData, "setCoolingSetpoint", {
                             value1: temp
                         });
                         _accessory.context.deviceData.attributes.coolingSetpoint = temp;
@@ -587,7 +584,7 @@ module.exports = class DeviceCharacteristics {
             if (!c._events.set)
                 c.on("set", (value, callback) => {
                     if (value && (_accessory.context.deviceData.attributes.switch === "off")) {
-                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "mode");
+                        _accessory.sendCommand(callback, _accessory, _accessory.context.deviceData, "mode");
                     }
                 });
             this.accessories.storeCharacteristicItem("switch", _accessory.context.deviceData.deviceid, c);
@@ -608,7 +605,7 @@ module.exports = class DeviceCharacteristics {
             if (!c._events.set)
                 c.on("set", (value, callback) => {
                     if (value) {
-                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "routine");
+                        _accessory.sendCommand(callback, _accessory, _accessory.context.deviceData, "routine");
                         setTimeout(() => {
                             console.log("routineOff...");
                             _accessory.context.deviceData.attributes.switch = "off";
@@ -645,12 +642,12 @@ module.exports = class DeviceCharacteristics {
             if (!c._events.set) {
                 c.on("set", (value, callback) => {
                     if (_accessory.hasCommand('close') && value <= 2) {
-                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "close");
+                        _accessory.sendCommand(callback, _accessory, _accessory.context.deviceData, "close");
                     } else {
                         let v = value;
                         if (value <= 2) v = 0;
                         if (value >= 98) v = 100;
-                        this.client.sendDeviceCommand(callback, _accessory.context.deviceData, "setLevel", {
+                        _accessory.sendCommand(callback, _accessory, _accessory.context.deviceData, "setLevel", {
                             value1: v
                         });
                     }
