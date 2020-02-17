@@ -151,7 +151,7 @@ module.exports = class ST_Accessories {
 
     sendCommand(callback, acc, dev, cmd, vals) {
         const id = `${cmd}`;
-        const ts = Date.now();
+        const tsNow = Date.now();
         let d = 0;
         let d2;
         let o = {};
@@ -166,42 +166,37 @@ module.exports = class ST_Accessories {
             case "setCoolingSetpoint":
             case "setThermostatSetpoint":
                 d = 600;
-                d2 = 1000;
+                d2 = 1500;
                 o.trailing = true;
                 break;
             case "setThermostatMode":
                 d = 600;
-                d2 = 1000;
+                d2 = 1500;
                 o.trailing = true;
                 break;
             default:
                 o.leading = true;
                 break;
         }
-
-        let lastTS = acc.commandTimersTS[id] ? ts - acc.commandTimersTS[id] : undefined;
+        let lastTS = (acc.commandTimersTS[id] && tsNow) ? (tsNow - acc.commandTimersTS[id]) : undefined;
+        // console.log("lastTS: " + lastTS, ' | ts:', acc.commandTimersTS[id]);
         if (acc.commandTimers[id] && acc.commandTimers[id] !== null) {
             acc.commandTimers[id].cancel();
-            // clearTimeout(acc.commandTimers[id]);
             acc.commandTimers[id] = null;
-            console.log('lastTS: ', lastTS, ' | now:', ts, ' | last: ', acc.commandTimersTS[id]);
-            console.log(`Existing Command Found | Command: ${cmd} | Vals: ${vals} | Executing in (${d}ms) | Last Cmd: (${lastTS}ms) | Id: ${id} `);
+            // console.log('lastTS: ', lastTS, ' | now:', tsNow, ' | last: ', acc.commandTimersTS[id]);
+            // console.log(`Existing Command Found | Command: ${cmd} | Vals: ${vals} | Executing in (${d}ms) | Last Cmd: (${lastTS ? (lastTS/1000).toFixed(1) : "unknown"}sec) | Id: ${id} `);
             if (lastTS && lastTS < d) {
                 d = d2 || 0;
             }
         }
-        //TODO: Create a custom execution mechanism
         // acc.commandTimers[id] = setTimeout(() => {
         //     appEvts.emit('event:device_command', dev, cmd, vals);
         // }, d);
-
         acc.commandTimers[id] = _.debounce(async() => {
-            acc.commandTimersTS[id] = ts;
-            // acc.commandTimers[id] = null;
+            acc.commandTimersTS[id] = tsNow;
             appEvts.emit('event:device_command', dev, cmd, vals);
         }, d, o);
         acc.commandTimers[id]();
-
         if (callback) {
             callback();
             callback = undefined;
