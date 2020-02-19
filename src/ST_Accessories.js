@@ -153,6 +153,7 @@ module.exports = class ST_Accessories {
         const id = `${cmd}`;
         const tsNow = Date.now();
         let d = 0;
+        let b = false;
         let d2;
         let o = {};
         switch (cmd) {
@@ -175,28 +176,30 @@ module.exports = class ST_Accessories {
                 o.trailing = true;
                 break;
             default:
-                o.leading = true;
+                b = true;
                 break;
         }
-        let lastTS = (acc.commandTimersTS[id] && tsNow) ? (tsNow - acc.commandTimersTS[id]) : undefined;
-        // console.log("lastTS: " + lastTS, ' | ts:', acc.commandTimersTS[id]);
-        if (acc.commandTimers[id] && acc.commandTimers[id] !== null) {
-            acc.commandTimers[id].cancel();
-            acc.commandTimers[id] = null;
-            // console.log('lastTS: ', lastTS, ' | now:', tsNow, ' | last: ', acc.commandTimersTS[id]);
-            // console.log(`Existing Command Found | Command: ${cmd} | Vals: ${vals} | Executing in (${d}ms) | Last Cmd: (${lastTS ? (lastTS/1000).toFixed(1) : "unknown"}sec) | Id: ${id} `);
-            if (lastTS && lastTS < d) {
-                d = d2 || 0;
-            }
-        }
-        // acc.commandTimers[id] = setTimeout(() => {
-        //     appEvts.emit('event:device_command', dev, cmd, vals);
-        // }, d);
-        acc.commandTimers[id] = _.debounce(async() => {
-            acc.commandTimersTS[id] = tsNow;
+
+        if (b) {
             appEvts.emit('event:device_command', dev, cmd, vals);
-        }, d, o);
-        acc.commandTimers[id]();
+        } else {
+            let lastTS = (acc.commandTimersTS[id] && tsNow) ? (tsNow - acc.commandTimersTS[id]) : undefined;
+            // console.log("lastTS: " + lastTS, ' | ts:', acc.commandTimersTS[id]);
+            if (acc.commandTimers[id] && acc.commandTimers[id] !== null) {
+                acc.commandTimers[id].cancel();
+                acc.commandTimers[id] = null;
+                // console.log('lastTS: ', lastTS, ' | now:', tsNow, ' | last: ', acc.commandTimersTS[id]);
+                // console.log(`Existing Command Found | Command: ${cmd} | Vals: ${vals} | Executing in (${d}ms) | Last Cmd: (${lastTS ? (lastTS/1000).toFixed(1) : "unknown"}sec) | Id: ${id} `);
+                if (lastTS && lastTS < d) {
+                    d = d2 || 0;
+                }
+            }
+            acc.commandTimers[id] = _.debounce(async() => {
+                acc.commandTimersTS[id] = tsNow;
+                appEvts.emit('event:device_command', dev, cmd, vals);
+            }, d, o);
+            acc.commandTimers[id]();
+        }
         if (callback) {
             callback();
             callback = undefined;
