@@ -1,3 +1,7 @@
+## v2.3.0
+- [REMOVE] Support for Local Commands removed (It doesn't really speed up anything anyways)
+- [FIX] Resolve null Service types issue #74.
+
 ## v2.2.1
 - [FIX] Resolved the issue with Window Shades not working #71.
 - [FIX] Resolve null Service types issue #74.

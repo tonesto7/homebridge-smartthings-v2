@@ -1,6 +1,13 @@
 
 # Changelog
 
+## v2.3.0
+- [REMOVE] Support for Local Commands removed (It doesn't really speed up anything anyways)
+- [NEW] Rate-Limiting of commands (debounce)
+- [UPDATE] Command optimizations.
+- [NEW] Switched web request library from Request-Promise to Axios.
+- [FIX] StatusActive characteristic now reports correctly.
+- [FIX] Minor bugfixes and optimizations.
 ## v2.2.1
 - [FIX] Minor tweaks to support shades fixes in the plugin.
 
