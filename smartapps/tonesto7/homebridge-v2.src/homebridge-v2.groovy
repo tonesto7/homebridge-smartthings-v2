@@ -68,8 +68,8 @@ def startPage() {
     if(!state?.installData) { state?.installData = [initVer: appVersion(), dt: getDtNow().toString(), updatedDt: getDtNow().toString(), shownDonation: false] }
     checkVersionData(true)
     if(showChgLogOk()) { return changeLogPage() }
-    else if(showDonationOk()) { return donationPage() }
-    else { return mainPage() }
+    if(showDonationOk()) { return donationPage() }
+    return mainPage()
 }
 
 def mainPage() {
@@ -499,7 +499,8 @@ def getAccessToken() {
             atomicState?.accessToken = createAccessToken();
             if(showDebugLogs) log.debug "SmartApp Access Token Missing... Generating New Token!!!"
             return true;
-        } else { return true }
+        }
+        return true
     } catch (ex) {
         def msg = "Error: OAuth is not Enabled for ${appName()}!. Please click remove and Enable Oauth under the SmartApp App Settings in the IDE"
         log.error "getAccessToken Exception: ${msg}"
@@ -632,7 +633,7 @@ def getDeviceData(type, sItem) {
             // Define firmware variable and initialize it out of device handler attribute`
             try {
                 if (sItem?.hasAttribute("firmware")) { firmware = sItem?.currentValue("firmware")?.toString() }
-            } catch (ex) { }
+            } catch (ex) { firmware = null }
             break
     }
     if(curType && obj) {
@@ -651,7 +652,8 @@ def getDeviceData(type, sItem) {
             deviceflags: !isVirtual ? getDeviceFlags(sItem) : optFlags,
             attributes: !isVirtual ? deviceAttributeList(sItem) : ["switch": attrVal]
         ]
-    } else { return null }
+    }
+    return null
 }
 
 String modeSwitchState(String mode) {
@@ -1633,12 +1635,11 @@ Integer getDaysSinceUpdated() {
     if(updDt == null || updDt == "Not Set") {
         updInstData("updatedDt", getDtNow().toString())
         return 0
-    } else {
-        def start = Date.parse("E MMM dd HH:mm:ss z yyyy", updDt)
-        def stop = new Date()
-        if(start && stop) {	return (stop - start) }
-        return 0
     }
+    def start = Date.parse("E MMM dd HH:mm:ss z yyyy", updDt)
+    def stop = new Date()
+    if(start && stop) {	return (stop - start) }
+    return 0
 }
 
 String changeLogData() { return getWebData([uri: "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/master/CHANGELOG-app.md", contentType: "text/plain; charset=UTF-8"], "changelog") }
