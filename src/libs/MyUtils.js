@@ -74,10 +74,16 @@ module.exports = class MyUtils {
                         this.log.warn(`---------------------------------------------------------------`);
                         this.log.warn(`NOTICE: New version of ${packageFile.name} available: ${newVer}`);
                         this.log.warn(`---------------------------------------------------------------`);
-                        resolve(true);
+                        resolve({
+                            hasUpdate: true,
+                            newVersion: newVer
+                        });
                     } else {
                         this.log.info(`INFO: Your plugin version is up-to-date`);
-                        resolve(false);
+                        resolve({
+                            hasUpdate: false,
+                            newVersion: newVer
+                        });
                     }
                 }
             );

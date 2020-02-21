@@ -1,3 +1,8 @@
+## v2.3.1
+
+- [FIX] Plugin wasn't sending pluginstatus and enable direct messages to SmartApp, so device events weren't being sent to the plugin
+- [NEW] Changed some of the plugin version check logic. I also runs after every device refresh (~1 hour)
+
 ## v2.3.0
 
 - [REMOVE] Support for Local Commands removed (It doesn't really speed up anything anyways)

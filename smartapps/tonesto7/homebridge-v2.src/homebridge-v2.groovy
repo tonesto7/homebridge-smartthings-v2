@@ -57,7 +57,8 @@ private Map ignoreLists() {
             'speed', 'verticalAccuracyMetric', 'altitude', 'indicatorStatus', 'todayCost', 'longitude', 'distance', 'previousPlace','closestPlace', 'places', 'minCodeLength',
             'arrivingAtPlace', 'lastUpdatedDt', 'scheduleType', 'zoneStartDate', 'zoneElapsed', 'zoneDuration', 'watering', 'eventTime', 'eventSummary', 'endOffset', 'startOffset',
             'closeTime', 'endMsgTime', 'endMsg', 'openTime', 'startMsgTime', 'startMsg', 'calName', "deleteInfo", "eventTitle", "floor", "sleeping", "powerSource", "batteryStatus",
-            "LchildVer", "FchildVer", "LchildCurr", "FchildCurr", "lightStatus", "lastFanMode", "lightLevel", "coolingSetpointRange", "heatingSetpointRange", "thermostatSetpointRange", "energy", "power"
+            "LchildVer", "FchildVer", "LchildCurr", "FchildCurr", "lightStatus", "lastFanMode", "lightLevel", "coolingSetpointRange", "heatingSetpointRange", "thermostatSetpointRange",
+            "energy", "power", "colorName", "locationForURL", "location", "offsetNotify"
         ],
         capabilities: ["Health Check", "Ultraviolet Index", "Indicator", "Window Shade Preset"]
     ]
@@ -820,8 +821,6 @@ def lanEventHandler(evt) {
     }
 }
 
-
-
 def deviceCommand() {
     // log.info("Command Request: $params")
     def val1 = request?.JSON?.value1 ?: null
@@ -1457,11 +1456,14 @@ def appInfoSect() {
 String bulletItem(String inStr, String strVal) { return "${inStr == "" ? "" : "\n"} \u2022 ${strVal}" }
 String dashItem(String inStr, String strVal, newLine=false) { return "${(inStr == "" && !newLine) ? "" : "\n"} - ${strVal}" }
 String textDonateLink() { return "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RVFJTG8H86SK8&source=url" }
-Integer versionStr2Int(str) { return str ? str?.toString().tokenize("-")[0]?.replaceAll("\\.", "")?.toInteger() : null }
+Integer versionStr2Int(str) { return str ? str?.toString()?.tokenize("-")[0]?.replaceAll("\\.", "")?.toInteger() : null }
+String versionCleanup(str) { return str ? str?.toString()?.tokenize("-")[0] : null }
 Boolean codeUpdIsAvail(String newVer, String curVer, String type) {
     Boolean result = false
     def latestVer
     if(newVer && curVer) {
+        newVer = versionCleanup(newVer)
+        curVer = versionCleanup(curVer)
         List versions = [newVer, curVer]
         if(newVer != curVer) {
             latestVer = versions?.max { a, b ->

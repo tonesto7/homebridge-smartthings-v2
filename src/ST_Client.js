@@ -29,10 +29,10 @@ module.exports = class ST_Client {
         this.appEvts.on("event:device_command", async(devData, cmd, vals) => {
             await this.sendDeviceCommand(devData, cmd, vals);
         });
-        this.appEvts.on("event:event:plugin_upd_status", async(res) => {
-            await this.sendUpdateStatus(res);
+        this.appEvts.on("event:plugin_upd_status", async() => {
+            await this.sendUpdateStatus();
         });
-        this.appEvts.on("event:event:plugin_start_direct", async() => {
+        this.appEvts.on("event:plugin_start_direct", async() => {
             await this.sendStartDirect();
         });
     }
@@ -176,28 +176,37 @@ module.exports = class ST_Client {
         });
     }
 
-    sendUpdateStatus(hasUpdate, newVersion = null) {
+    sendUpdateStatus() {
         return new Promise((resolve) => {
-            this.log.notice(`Sending Plugin Status to SmartThings | UpdateAvailable: ${hasUpdate}${newVersion ?  ' | newVersion: ' + newVersion : ''}`);
-            axios({
-                    method: 'post',
-                    url: `${this.configItems.app_url}${this.configItems.app_id}/pluginStatus`,
-                    params: {
-                        access_token: this.configItems.access_token
-                    },
-                    data: { hasUpdate: hasUpdate, newVersion: newVersion, version: pluginVersion },
-                    timeout: 10000
-                })
-                .then((response) => {
-                    // console.log(response.data);
-                    if (response.data) {
-                        this.log.debug(`sendUpdateStatus Resp: ${JSON.stringify(response.data)}`);
-                        resolve(response.data);
-                    } else { resolve(null); }
-                })
-                .catch((err) => {
-                    this.handleError('sendUpdateStatus', err, true);
-                    resolve(undefined);
+            this.platform.myUtils.checkVersion()
+                .then((res) => {
+                    this.log.notice(`Sending Plugin Status to SmartThings | UpdateAvailable: ${res.hasUpdate}${res.newVersion ?  ' | newVersion: ' + res.newVersion : ''}`);
+                    axios({
+                            method: 'post',
+                            url: `${this.configItems.app_url}${this.configItems.app_id}/pluginStatus`,
+                            params: {
+                                access_token: this.configItems.access_token
+                            },
+                            data: {
+                                hasUpdate: res.hasUpdate,
+                                newVersion: res.newVersion,
+                                version: pluginVersion
+                            },
+                            timeout: 10000
+                        })
+                        .then((response) => {
+                            // console.log(response.data);
+                            if (response.data) {
+                                this.log.debug(`sendUpdateStatus Resp: ${JSON.stringify(response.data)}`);
+                                resolve(response.data);
+                            } else {
+                                resolve(null);
+                            }
+                        })
+                        .catch((err) => {
+                            this.handleError('sendUpdateStatus', err, true);
+                            resolve(undefined);
+                        });
                 });
         });
     }
@@ -238,7 +247,9 @@ module.exports = class ST_Client {
                             this.log.debug(`sendStartDirect Resp: ${JSON.stringify(response.data)}`);
                             resolve(response.data);
                             that.localHubErr(false);
-                        } else { resolve(null); }
+                        } else {
+                            resolve(null);
+                        }
                     })
                     .catch((err) => {
                         that.handleError("sendStartDirect", err, true);

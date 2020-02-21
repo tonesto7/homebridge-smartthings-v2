@@ -55,17 +55,20 @@ module.exports = class ST_Platform {
         this.client = new SmartThingsClient(this);
         this.SmartThingsAccessories = new SmartThingsAccessories(this);
         this.homebridge.on("didFinishLaunching", this.didFinishLaunching.bind(this));
-        this.myUtils.checkVersion()
-            .then((res) => {
-                this.appEvts.emit('event:plugin_upd_status', res);
-            });
+        this.appEvts.emit('event:plugin_upd_status');
     }
 
     initializeErrorReporting(cfg) {
         if (cfg.disableErrorReporting !== false) {
-            Sentry.init({ dsn: 'https://c126c2d965e84da8af105d80c5e92474@sentry.io/1878896', release: `${pluginName}@${pluginVersion}`, attachStacktrace: true });
+            Sentry.init({
+                dsn: 'https://c126c2d965e84da8af105d80c5e92474@sentry.io/1878896',
+                release: `${pluginName}@${pluginVersion}`,
+                attachStacktrace: true
+            });
             Sentry.configureScope((scope) => {
-                scope.setUser({ id: machineId });
+                scope.setUser({
+                    id: machineId
+                });
                 scope.setTag("username", os.userInfo().username);
                 scope.setTag("node", process.version);
                 scope.setTag("version", pluginVersion);
@@ -100,7 +103,12 @@ module.exports = class ST_Platform {
                 enabled: (config.logConfig.file.enabled === true),
                 level: (config.logConfig.file.level || 'good')
             }
-        } : { debug: false, showChanges: true, hideTimestamp: false, hideNamePrefix: false };
+        } : {
+            debug: false,
+            showChanges: true,
+            hideTimestamp: false,
+            hideNamePrefix: false
+        };
     }
 
     findDirectPort() {
@@ -189,6 +197,7 @@ module.exports = class ST_Platform {
                         that.log.alert(`Total Initialization Time: (${Math.round((new Date() - starttime) / 1000)} seconds)`);
                         that.log.notice(`Unknown Capabilities: ${JSON.stringify(that.unknownCapabilities)}`);
                         that.log.info(`${platformDesc} DeviceCache Size: (${Object.keys(this.SmartThingsAccessories.getAllAccessoriesFromCache()).length})`);
+                        if (src !== 'First Launch') this.appEvts.emit('event:plugin_upd_status');
                         resolve(true);
                     });
 
@@ -251,7 +260,9 @@ module.exports = class ST_Platform {
     }
 
     isValidRequestor(access_token, app_id, src) {
-        if (this.configItems.validateTokenId !== true) { return true; }
+        if (this.configItems.validateTokenId !== true) {
+            return true;
+        }
         if (app_id && access_token && (access_token === this.getConfigItems().access_token) && (app_id === this.getConfigItems().app_id)) return true;
         this.log.error(`(${src}) | We received a request from a client that didn't provide a valid access_token and app_id`);
         return false;
@@ -324,7 +335,9 @@ module.exports = class ST_Platform {
                                 break;
                         }
 
-                    } else { res.send('Error: Missing Valid Debug Query Parameter'); }
+                    } else {
+                        res.send('Error: Missing Valid Debug Query Parameter');
+                    }
                 });
 
                 webApp.post("/restartService", (req, res) => {

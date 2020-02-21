@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.3.1
+
+- [FIX] Typo `?.` in code preventing saving in IDE.
+- [NEW] Fixed new version info when using beta version of plugin.
+
 ## v2.3.0
 
 - [REMOVE] Support for Local Commands removed (It doesn't really speed up anything anyways)
