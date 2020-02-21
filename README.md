@@ -4,7 +4,7 @@
 ![npm](https://img.shields.io/npm/dw/homebridge-smartthings-v2?style=for-the-badge)
 ![GitHub repo size](https://img.shields.io/github/repo-size/tonesto7/homebridge-smartthings-v2?style=for-the-badge)
 [![GitHub issues](https://img.shields.io/github/issues/tonesto7/homebridge-smartthings-v2?style=for-the-badge)](https://github.com/tonesto7/homebridge-smartthings-v2/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/tonesto7/homebridge-smartthings-v2?style=for-the-badge)](https://github.com/tonesto7/homebridge-smartthings-v2/pulls)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/tonesto7/homebridge-smartthings-v2?style=for-the-badge)](https://github.com/tonesto7/homebridge-smartthings-v2/pulls) [![Greenkeeper badge](https://badges.greenkeeper.io/tonesto7/homebridge-smartthings-v2.svg)](https://greenkeeper.io/)
 
 ## About
 V2 of this plugin is a complete rewrite of the homebridge-smartthings-tonesto7 plugin using modern Javascript structure with classes, promises, and arrow functions.
