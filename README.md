@@ -6,6 +6,11 @@
 [![GitHub issues](https://img.shields.io/github/issues/tonesto7/homebridge-smartthings-v2?style=for-the-badge)](https://github.com/tonesto7/homebridge-smartthings-v2/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/tonesto7/homebridge-smartthings-v2?style=for-the-badge)](https://github.com/tonesto7/homebridge-smartthings-v2/pulls)
 
+![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/tonesto7/homebridge-smartthings-v2/master?style=for-the-badge)
+![Known Vulnerabilities](https://img.shields.io/snyk/vulnerabilities/github/tonesto7/homebridge-smartthings-v2?style=for-the-badge)
+
+[![Donate](https://img.shields.io/badge/donate-paypal-green.svg?style=for-the-badge)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RVFJTG8H86SK8&source=url)
+
 ## About
 V2 of this plugin is a complete rewrite of the homebridge-smartthings-tonesto7 plugin using modern Javascript structure with classes, promises, and arrow functions.
 
@@ -82,7 +87,7 @@ _**Note to users updating from homebridge-smartthings-tonesto7:** You can contin
    * Scroll down to the OAuth section and click **`Enable OAuth in Smartapp`**
    * Click **`Update`** at the bottom.
    * (If you are upgrading from a previous version of this project, OAuth will likely already be enabled and you can safely disregard this step)
-   
+
 ## 2. SmartApp Configuration
 
 * In the [SmartThings Classic Mobile App](https://apps.apple.com/app/smartthings-classic/id590800740), go to `Marketplace` and select `SmartApps`.
@@ -150,33 +155,33 @@ _**Note to users updating from homebridge-smartthings-tonesto7:** You can contin
 ```
 
 
- * `platform` & `name`  _Required_  
+ * `platform` & `name`  _Required_
 This information is used by homebridge to identify the plugin and should be the settings above.
 
- * `app_url` & `app_id` & `access_token`  _Required_  
-To get this information, open the SmartThings HomebridgeV2 SmartApp in your SmartThings Classic Mobile App, and tap on `View Configuration Data for Homebridge`  
+ * `app_url` & `app_id` & `access_token`  _Required_
+To get this information, open the SmartThings HomebridgeV2 SmartApp in your SmartThings Classic Mobile App, and tap on `View Configuration Data for Homebridge`
 **Notice:** The app_url in the example will be different for you.
 
- * `communityUserName`  _Optional_ | _Default:_ ''  
+ * `communityUserName`  _Optional_ | _Default:_ ''
 Only needed when you are having issues with the plugin and you want me to be able to identify your reported exception errors.
 
- * `direct_ip`  _Optional_ | _Default: 'First available IP on your computer'_  
+ * `direct_ip`  _Optional_ | _Default: 'First available IP on your computer'_
 Most installations won't need this, but if for any reason it can't identify your ip address correctly, use this setting to force the IP presented to SmartThings for the hub to send to.
 
- * `direct_port`  _Optional_ | _Default: `8000`_  
+ * `direct_port`  _Optional_ | _Default: `8000`_
 This is the port that the `homebridge-smartthings` plugin will listen on for traffic from your hub. Make sure your firewall allows incoming traffic on this port from your SmartThings hub IP address to your HomeBridge instance.
 
- * `temperature_unit`  _Optional_ | _Default: `F`_  
+ * `temperature_unit`  _Optional_ | _Default: `F`_
 This will allow you to define the temp unit to use.  This can also be set in the SmartApp
 
- * `validateTokenId`  _Optional_ | _Default: `false`_  
+ * `validateTokenId`  _Optional_ | _Default: `false`_
 This forces the plugin to validate the smartthings app token and location with that in the plugin configuration
 
- * `excluded_capabilities` _Optional_ | _Default: '{}' (None)_  
-NOTICE: The smartapp offers many inputs to help filter out device capabilities. Only use this if the available inputs don't meet your needs. Specify the SmartThings device by ID and the associated capabilities you want the plugin to ignore.  
+ * `excluded_capabilities` _Optional_ | _Default: '{}' (None)_
+NOTICE: The smartapp offers many inputs to help filter out device capabilities. Only use this if the available inputs don't meet your needs. Specify the SmartThings device by ID and the associated capabilities you want the plugin to ignore.
 This prevents a SmartThings device creating unwanted or redundant HomeKit accessories.
 
- * `logConfig` _Optional_  
+ * `logConfig` _Optional_
 Define log output format options as well as enable the log file output.
 
    - `debug` _Optional_ | _Default: `false`_
@@ -202,10 +207,10 @@ Defines the log entry levels that are written to the file. `good` (recommended) 
 
 ## Frequently Asked Question:
 
- ***Q:*** Can this support Samsung Washers, Dryers, Window AC, Robot Vacuum's?  
+ ***Q:*** Can this support Samsung Washers, Dryers, Window AC, Robot Vacuum's?
 ***A:*** Not in the way you hoped. There are no characteristics in Homekit to allow it beyond simple On/Off Switches.
 
- ***Q:*** Can this support Axis Blinds?  
+ ***Q:*** Can this support Axis Blinds?
 ***A:*** Maybe, it can support any device that has the windowShade capability and/or level attributes.
 
 ## Known Issues:
