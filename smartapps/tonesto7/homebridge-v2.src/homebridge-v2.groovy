@@ -992,9 +992,11 @@ def deviceCapabilityList(device) {
     }
     if(settings?.tstatList?.find { it?.id == device?.id }) {
         items["Thermostat"] = 1
+        items["Thermostat Operating State"] = 1
     }
     if(settings?.tstatHeatList?.find { it?.id == device?.id }) {
         items["Thermostat"] = 1
+        items["Thermostat Operating State"] = 1
         items?.remove("Thermostat Cooling Setpoint")
     }
     if(settings?.noTemp && items["Temperature Measurement"] && (items["Contact Sensor"] || items["Water Sensor"])) {
