@@ -167,6 +167,20 @@ def mainPage() {
     }
 }
 
+def deviceValidationErrors() {
+    /*
+        NOTE: Determine what we require to determine the thermostat a thermostat so we can support devices like Flair which are custom heat-only thermostats.
+    */
+    Map reqs = [
+        tstat: [ c:["Thermostat Operating State"], a: [r: ["thermostatOperatingState"], o: ["heatingSetpoint", "coolingSetpoint"]] ]
+        tstat_heat: [ c:["Thermostat Operating State"], a: [r: ["thermostatOperatingState", "heatingSetpoint"], o: []] ]
+    ]
+
+    if(tstatHeatList || tstatList) {
+
+    }
+}
+
 def defineDevicesPage() {
     return dynamicPage(name: "defineDevicesPage", title: "", install: false, uninstall: false) {
         section("Define Specific Categories:") {
