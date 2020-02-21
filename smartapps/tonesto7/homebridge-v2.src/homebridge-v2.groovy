@@ -394,15 +394,17 @@ def deviceDebugPage() {
     return dynamicPage(name: "deviceDebugPage", title: "", install: false, uninstall: false) {
         section("All Other Devices:") {
             paragraph "Have a device that's not working under homekit like you want?\nSelect a device from one of the inputs below and it will show you all data about the device.", state: "complete", image: getAppImg("info")
-            if(!debug_switch && !debug_other && !debug_garage)
+            if(!debug_switch && !debug_other && !debug_garage && !debug_tstat)
                 input "debug_sensor", "capability.sensor", title: "Sensors: ", multiple: false, submitOnChange: true, required: false, image: getAppImg("sensors")
-            if(!debug_sensor && !debug_other && !debug_garage)
+            if(!debug_sensor && !debug_other && !debug_garage && !debug_tstat)
                 input "debug_switch", "capability.actuator", title: "Switches: ", multiple: false, submitOnChange: true, required: false, image: getAppImg("switch")
-            if(!debug_switch && !debug_sensor && !debug_garage)
+            if(!debug_switch && !debug_sensor && !debug_garage && !debug_tstat)
                 input "debug_other", "capability.refresh", title: "Others Devices: ", multiple: false, submitOnChange: true, required: false, image: getAppImg("devices2")
             if(!debug_sensor && !debug_other && !debug_switch)
-                input "debug_garage", "capability.garageDoor", title: "Garage Doors: ", multiple: false, submitOnChange: true, required: false, image: getAppImg("garage")
-            if(debug_other || debug_sensor || debug_switch || debug_garage) {
+                input "debug_garage", "capability.garageDoorControl", title: "Garage Doors: ", multiple: false, submitOnChange: true, required: false, image: getAppImg("garage_door")
+            if(!debug_sensor && !debug_other && !debug_switch && !debug_garage)
+                input "debug_tstat", "capability.thermostat", title: "Thermostats: ", multiple: false, submitOnChange: true, required: false, image: getAppImg("thermostat")
+            if(debug_other || debug_sensor || debug_switch || debug_garage || debug_tstat) {
                 href url: getAppEndpointUrl("deviceDebug"), style: "embedded", required: false, title: "Tap here to view Device Data...", description: "", state: "complete", image: getAppImg("info")
             }
         }
@@ -414,6 +416,7 @@ public clearTestDeviceItems() {
     settingRemove("debug_switch")
     settingRemove("debug_other")
     settingRemove("debug_garage")
+    settingRemove("debug_tstat")
 }
 
 def viewDeviceDebug() {
@@ -422,6 +425,7 @@ def viewDeviceDebug() {
     if(debug_sensor) sDev = debug_sensor
     if(debug_switch) sDev = debug_switch
     if(debug_garage) sDev = debug_garage
+    if(debug_tstat)  sDev = debug_tstat
     def json = new groovy.json.JsonOutput().toJson(getDeviceDebugMap(sDev))
     def jsonStr = new groovy.json.JsonOutput().prettyPrint(json)
     render contentType: "application/json", data: jsonStr
