@@ -1,8 +1,10 @@
 # homebridge-smartthings-v2
+
 [![npm](https://img.shields.io/npm/v/homebridge-smartthings-v2?style=for-the-badge)](https://www.npmjs.com/package/homebridge-smartthings-v2)
 [![npm](https://img.shields.io/npm/dt/homebridge-smartthings-v2?style=for-the-badge)](https://www.npmjs.com/package/homebridge-smartthings-v2)
 ![npm](https://img.shields.io/npm/dw/homebridge-smartthings-v2?style=for-the-badge)
 ![GitHub repo size](https://img.shields.io/github/repo-size/tonesto7/homebridge-smartthings-v2?style=for-the-badge)
+
 [![GitHub issues](https://img.shields.io/github/issues/tonesto7/homebridge-smartthings-v2?style=for-the-badge)](https://github.com/tonesto7/homebridge-smartthings-v2/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/tonesto7/homebridge-smartthings-v2?style=for-the-badge)](https://github.com/tonesto7/homebridge-smartthings-v2/pulls)
 
@@ -12,6 +14,9 @@
 [![Donate](https://img.shields.io/badge/donate-paypal-green.svg?style=for-the-badge)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RVFJTG8H86SK8&source=url)
 
 ## About
+<p align="left">
+  <img width="100" height="100" src="https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/master/images/hb_tonesto7.png">
+</p>
 V2 of this plugin is a complete rewrite of the homebridge-smartthings-tonesto7 plugin using modern Javascript structure with classes, promises, and arrow functions.
 
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/tonesto7/homebridge-smartthings-v2?label=Latest%20SmartApp%20Version&sort=semver&style=for-the-badge)
@@ -218,5 +223,8 @@ Defines the log entry levels that are written to the file. `good` (recommended) 
 * When you change capability filters on a device already created under homekit it will not remove the old capabilities from the device (I'm working on this).
 
 ## DONATIONS:
+<p align="left">
+  <img width="200" height="200" src="https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/master/images/donation_qr.png">
+</p>
 
-[PayPal Donations Link](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RVFJTG8H86SK8&source=url "Paypal Donations Link")
+[![PayPal Donations](https://img.shields.io/badge/donate-paypal-green.svg?style=for-the-badge)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RVFJTG8H86SK8&source=url)
