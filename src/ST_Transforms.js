@@ -11,6 +11,17 @@ module.exports = class Transforms {
         this.log = platform.log;
     }
 
+    transformStatus(val) {
+        val = val.toLowerCase() || undefined;
+        switch (val) {
+            case "online":
+            case "active":
+                return true;
+            default:
+                return false;
+        }
+    }
+
     transformAttributeState(attr, val, charName) {
         switch (attr) {
             case "switch":
@@ -285,7 +296,9 @@ module.exports = class Transforms {
                     return "medium";
                 } else if (val > CommunityTypes.FanOscilationMode.MEDIUM && val <= CommunityTypes.FanOscilationMode.HIGH) {
                     return "high";
-                } else { return "sleep"; }
+                } else {
+                    return "sleep";
+                }
             default:
                 return val;
         }
@@ -379,7 +392,10 @@ module.exports = class Transforms {
                     attrName = useCool ? "coolingSetpoint" : "heatingSetpoint";
                 }
         }
-        return { cmdName: cmdName, attrName: attrName };
+        return {
+            cmdName: cmdName,
+            attrName: attrName
+        };
     }
 
     tempConversion(temp, onlyC = false) {

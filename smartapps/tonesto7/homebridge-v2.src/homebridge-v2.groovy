@@ -4,8 +4,8 @@
  *  Copyright 2018, 2019, 2020 Anthony Santilli
  */
 
-String appVersion()                     { return "2.2.2" }
-String appModified()                    { return "02-20-2020" }
+String appVersion()                     { return "2.2.3" }
+String appModified()                    { return "02-21-2020" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
@@ -78,7 +78,7 @@ def mainPage() {
         appInfoSect()
         section("Define Specific Categories:") {
             paragraph "Each category below will adjust the device attributes to make sure they are recognized as the desired device type under HomeKit.\nNOTICE: Don't select the same devices used here in the Select Your Devices Input below.", state: "complete"
-            Boolean conf = (lightList || buttonList || fanList || fan3SpdList || fan4SpdList || speakerList || shadesList || tstatHeatList)
+            Boolean conf = (lightList || buttonList || fanList || fan3SpdList || fan4SpdList || speakerList || shadesList || garageList || tstatList || tstatHeatList)
             Integer fansize = (fanList?.size() ?: 0) + (fan3SpdList?.size() ?: 0) + (fan4SpdList?.size() ?: 0)
             String desc = "Tap to configure"
             if(conf) {
@@ -88,6 +88,8 @@ def mainPage() {
                 desc += (fanList || fan3SpdList || fan4SpdList) ? "(${fansize}) Fan Devices\n" : ""
                 desc += speakerList ? "(${speakerList?.size()}) Speaker Devices\n" : ""
                 desc += shadesList ? "(${shadesList?.size()}) Shade Devices\n" : ""
+                desc += garageList ? "(${garageList?.size()}) Garage Door Devices\n" : ""
+                desc += tstatList ? "(${tstatList?.size()}) Tstat Devices\n" : ""
                 desc += tstatHeatList ? "(${tstatHeatList?.size()}) Tstat Heat Devices\n" : ""
                 desc += "\nTap to modify..."
             }
@@ -179,8 +181,12 @@ def defineDevicesPage() {
             input "fan3SpdList", "capability.switch", title: "Fans (3 Speeds): (${fan3SpdList ? fan3SpdList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on")
             input "fan4SpdList", "capability.switch", title: "Fans (4 Speeds): (${fan4SpdList ? fan4SpdList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on")
         }
+        section("Garage Doors") {
+            input "garageList", "capability.garageDoorControl", title: "Garage Doors: (${garageList ? garageList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("garage_door")
+        }
         section("Thermostats") {
-            input "tstatHeatList", "capability.thermostat", title: "Heat Only Thermostat: (${tstatHeatList ? tstatHeatList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("thermostat")
+            input "tstatList", "capability.thermostat", title: "Thermostats: (${tstatList ? tstatList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("thermostat")
+            input "tstatHeatList", "capability.thermostat", title: "Heat Only Thermostats: (${tstatHeatList ? tstatHeatList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("thermostat")
         }
     }
 }
@@ -229,7 +235,9 @@ private resetCapFilters() {
 private inputDupeValidation() {
     Map clnUp = [d: [:], o: [:]]
     Map items = [
-        d: ["fanList": "Fans", "fan3SpdList": "Fans (3-Speed)", "fan4SpdList": "Fans (4-Speed)", "buttonList": "Buttons", "lightList": "Lights", "shadesList": "Window Shadse", "speakerList": "Speakers", "tstatHeatList": "Thermostat (Heat Only)"],
+        d: ["fanList": "Fans", "fan3SpdList": "Fans (3-Speed)", "fan4SpdList": "Fans (4-Speed)", "buttonList": "Buttons", "lightList": "Lights", "shadesList": "Window Shadse", "speakerList": "Speakers",
+            "garageList": "Garage Doors", "tstatList": "Thermostat", "tstatHeatList": "Thermostat (Heat Only)"
+        ],
         o: ["deviceList": "Other", "sensorList": "Sensor", "switchList": "Switch"]
     ]
     items?.d?.each { k, v->
@@ -960,7 +968,14 @@ def deviceCapabilityList(device) {
     if(settings?.shadesList?.find { it?.id == device?.id }) {
         items["Window Shade"] = 1
     }
+    if(settings?.garageList?.find { it?.id == device?.id }) {
+        items["Garage Door Control"] = 1
+    }
+    if(settings?.tstatList?.find { it?.id == device?.id }) {
+        items?.["Thermostat"] = 1
+    }
     if(settings?.tstatHeatList?.find { it?.id == device?.id }) {
+        items?.["Thermostat"] = 1
         items?.remove("Thermostat Cooling Setpoint")
     }
     if(settings?.noTemp && items["Temperature Measurement"] && (items["Contact Sensor"] || items["Water Sensor"])) {
@@ -1099,7 +1114,7 @@ def registerDevices2() {
 
 def registerDevices3() {
     //This has to be done at startup because it takes too long for a normal command.
-    ["switchList": "Switch Devices", "shadesList": "Window Shade Devices", "tstatHeatList": "Thermostat (HeatOnly) Devices"]?.each { k,v->
+    ["switchList": "Switch Devices", "shadesList": "Window Shade Devices", "garageList": "Garage Door Devices", "tstatList": "Thermostat Devices", "tstatHeatList": "Thermostat (HeatOnly) Devices"]?.each { k,v->
         if(showDebugLogs) log.debug "Registering (${settings?."${k}"?.size() ?: 0}) ${v}"
         registerChangeHandler(settings?."${k}")
     }

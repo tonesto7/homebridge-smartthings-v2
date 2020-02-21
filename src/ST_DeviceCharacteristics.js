@@ -21,7 +21,7 @@ module.exports = class DeviceCharacteristics {
         if (!c._events.get) {
             c.on("get", (callback) => {
                 if (attr === 'status' && char === Characteristic.StatusActive) {
-                    callback(null, this.context.deviceData.status === 'Online');
+                    callback(null, accClass.transforms.transformStatus(this.context.deviceData.status));
                 } else {
                     callback(null, accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
                     accClass.log_get(attr, char, acc, accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
@@ -33,7 +33,7 @@ module.exports = class DeviceCharacteristics {
             accClass.storeCharacteristicItem(attr, this.context.deviceData.deviceid, c);
         } else {
             if (attr === 'status' && char === Characteristic.StatusActive) {
-                c.updateValue(this.context.deviceData.status === 'Online');
+                c.updateValue(accClass.transforms.transformStatus(this.context.deviceData.status));
             } else {
                 c.updateValue(accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
                 accClass.log_get(attr, char, acc, accClass.transforms.transformAttributeState(opts.get_altAttr || attr, this.context.deviceData.attributes[opts.get_altValAttr || attr], c.displayName));
@@ -60,7 +60,9 @@ module.exports = class DeviceCharacteristics {
                     let cmdName = accClass.transforms.transformCommandName(opts.set_altAttr || attr, value);
                     let cmdVal = accClass.transforms.transformCommandValue(opts.set_altAttr || attr, value);
                     if (opts.cmdHasVal === true) {
-                        acc.sendCommand(callback, acc, this.context.deviceData, cmdName, { value1: cmdVal });
+                        acc.sendCommand(callback, acc, this.context.deviceData, cmdName, {
+                            value1: cmdVal
+                        });
                     } else {
                         acc.sendCommand(callback, acc, this.context.deviceData, cmdVal);
                     }
@@ -203,7 +205,9 @@ module.exports = class DeviceCharacteristics {
         _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusActive, 'status');
         if (_accessory.hasCapability('Tamper Alert')) {
             _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusTampered, 'tamper');
-        } else { _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered); }
+        } else {
+            _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered);
+        }
         _accessory.context.deviceGroups.push("carbon_dioxide");
         return _accessory;
     }
@@ -213,7 +217,9 @@ module.exports = class DeviceCharacteristics {
         _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusActive, 'status');
         if (_accessory.hasCapability('Tamper Alert')) {
             _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusTampered, 'tamper');
-        } else { _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered); }
+        } else {
+            _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered);
+        }
         _accessory.context.deviceGroups.push("carbon_monoxide");
         return _accessory;
     }
@@ -224,7 +230,9 @@ module.exports = class DeviceCharacteristics {
         _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusActive, 'status');
         if (_accessory.hasCapability('Tamper Alert')) {
             _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusTampered, 'tamper');
-        } else { _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered); }
+        } else {
+            _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered);
+        }
         _accessory.context.deviceGroups.push("contact_sensor");
         return _accessory;
     }
@@ -238,7 +246,9 @@ module.exports = class DeviceCharacteristics {
     fan(_accessory, _service) {
         if (_accessory.hasAttribute('switch')) {
             _accessory.manageGetSetCharacteristic(_service, _accessory, Characteristic.Active, 'switch');
-            _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.CurrentFanState, 'switch', { get_altAttr: "fanState" });
+            _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.CurrentFanState, 'switch', {
+                get_altAttr: "fanState"
+            });
         } else {
             _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.CurrentFanState);
             _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.Active);
@@ -248,8 +258,15 @@ module.exports = class DeviceCharacteristics {
         if (_accessory.hasDeviceFlag('fan_4_spd')) spdSteps = 25;
         let spdAttr = (_accessory.hasAttribute('level')) ? "level" : (_accessory.hasAttribute('fanSpeed') && _accessory.hasCommand('setFanSpeed')) ? 'fanSpeed' : undefined;
         if (_accessory.hasAttribute('level') || _accessory.hasAttribute('fanSpeed')) {
-            _accessory.manageGetSetCharacteristic(_service, _accessory, Characteristic.RotationSpeed, spdAttr, { cmdHasVal: true, props: { minSteps: spdSteps } });
-        } else { _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.RotationSpeed); }
+            _accessory.manageGetSetCharacteristic(_service, _accessory, Characteristic.RotationSpeed, spdAttr, {
+                cmdHasVal: true,
+                props: {
+                    minSteps: spdSteps
+                }
+            });
+        } else {
+            _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.RotationSpeed);
+        }
         _accessory.context.deviceGroups.push("fan");
         return _accessory;
     }
@@ -266,17 +283,26 @@ module.exports = class DeviceCharacteristics {
         _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusActive, 'status');
         if (_accessory.hasCapability('Tamper Alert')) {
             _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusTampered, 'tamper');
-        } else { _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered); }
+        } else {
+            _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered);
+        }
         _accessory.context.deviceGroups.push("humidity_sensor");
         return _accessory;
     }
 
     illuminance_sensor(_accessory, _service) {
-        _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.CurrentAmbientLightLevel, 'illuminance', { props: { minValue: 0, maxValue: 100000 } });
+        _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.CurrentAmbientLightLevel, 'illuminance', {
+            props: {
+                minValue: 0,
+                maxValue: 100000
+            }
+        });
         _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusActive, 'status');
         if (_accessory.hasCapability('Tamper Alert')) {
             _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusTampered, 'tamper');
-        } else { _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered); }
+        } else {
+            _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered);
+        }
         _accessory.context.deviceGroups.push("illuminance_sensor");
         return _accessory;
     }
@@ -284,8 +310,12 @@ module.exports = class DeviceCharacteristics {
     light(_accessory, _service) {
         _accessory.manageGetSetCharacteristic(_service, _accessory, Characteristic.On, 'switch');
         if (_accessory.hasAttribute('level')) {
-            _accessory.manageGetSetCharacteristic(_service, _accessory, Characteristic.Brightness, 'level', { cmdHasVal: true });
-        } else { _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.Brightness); }
+            _accessory.manageGetSetCharacteristic(_service, _accessory, Characteristic.Brightness, 'level', {
+                cmdHasVal: true
+            });
+        } else {
+            _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.Brightness);
+        }
         if (_accessory.hasAttribute('hue')) {
             _accessory.manageGetSetCharacteristic(_service, _accessory, Characteristic.Hue, 'hue', {
                 cmdHasVal: true,
@@ -294,13 +324,23 @@ module.exports = class DeviceCharacteristics {
                     maxValue: 30000
                 }
             });
-        } else { _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.Hue); }
+        } else {
+            _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.Hue);
+        }
         if (_accessory.hasAttribute('saturation')) {
-            _accessory.manageGetSetCharacteristic(_service, _accessory, Characteristic.Saturation, 'saturation', { cmdHasVal: true });
-        } else { _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.Saturation); }
+            _accessory.manageGetSetCharacteristic(_service, _accessory, Characteristic.Saturation, 'saturation', {
+                cmdHasVal: true
+            });
+        } else {
+            _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.Saturation);
+        }
         if (_accessory.hasAttribute('colorTemperature')) {
-            _accessory.manageGetSetCharacteristic(_service, _accessory, Characteristic.ColorTemperature, 'colorTemperature', { cmdHasVal: true });
-        } else { _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.ColorTemperature); }
+            _accessory.manageGetSetCharacteristic(_service, _accessory, Characteristic.ColorTemperature, 'colorTemperature', {
+                cmdHasVal: true
+            });
+        } else {
+            _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.ColorTemperature);
+        }
         _accessory.context.deviceGroups.push("light_bulb");
         return _accessory;
     }
@@ -317,7 +357,9 @@ module.exports = class DeviceCharacteristics {
         _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusActive, 'status');
         if (_accessory.hasCapability('Tamper Alert')) {
             _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusTampered, 'tamper');
-        } else { _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered); }
+        } else {
+            _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered);
+        }
         _accessory.context.deviceGroups.push("motion_sensor");
         return _accessory;
     }
@@ -333,7 +375,9 @@ module.exports = class DeviceCharacteristics {
         _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusActive, 'status');
         if (_accessory.hasCapability('Tamper Alert')) {
             _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusTampered, 'tamper');
-        } else { _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered); }
+        } else {
+            _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered);
+        }
         _accessory.context.deviceGroups.push("presence_sensor");
         return _accessory;
     }
@@ -343,7 +387,9 @@ module.exports = class DeviceCharacteristics {
         _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusActive, 'status');
         if (_accessory.hasCapability('Tamper Alert')) {
             _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusTampered, 'tamper');
-        } else { _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered); }
+        } else {
+            _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered);
+        }
         _accessory.context.deviceGroups.push("smoke_detector");
         return _accessory;
     }
@@ -403,7 +449,9 @@ module.exports = class DeviceCharacteristics {
         });
         if (_accessory.hasCapability('Tamper Alert')) {
             _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusTampered, 'tamper');
-        } else { _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered); }
+        } else {
+            _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered);
+        }
         _accessory.context.deviceGroups.push("temperature_sensor");
         return _accessory;
     }
@@ -631,7 +679,11 @@ module.exports = class DeviceCharacteristics {
     }
 
     window_shade(_accessory, _service) {
-        _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.CurrentPosition, 'level', { props: { steps: 10 } });
+        _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.CurrentPosition, 'level', {
+            props: {
+                steps: 10
+            }
+        });
         let c = _accessory.getOrAddService(_service).getCharacteristic(Characteristic.TargetPosition);
         if (!c._events.get || !c._events.set) {
             if (!c._events.get) {
