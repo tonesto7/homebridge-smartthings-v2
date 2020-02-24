@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.3.2
+
+- [NEW] Added support for bringing acceleration sensors into homekit as motion sensors.
+- [FIX] Fixed issue with new Garage and Thermostat define type inputs from actually bringing in the devices.
+
 ## v2.3.1
 
 - [FIX] Typo `?.` in code preventing saving in IDE.

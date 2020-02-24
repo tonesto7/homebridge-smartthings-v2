@@ -1,3 +1,7 @@
+## v2.3.2
+
+- [NEW] Added support for bringing acceleration sensors into homekit as motion sensors.
+
 ## v2.3.1
 
 - [FIX] Plugin wasn't sending pluginstatus and enable direct messages to SmartApp, so device events weren't being sent to the plugin
