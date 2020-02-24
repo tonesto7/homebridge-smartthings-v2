@@ -49,8 +49,10 @@ private Map ignoreLists() {
     Boolean noEnr = true
     Map o = [
         commands: ["indicatorWhenOn", "indicatorWhenOff", "ping", "refresh", "indicatorNever", "configure", "poll", "reset"],
-        attributes: ['DeviceWatch-Enroll', 'DeviceWatch-Status', "checkInterval", "LchildVer", "FchildVer", "LchildCurr", "FchildCurr", "lightStatus", "lastFanMode", "lightLevel",
-            "coolingSetpointRange", "heatingSetpointRange", "thermostatSetpointRange"],
+        attributes: [
+            'DeviceWatch-Enroll', 'DeviceWatch-Status', "checkInterval", "LchildVer", "FchildVer", "LchildCurr", "FchildCurr", "lightStatus", "lastFanMode", "lightLevel",
+            "coolingSetpointRange", "heatingSetpointRange", "thermostatSetpointRange"
+        ],
         evt_attributes: [
             'DeviceWatch-DeviceStatus', "DeviceWatch-Enroll", 'checkInterval', 'devTypeVer', 'dayPowerAvg', 'apiStatus', 'yearCost', 'yearUsage','monthUsage', 'monthEst', 'weekCost', 'todayUsage',
             'maxCodeLength', 'maxCodes', 'readingUpdated', 'maxEnergyReading', 'monthCost', 'maxPowerReading', 'minPowerReading', 'monthCost', 'weekUsage', 'minEnergyReading',
@@ -189,9 +191,8 @@ def deviceValidationErrors() {
         ]
     ]
 
-    if(tstatHeatList || tstatList) {
-
-    }
+    // if(tstatHeatList || tstatList) {}
+    return reqs
 }
 
 def defineDevicesPage() {
@@ -1496,7 +1497,7 @@ Boolean codeUpdIsAvail(String newVer, String curVer, String type) {
                 for (int i = 0; i < commonIndices; ++i) { if(verA[i]?.toInteger() != verB[i]?.toInteger()) { return verA[i]?.toInteger() <=> verB[i]?.toInteger() }; }
                 verA?.size() <=> verB?.size()
             }
-            result = (latestVer == newVer) ? true : false
+            result = (latestVer == newVer)
         }
     }
     return result
@@ -1652,7 +1653,7 @@ def GetTimeDiffSeconds(lastDate, sender=null) {
 /******************************************
 |       Changelog Logic
 ******************************************/
-Boolean showDonationOk() { return (state?.isInstalled && !atomicState?.installData?.shownDonation && getDaysSinceUpdated() >= 30 && !settings?.sentDonation) ? true : false }
+Boolean showDonationOk() { return (state?.isInstalled && !atomicState?.installData?.shownDonation && getDaysSinceUpdated() >= 30 && !settings?.sentDonation) }
 Integer getDaysSinceUpdated() {
     def updDt = atomicState?.installData?.updatedDt ?: null
     if(updDt == null || updDt == "Not Set") {
