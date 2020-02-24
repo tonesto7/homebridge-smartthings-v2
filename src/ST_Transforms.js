@@ -117,6 +117,7 @@ module.exports = class Transforms {
                 }
             case "tamper":
                 return (val === "detected") ? Characteristic.StatusTampered.TAMPERED : Characteristic.StatusTampered.NOT_TAMPERED;
+            case "acceleration":
             case "motion":
                 return (val === "active");
             case "water":

@@ -45,10 +45,14 @@ preferences {
 }
 
 private Map ignoreLists() {
-    return [
+    Boolean noPwr = true
+    Boolean noEnr = true
+    Map o = [
         commands: ["indicatorWhenOn", "indicatorWhenOff", "ping", "refresh", "indicatorNever", "configure", "poll", "reset"],
-        attributes: ['DeviceWatch-Enroll', 'DeviceWatch-Status', "checkInterval", "LchildVer", "FchildVer", "LchildCurr", "FchildCurr", "lightStatus", "lastFanMode", "lightLevel",
-            "coolingSetpointRange", "heatingSetpointRange", "thermostatSetpointRange", "energy", "power"],
+        attributes: [
+            'DeviceWatch-Enroll', 'DeviceWatch-Status', "checkInterval", "LchildVer", "FchildVer", "LchildCurr", "FchildCurr", "lightStatus", "lastFanMode", "lightLevel",
+            "coolingSetpointRange", "heatingSetpointRange", "thermostatSetpointRange"
+        ],
         evt_attributes: [
             'DeviceWatch-DeviceStatus', "DeviceWatch-Enroll", 'checkInterval', 'devTypeVer', 'dayPowerAvg', 'apiStatus', 'yearCost', 'yearUsage','monthUsage', 'monthEst', 'weekCost', 'todayUsage',
             'maxCodeLength', 'maxCodes', 'readingUpdated', 'maxEnergyReading', 'monthCost', 'maxPowerReading', 'minPowerReading', 'monthCost', 'weekUsage', 'minEnergyReading',
@@ -58,10 +62,13 @@ private Map ignoreLists() {
             'arrivingAtPlace', 'lastUpdatedDt', 'scheduleType', 'zoneStartDate', 'zoneElapsed', 'zoneDuration', 'watering', 'eventTime', 'eventSummary', 'endOffset', 'startOffset',
             'closeTime', 'endMsgTime', 'endMsg', 'openTime', 'startMsgTime', 'startMsg', 'calName', "deleteInfo", "eventTitle", "floor", "sleeping", "powerSource", "batteryStatus",
             "LchildVer", "FchildVer", "LchildCurr", "FchildCurr", "lightStatus", "lastFanMode", "lightLevel", "coolingSetpointRange", "heatingSetpointRange", "thermostatSetpointRange",
-            "energy", "power", "colorName", "locationForURL", "location", "offsetNotify"
+            "colorName", "locationForURL", "location", "offsetNotify"
         ],
         capabilities: ["Health Check", "Ultraviolet Index", "Indicator", "Window Shade Preset"]
     ]
+    if(noPwr) { o?.attributes?.push("power"); o?.evt_attributes?.push("power"); o?.capabilities?.push("Power Meter") }
+    if(noEnr) { o?.attributes?.push("energy"); o?.evt_attributes?.push("energy"); o?.capabilities?.push("Energy Meter") }
+    return o
 }
 
 def startPage() {
@@ -113,8 +120,10 @@ def mainPage() {
         inputDupeValidation()
 
         section("Capability Filtering:") {
-            Boolean conf = (removeBattery || removeButton || removeContact || removeEnergy || removeHumidity || removeIlluminance || removeLevel || removeLock || removeMotion || removePower || removePresence ||
-            removeSwitch || removeTamper || removeTemp || removeValve)
+            Boolean conf = (
+                removeAcceleration || removeBattery || removeButton || removeContact || removeEnergy || removeHumidity || removeIlluminance || removeLevel || removeLock || removeMotion ||
+                removePower || removePresence || removeSwitch || removeTamper || removeTemp || removeValve
+            )
             href "capFilterPage", title: "Filter out capabilities from your devices", required: false, image: getAppImg("filter"), state: (conf ? "complete" : null), description: (conf ? "Tap to modify..." : "Tap to configure")
         }
 
@@ -167,12 +176,32 @@ def mainPage() {
     }
 }
 
+def deviceValidationErrors() {
+    /*
+        NOTE: Determine what we require to determine the thermostat a thermostat so we can support devices like Flair which are custom heat-only thermostats.
+    */
+    Map reqs = [
+        tstat: [ c:["Thermostat Operating State"], a: [r: ["thermostatOperatingState"], o: ["heatingSetpoint", "coolingSetpoint"]] ],
+        tstat_heat: [
+            c: ["Thermostat Operating State"],
+            a: [
+                r: ["thermostatOperatingState", "heatingSetpoint"],
+                o: []
+            ]
+        ]
+    ]
+
+    // if(tstatHeatList || tstatList) {}
+    return reqs
+}
+
 def defineDevicesPage() {
     return dynamicPage(name: "defineDevicesPage", title: "", install: false, uninstall: false) {
         section("Define Specific Categories:") {
             paragraph "NOTE: Please do not select a device here and then again in another input below."
             paragraph "Each category below will adjust the device attributes to make sure they are recognized as the desired device type under HomeKit", state: "complete"
             input "lightList", "capability.switch", title: "Lights: (${lightList ? lightList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("light_on")
+            input "garageList", "capability.garageDoorControl", title: "Garage Doors: (${garageList ? garageList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("garage_door")
             input "buttonList", "capability.button", title: "Buttons: (${buttonList ? buttonList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("button")
             input "speakerList", "capability.switch", title: "Speakers: (${speakerList ? speakerList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("media_player")
             input "shadesList", "capability.windowShade", title: "Window Shades: (${shadesList ? shadesList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("window_shade")
@@ -181,9 +210,6 @@ def defineDevicesPage() {
             input "fanList", "capability.switch", title: "Fans: (${fanList ? fanList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on")
             input "fan3SpdList", "capability.switch", title: "Fans (3 Speeds): (${fan3SpdList ? fan3SpdList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on")
             input "fan4SpdList", "capability.switch", title: "Fans (4 Speeds): (${fan4SpdList ? fan4SpdList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("fan_on")
-        }
-        section("Garage Doors") {
-            input "garageList", "capability.garageDoorControl", title: "Garage Doors: (${garageList ? garageList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("garage_door")
         }
         section("Thermostats") {
             input "tstatList", "capability.thermostat", title: "Thermostats: (${tstatList ? tstatList?.size() : 0} Selected)", multiple: true, submitOnChange: true, required: false, image: getAppImg("thermostat")
@@ -327,6 +353,7 @@ def capFilterPage() {
         }
         section("Remove Capabilities from Devices") {
             paragraph "This will allow you to filter out certain capabilities from creating unwanted devices under HomeKit"
+            input "removeAcceleration", "capability.accelerationSensor", title: "Remove Acceleration from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("acceleration")
             input "removeBattery", "capability.battery", title: "Remove Battery from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("battery")
             input "removeButton", "capability.button", title: "Remove Buttons from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("button")
             input "removeContact", "capability.contactSensor", title: "Remove Contact from these Devices", multiple: true, submitOnChange: true, required: false, image: getAppImg("contact")
@@ -956,57 +983,53 @@ def deviceQuery() {
 }
 
 def deviceCapabilityList(device) {
-    def items = device?.capabilities?.findAll{ !(it?.name in ignoreLists()?.capabilities) }?.collectEntries { capability-> [ (capability?.name):1 ] }
-    // ["Health Check", "Ultraviolet Index", "Indicator"]?.each { if(it in items) { items?.remove(it as String) } }
-    if(settings?.lightList?.find { it?.id == device?.id }) {
-        items["LightBulb"] = 1
+    String devId = device?.getId()
+    def capItems = device?.capabilities?.findAll{ !(it?.name in ignoreLists()?.capabilities) }?.collectEntries { capability-> [ (capability?.name as String):1 ] }
+    if(isDeviceInInput("lightList", device?.id)) {
+        capItems["LightBulb"] = 1
     }
-    if(settings?.buttonList?.find { it?.id == device?.id }) {
-        items["Button"] = 1
+    if(isDeviceInInput("buttonList", device?.id)) {
+        capItems["Button"] = 1
     }
-    if(settings?.fanList?.find { it?.id == device?.id }) {
-        items["Fan"] = 1
+    if(isDeviceInInput("fanList", device?.id)) {
+        capItems["Fan"] = 1
     }
-    if(settings?.speakerList?.find { it?.id == device?.id }) {
-        items["Speaker"] = 1
+    if(isDeviceInInput("speakerList", device?.id)) {
+        capItems["Speaker"] = 1
     }
-    if(settings?.shadesList?.find { it?.id == device?.id }) {
-        items["Window Shade"] = 1
+    if(isDeviceInInput("shadesList", device?.id)) {
+        capItems["Window Shade"] = 1
     }
-    if(settings?.garageList?.find { it?.id == device?.id }) {
-        items["Garage Door Control"] = 1
+    if(isDeviceInInput("garageList", device?.id)) {
+        capItems["Garage Door Control"] = 1
     }
-    if(settings?.tstatList?.find { it?.id == device?.id }) {
-        items["Thermostat"] = 1
+    if(isDeviceInInput("tstatList", device?.id)) {
+        capItems["Thermostat"] = 1
+        capItems["Thermostat Operating State"] = 1
     }
-    if(settings?.tstatHeatList?.find { it?.id == device?.id }) {
-        items["Thermostat"] = 1
-        items?.remove("Thermostat Cooling Setpoint")
+    if(isDeviceInInput("tstatHeatList", device?.id)) {
+        capItems["Thermostat"] = 1
+        capItems["Thermostat Operating State"] = 1
+        capItems?.remove("Thermostat Cooling Setpoint")
     }
-    if(settings?.noTemp && items["Temperature Measurement"] && (items["Contact Sensor"] || items["Water Sensor"])) {
+    if(settings?.noTemp && capItems["Temperature Measurement"] && (capItems["Contact Sensor"] || capItems["Water Sensor"])) {
         Boolean remTemp = true
-        if(settings?.sensorAllowTemp) {
-            List aItems = settings?.sensorAllowTemp?.collect { it?.getId() as String } ?: []
-            if(aItems?.contains(device?.id as String)) { remTemp = false }
-        }
-        if(remTemp) { items?.remove("Temperature Measurement") }
+        if(settings?.sensorAllowTemp && isDeviceInInput("sensorAllowTemp", device?.id)) remTemp = false
+        if(remTemp) { capItems?.remove("Temperature Measurement") }
     }
-    if(settings?.removeBattery && items["Battery"] && isDeviceInInput('removeBattery', device?.id)) { items?.remove("Battery"); if(showDebugLogs) { log.debug "Filtering Battery"; } }
-    if(settings?.removeButton && items["Button"] && isDeviceInInput('removeButton', device?.id)) { items?.remove("Button");  if(showDebugLogs) { log.debug "Filtering Button"; } }
-    if(settings?.removeContact && items["Contact Sensor"] && isDeviceInInput('removeContact', device?.id)) { items?.remove("Contact Sensor");  if(showDebugLogs) { log.debug "Filtering Contact"; } }
-    if(settings?.removeEnergy && items["Energy Meter"] && isDeviceInInput('removeEnergy', device?.id)) { items?.remove("Energy Meter");  if(showDebugLogs) { log.debug "Filtering Energy"; } }
-    if(settings?.removeHumidity && items["Relative Humidity Measurement"] && isDeviceInInput('removeHumidity', device?.id)) { items?.remove("Relative Humidity Measurement");  if(showDebugLogs) { log.debug "Filtering Humidity"; } }
-    if(settings?.removeIlluminance && items["Illuminance Measurement"] && isDeviceInInput('removeIlluminance', device?.id)) { items?.remove("Illuminance Measurement");  if(showDebugLogs) { log.debug "Filtering Illuminance"; } }
-    if(settings?.removeLevel && items["Switch Level"] && isDeviceInInput('removeLevel', device?.id)) { items?.remove("Switch Level");  if(showDebugLogs) { log.debug "Filtering Level"; } }
-    if(settings?.removeLock && items["Lock"] && isDeviceInInput('removeLock', device?.id)) { items?.remove("Lock");  if(showDebugLogs) { log.debug "Filtering Lock"; } }
-    if(settings?.removeMotion && items["Motion Sensor"] && isDeviceInInput('removeMotion', device?.id)) { items?.remove("Motion Sensor");  if(showDebugLogs) { log.debug "Filtering Motion"; } }
-    if(settings?.removePower && items["Power Meter"] && isDeviceInInput('removePower', device?.id)) { items?.remove("Power Meter");  if(showDebugLogs) { log.debug "Filtering Power Meter"; } }
-    if(settings?.removePresence && items["Presence Sensor"] && isDeviceInInput('removePresence', device?.id)) { items?.remove("Presence Sensor");  if(showDebugLogs) { log.debug "Filtering Presence"; } }
-    if(settings?.removeSwitch && items["Switch"] && isDeviceInInput('removeSwitch', device?.id)) { items?.remove("Switch");  if(showDebugLogs) { log.debug "Filtering Switch"; } }
-    if(settings?.removeTamper && items["Tamper Alert"] && isDeviceInInput('removeTamper', device?.id)) { items?.remove("Tamper Alert");  if(showDebugLogs) { log.debug "Filtering Tamper"; } }
-    if(settings?.removeTemp && items["Temperature Measurement"] && isDeviceInInput('removeTemp', device?.id)) { items?.remove("Temperature Measurement");  if(showDebugLogs) { log.debug "Filtering Temp"; } }
-    if(settings?.removeValve && items["Valve"] && isDeviceInInput('removeValve', device?.id)) { items?.remove("Valve");  if(showDebugLogs) { log.debug "Filtering Valve"; } }
-    return items
+
+    //This will filter out selected capabilities from the devices selected in filtering inputs.
+    Map remCaps = [
+        "Battery": "Battery", "Button": "Button", "Contact": "Contact Sensor", "Energy": "Energy Meter", "Humidity": "Relative Humidity Measurement", "Illuminance": "Illuminance Measurement",
+        "Level": "Switch Level", "Lock": "Lock", "Motion": "Motion Sensor", "Power": "Power Meter", "Presence": "Presence Sensor", "Switch": "Switch", "Tamper": "Tamper Alert",
+        "Temp": "Temperature Measurement", "Valve": "Valve"
+    ]
+    List remKeys = settings?.findAll { it?.key?.toString()?.startsWith("remove") && it?.value != null }?.collect { it?.key as String } ?: []
+    remKeys?.each { k->
+        String capName = k?.replaceAll("remove", "")
+        if(remCaps[capName] && capItems[remCaps[capName]] && isDeviceInInput(k, device?.id)) { capItems?.remove(remCaps[capName]);  if(showDebugLogs) { log.debug "Filtering ${capName}"; } }
+    }
+    return capItems
 }
 
 def deviceCommandList(device) {
@@ -1040,7 +1063,8 @@ def checkForMissedRegistration() {
 Map deviceSettingKeys() {
     return [
         "fanList": "Fan Devices", "fan3SpdList": "Fans (3Spd) Devices", "fan4SpdList": "Fans (4Spd) Devices", "buttonList": "Button Devices", "deviceList": "Other Devices",
-        "sensorList": "Sensor Devices", "speakerList": "Speaker Devices", "switchList": "Switch Devices", "lightList": "Light Devices", "shadesList": "Window Shade Devices"
+        "sensorList": "Sensor Devices", "speakerList": "Speaker Devices", "switchList": "Switch Devices", "lightList": "Light Devices", "shadesList": "Window Shade Devices",
+        "garageList": "Garage Devices", "tstatList":"T-Stat Devices", "tstatHeatList": "T-Stat Devices (Heat)"
     ]
 }
 
@@ -1137,8 +1161,7 @@ def registerDevices3() {
 
 Boolean isDeviceInInput(setKey, devId) {
     if(settings[setKey]) {
-        List aItems = settings[setKey] ? settings[setKey]?.collect { it?.getId() as String } : []
-        if(aItems?.contains(devId as String)) { return true }
+        return (settings[setKey]?.find { it?.getId() == devId })
     }
     return false
 }
@@ -1156,6 +1179,7 @@ def registerChangeHandler(devices, showlog=false) {
                     }
                     if(skipAtt) { return }
                 }
+                if(att == "acceleration" && isDeviceInInput('removeAcceleration', device?.id)) {return}
                 if(att == "battery" &&      isDeviceInInput('removeBattery', device?.id)) {return}
                 if(att == "button" &&       isDeviceInInput('removeButton', device?.id)) {return}
                 if(att == "switch" &&       isDeviceInInput('removeSwitch', device?.id)) {return}
@@ -1473,7 +1497,7 @@ Boolean codeUpdIsAvail(String newVer, String curVer, String type) {
                 for (int i = 0; i < commonIndices; ++i) { if(verA[i]?.toInteger() != verB[i]?.toInteger()) { return verA[i]?.toInteger() <=> verB[i]?.toInteger() }; }
                 verA?.size() <=> verB?.size()
             }
-            result = (latestVer == newVer) ? true : false
+            result = (latestVer == newVer)
         }
     }
     return result
@@ -1629,7 +1653,7 @@ def GetTimeDiffSeconds(lastDate, sender=null) {
 /******************************************
 |       Changelog Logic
 ******************************************/
-Boolean showDonationOk() { return (state?.isInstalled && !atomicState?.installData?.shownDonation && getDaysSinceUpdated() >= 30 && !settings?.sentDonation) ? true : false }
+Boolean showDonationOk() { return (state?.isInstalled && !atomicState?.installData?.shownDonation && getDaysSinceUpdated() >= 30 && !settings?.sentDonation) }
 Integer getDaysSinceUpdated() {
     def updDt = atomicState?.installData?.updatedDt ?: null
     if(updDt == null || updDt == "Not Set") {
