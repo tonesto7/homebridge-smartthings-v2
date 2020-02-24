@@ -85,6 +85,18 @@ module.exports = class DeviceCharacteristics {
         }
     }
 
+    acceleration_sensor(_accessory, _service) {
+        _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.MotionDetected, 'acceleration');
+        _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusActive, 'status');
+        if (_accessory.hasCapability('Tamper Alert')) {
+            _accessory.manageGetCharacteristic(_service, _accessory, Characteristic.StatusTampered, 'tamper');
+        } else {
+            _accessory.getOrAddService(_service).removeCharacteristic(Characteristic.StatusTampered);
+        }
+        _accessory.context.deviceGroups.push("acceleration_sensor");
+        return _accessory;
+    }
+
     air_purifier(_accessory, _service) {
         let actState = (_accessory.context.deviceData.attributes.switch === "on") ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE;
         let c = this.getOrAddService(_service).getCharacteristic(Characteristic.Active);

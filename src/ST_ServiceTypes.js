@@ -13,6 +13,7 @@ module.exports = class ServiceTypes {
         Service = srvc;
         this.homebridge = accessories.homebridge;
         this.serviceMap = {
+            acceleration_sensor: Service.MotionSensor,
             air_purifier: this.CommunityTypes.NewAirPurifierService,
             air_quality: Service.AirQualitySensor,
             alarm_system: Service.SecuritySystem,
@@ -125,6 +126,7 @@ const serviceTests = [
     new ServiceTest("carbon_monoxide", accessory => accessory.hasCapability("Carbon Monoxide Detector") && accessory.hasAttribute('carbonMonoxide')),
     new ServiceTest("carbon_dioxide", accessory => accessory.hasCapability("Carbon Dioxide Measurement") && accessory.hasAttribute('carbonDioxideMeasurement')),
     new ServiceTest("motion_sensor", accessory => (accessory.hasCapability("Motion Sensor"))),
+    new ServiceTest("acceleration_sensor", accessory => (accessory.hasCapability("Acceleration Sensor"))),
     new ServiceTest("water_sensor", accessory => (accessory.hasCapability("Water Sensor"))),
     new ServiceTest("presence_sensor", accessory => (accessory.hasCapability("Presence Sensor"))),
     new ServiceTest("humidity_sensor", accessory => (accessory.hasCapability("Relative Humidity Measurement") && !(accessory.hasCapability('Thermostat') || accessory.hasCapability('Thermostat Operating State') || accessory.hasAttribute('thermostatOperatingState')))),
