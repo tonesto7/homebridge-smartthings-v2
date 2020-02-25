@@ -5,7 +5,7 @@
  */
 
 String appVersion()                     { return "2.3.2" }
-String appModified()                    { return "02-24-2020" }
+String appModified()                    { return "02-25-2020" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
@@ -1022,7 +1022,7 @@ def deviceCapabilityList(device) {
     Map remCaps = [
         "Battery": "Battery", "Button": "Button", "Contact": "Contact Sensor", "Energy": "Energy Meter", "Humidity": "Relative Humidity Measurement", "Illuminance": "Illuminance Measurement",
         "Level": "Switch Level", "Lock": "Lock", "Motion": "Motion Sensor", "Power": "Power Meter", "Presence": "Presence Sensor", "Switch": "Switch", "Tamper": "Tamper Alert",
-        "Temp": "Temperature Measurement", "Valve": "Valve"
+        "Temp": "Temperature Measurement", "Valve": "Valve", "Acceleration": "Acceleration Sensor"
     ]
     List remKeys = settings?.findAll { it?.key?.toString()?.startsWith("remove") && it?.value != null }?.collect { it?.key as String } ?: []
     remKeys?.each { k->
@@ -1179,23 +1179,11 @@ def registerChangeHandler(devices, showlog=false) {
                     }
                     if(skipAtt) { return }
                 }
-                if(att == "acceleration" && isDeviceInInput('removeAcceleration', device?.id)) {return}
-                if(att == "battery" &&      isDeviceInInput('removeBattery', device?.id)) {return}
-                if(att == "button" &&       isDeviceInInput('removeButton', device?.id)) {return}
-                if(att == "switch" &&       isDeviceInInput('removeSwitch', device?.id)) {return}
-                if(att == "temperature" &&  isDeviceInInput('removeTemp', device?.id)) {return}
-                if(att == "contact" &&      isDeviceInInput('removeContact', device?.id)) {return}
-                if(att == "energy" &&       isDeviceInInput('removeEnergy', device?.id)) {return}
-                if(att == "humidity" &&     isDeviceInInput('removeHumidity', device?.id)) {return}
-                if(att == "illuminance" &&  isDeviceInInput('removeIlluminance', device?.id)) {return}
-                if(att == "level" &&        isDeviceInInput('removeLevel', device?.id)) { return }
-                if(att == "lock" &&         isDeviceInInput('removeLock', device?.id)) { return }
-                if(att == "motion" &&       isDeviceInInput('removeMotion', device?.id)) { return }
-                if(att == "power" &&        isDeviceInInput('removePower', device?.id)) { return }
-                if(att == "presence" &&     isDeviceInInput('removePresence', device?.id)) { return }
-                if(att == "tamper" &&       isDeviceInInput('removeTamper', device?.id)) { return }
-                if(att == "valve" &&        isDeviceInInput('removeValve', device?.id)) { return }
-
+                Map attMap = [
+                    "acceleration": "Acceleration", "battery": "Battery", "button": "Button", "contact": "Contact", "energy": "Energy", "humidity": "Humidity", "illuminance": "Illuminance",
+                    "level": "Level", "lock": "Lock", "motion": "Motion", "power": "Power", "presence": "Presence", "switch": "Switch", "tamper": "Tamper",
+                    "temperature": "Temp", "valve": "Valve"
+                ]?.each { k,v -> if(att == k && isDeviceInInput('remove${v}', device?.id)) { return } }
                 subscribe(device, att, "changeHandler")
                 if(showlog) { log.debug "Registering ${device?.displayName} for ${att} events" }
             }
