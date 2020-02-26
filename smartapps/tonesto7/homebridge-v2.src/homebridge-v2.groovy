@@ -1020,9 +1020,9 @@ def deviceCapabilityList(device) {
 
     //This will filter out selected capabilities from the devices selected in filtering inputs.
     Map remCaps = [
-        "Battery": "Battery", "Button": "Button", "Contact": "Contact Sensor", "Energy": "Energy Meter", "Humidity": "Relative Humidity Measurement", "Illuminance": "Illuminance Measurement",
-        "Level": "Switch Level", "Lock": "Lock", "Motion": "Motion Sensor", "Power": "Power Meter", "Presence": "Presence Sensor", "Switch": "Switch", "Tamper": "Tamper Alert",
-        "Temp": "Temperature Measurement", "Valve": "Valve", "Acceleration": "Acceleration Sensor"
+       "Acceleration": "Acceleration Sensor", "Battery": "Battery", "Button": "Button", "Contact": "Contact Sensor", "Energy": "Energy Meter", "Humidity": "Relative Humidity Measurement",
+       "Illuminance": "Illuminance Measurement", "Level": "Switch Level", "Lock": "Lock", "Motion": "Motion Sensor", "Power": "Power Meter", "Presence": "Presence Sensor", "Switch": "Switch",
+       "Tamper": "Tamper Alert", "Temp": "Temperature Measurement", "Valve": "Valve"
     ]
     List remKeys = settings?.findAll { it?.key?.toString()?.startsWith("remove") && it?.value != null }?.collect { it?.key as String } ?: []
     remKeys?.each { k->
@@ -1033,17 +1033,21 @@ def deviceCapabilityList(device) {
 }
 
 def deviceCommandList(device) {
-    return device?.supportedCommands?.findAll { !(it?.name in ignoreLists()?.commands) }?.collectEntries { command-> [ (command?.name): 1 ] }
+    def cmds = device?.supportedCommands?.findAll { !(it?.name in ignoreLists()?.commands) }?.collectEntries { c-> [ (c?.name): 1 ] }
+    if(isDeviceInInput("tstatHeatList", device?.id)) { cmds?.remove("setCoolingSetpoint"); cmds?.remove("auto"); cmds?.remove("cool"); }
+    return cmds
 }
 
 def deviceAttributeList(device) {
-    return device?.supportedAttributes?.findAll { !(it?.name in ignoreLists()?.attributes) }?.collectEntries { attribute->
+    def atts = device?.supportedAttributes?.findAll { !(it?.name in ignoreLists()?.attributes) }?.collectEntries { attribute->
         try {
             [(attribute?.name): device?.currentValue(attribute?.name)]
         } catch(e) {
             [(attribute?.name): null]
         }
     }
+    if(isDeviceInInput("tstatHeatList", device?.id)) { atts?.remove("coolingSetpoint"); atts?.remove("coolingSetpointRange"); }
+    return atts
 }
 
 String getAppEndpointUrl(subPath) { return "${apiServerUrl("/api/smartapps/installations/${app.id}${subPath ? "/${subPath}" : ""}?access_token=${atomicState?.accessToken}")}" }
