@@ -5,7 +5,7 @@
  */
 
 String appVersion()                     { return "2.3.2" }
-String appModified()                    { return "02-25-2020" }
+String appModified()                    { return "03-02-2020" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
@@ -26,6 +26,7 @@ definition(
 
 {
     appSetting "devMode"
+    appSetting "log_address"
 }
 
 preferences {
@@ -243,10 +244,10 @@ def settingsPage() {
 }
 
 private resetAppToken() {
-    log.warn "resetAppToken | Current Access Token Removed..."
+    logWarn("resetAppToken | Current Access Token Removed...")
     state.remove("accessToken")
     if(getAccessToken()) {
-        log.info "resetAppToken | New Access Token Created..."
+        logInfo("resetAppToken | New Access Token Created...")
     }
 }
 
@@ -479,7 +480,7 @@ def getDeviceDebugMap(dev) {
             r?.eventHistory = dev?.eventsSince(new Date() - 1, [max: 20])?.collect { "${it?.date} | [${it?.name}] | (${it?.value}${it?.unit ? " ${it?.unit}" : ""})" };
             dev?.supportedAttributes?.collect { it?.name as String }?.unique()?.sort()?.each { r?.attributes[it] = dev?.currentValue(it as String); };
         } catch(ex) {
-            log.error("Error while generating device data: ", ex);
+            logError("Error while generating device data: ", ex);
         }
     }
     return r
@@ -498,14 +499,14 @@ def getDeviceCnt(phyOnly=false) {
 }
 
 def installed() {
-    log.debug "${app.name} | installed() has been called..."
+    logDebug("${app.name} | installed() has been called...")
     state?.isInstalled = true
     state?.installData = [initVer: appVersion(), dt: getDtNow().toString(), updatedDt: "Not Set", showDonation: false, shownChgLog: true]
     initialize()
 }
 
 def updated() {
-    log.debug "${app.name} | updated() has been called..."
+    logDebug("${app.name} | updated() has been called...")
     state?.isInstalled = true
     if(!state?.installData) { state?.installData = [initVer: appVersion(), dt: getDtNow().toString(), updatedDt: getDtNow().toString(), shownDonation: false] }
     unsubscribe()
@@ -517,32 +518,32 @@ def initialize() {
     if(getAccessToken()) {
         subscribeToEvts()
         runEvery5Minutes("healthCheck")
-    } else { log.error "initialize error: Unable to get or generate smartapp access token" }
+    } else { logError("initialize error: Unable to get or generate smartapp access token") }
 }
 
 def getAccessToken() {
     try {
         if(!atomicState?.accessToken) {
             atomicState?.accessToken = createAccessToken();
-            if(showDebugLogs) log.debug "SmartApp Access Token Missing... Generating New Token!!!"
+            logDebug("SmartApp Access Token Missing... Generating New Token!!!")
             return true;
         }
         return true
     } catch (ex) {
         def msg = "Error: OAuth is not Enabled for ${appName()}!. Please click remove and Enable Oauth under the SmartApp App Settings in the IDE"
-        log.error "getAccessToken Exception: ${msg}"
+        logError("getAccessToken Exception: ${msg}")
         return false
     }
 }
 
 private subscribeToEvts() {
     runIn(4, "registerDevices")
-    log.info "Starting Device Subscription Process"
+    logInfo("Starting Device Subscription Process")
     if(settings?.addSecurityDevice) {
         subscribe(location, "alarmSystemStatus", changeHandler)
     }
     if(settings?.modeList) {
-        if(showDebugLogs) log.debug "Registering (${settings?.modeList?.size() ?: 0}) Virtual Mode Devices"
+        logDebug("Registering (${settings?.modeList?.size() ?: 0}) Virtual Mode Devices")
         subscribe(location, "mode", changeHandler)
         if(state?.lastMode == null) { state?.lastMode = location?.mode?.toString() }
     }
@@ -550,7 +551,7 @@ private subscribeToEvts() {
     subscribe(app, onAppTouch)
     if(settings?.sendCmdViaHubaction != false) { subscribe(location, null, lanEventHandler, [filterEvents:false]) }
     if(settings?.routineList) {
-        if(showDebugLogs) log.debug "Registering (${settings?.routineList?.size() ?: 0}) Virtual Routine Devices"
+        logDebug("Registering (${settings?.routineList?.size() ?: 0}) Virtual Routine Devices")
         subscribe(location, "routineExecuted", changeHandler)
     }
 }
@@ -558,13 +559,13 @@ private subscribeToEvts() {
 private healthCheck() {
     checkVersionData()
     if(checkIfCodeUpdated()) {
-        log.warn("Code Version Change Detected... Health Check will occur on next cycle.")
+        logWarn("Code Version Change Detected... Health Check will occur on next cycle.")
         return
     }
 }
 
 private checkIfCodeUpdated() {
-    if(showDebugLogs) log.debug("Code versions: ${state?.codeVersions}")
+    logDebug("Code versions: ${state?.codeVersions}")
     if(state?.codeVersions) {
         if(state?.codeVersions?.mainApp != appVersion()) {
             checkVersionData(true)
@@ -577,7 +578,7 @@ private checkIfCodeUpdated() {
                 iData["shownDonation"] = false
             }
             atomicState?.installData = iData
-            log.info("Code Version Change Detected... | Re-Initializing SmartApp in 5 seconds")
+            logInfo("Code Version Change Detected... | Re-Initializing SmartApp in 5 seconds")
             return true
         }
     }
@@ -613,7 +614,7 @@ def renderDevices() {
                     Map devObj = getDeviceData(item, dev) ?: [:]
                     if(devObj?.size()) { devMap[dev] = devObj }
                 } catch (e) {
-                    log.error("Device (${dev?.displayName}) Render Exception: ${ex.message}")
+                    logError("Device (${dev?.displayName}) Render Exception: ${ex.message}")
                 }
             }
         }
@@ -747,7 +748,7 @@ def getSecurityStatus(retInt=false) {
 }
 
 private setSecurityMode(mode) {
-    log.info "Setting the Smart Home Monitor Mode to (${mode})..."
+    logInfo("Setting the Smart Home Monitor Mode to (${mode})...")
     sendLocationEvent(name: 'alarmSystemStatus', value: mode.toString())
 }
 
@@ -846,7 +847,7 @@ def lanEventHandler(evt) {
             }
         }
     } catch (ex) {
-        log.error "lanEventHandler Exception:", ex
+        logError "lanEventHandler Exception:", ex
     }
 }
 
@@ -858,43 +859,43 @@ def deviceCommand() {
 }
 
 private processCmd(devId, cmd, value1, value2, local=false) {
-    log.info("Process Command${local ? "(LOCAL)" : ""} | DeviceId: $devId | Command: ($cmd)${value1 ? " | Param1: ($value1)" : ""}${value2 ? " | Param2: ($value2)" : ""}")
+    logInfo("Process Command${local ? "(LOCAL)" : ""} | DeviceId: $devId | Command: ($cmd)${value1 ? " | Param1: ($value1)" : ""}${value2 ? " | Param2: ($value2)" : ""}")
     def device = findDevice(devId)
     def command = cmd
     if(settings?.addSecurityDevice != false && devId == "alarmSystemStatus_${location?.id}") {
         setSecurityMode(command)
         CommandReply("Success", "Security Alarm, Command $command")
     }  else if (settings?.modeList && command == "mode" && devId) {
-        log.debug("Virtual Mode Received: ${devId}")
+        logDebug("Virtual Mode Received: ${devId}")
         changeMode(devId)
         CommandReply("Success", "Mode Device, Command $command")
     } else if (settings?.routineList && command == "routine" && devId) {
-        log.debug("Virtual Routine Received: ${devId}")
+        logDebug("Virtual Routine Received: ${devId}")
         runRoutine(devId)
         CommandReply("Success", "Routine Device, Command $command")
     } else {
         if (!device) {
-            log.error("Device Not Found")
+            logError("Device Not Found")
             CommandReply("Failure", "Device Not Found")
         } else if (!device?.hasCommand(command as String)) {
-            log.error("Device ${device.displayName} does not have the command $command")
+            logError("Device ${device.displayName} does not have the command $command")
             CommandReply("Failure", "Device ${device.displayName} does not have the command $command")
         } else {
             try {
                 if (value2 != null) {
                     device?."$command"(value1,value2)
-                    log.info("Command Successful for Device ${device.displayName} | Command ${command}($value1, $value2)")
+                    logInfo("Command Successful for Device ${device.displayName} | Command ${command}($value1, $value2)")
                 } else if (value1 != null) {
                     device?."$command"(value1)
-                    log.info("Command Successful for Device ${device.displayName} | Command ${command}($value1)")
+                    logInfo("Command Successful for Device ${device.displayName} | Command ${command}($value1)")
                 } else {
                     device?."$command"()
-                    log.info("Command Successful for Device ${device.displayName} | Command ${command}()")
+                    logInfo("Command Successful for Device ${device.displayName} | Command ${command}()")
                 }
                 CommandReply("Success", "Device ${device.displayName} | Command ${command}()")
                 logCmd([cmd: command, device: device?.displayName, value1: value1, value2: value2])
             } catch (e) {
-                log.error("Error Occurred for Device ${device.displayName} | Command ${command}()")
+                logError("Error Occurred for Device ${device.displayName} | Command ${command}()")
                 CommandReply("Failure", "Error Occurred For Device ${device.displayName} | Command ${command}()")
             }
         }
@@ -906,10 +907,10 @@ def changeMode(modeId) {
     if(modeId) {
         def mode = findVirtModeDevice(modeId)
         if(mode) {
-            log.info"Setting the Location Mode to (${mode})..."
+            logInfo("Setting the Location Mode to (${mode})...")
             setLocationMode(mode)
             state?.lastMode = mode
-        } else { log.error("Unable to find a matching mode for the id: ${modeId}") }
+        } else { logError("Unable to find a matching mode for the id: ${modeId}") }
     }
 }
 
@@ -917,9 +918,9 @@ def runRoutine(rtId) {
     if(rtId) {
         def rt = findVirtRoutineDevice(rtId)
         if(rt?.label) {
-            log.info "Executing the (${rt?.label}) Routine..."
+            logInfo("Executing the (${rt?.label}) Routine...")
             location?.helloHome?.execute(rt?.label)
-        } else { log.error("Unable to find a matching routine for the id: ${rtId}") }
+        } else { logError("Unable to find a matching routine for the id: ${rtId}") }
     }
 }
 
@@ -964,7 +965,7 @@ def deviceQuery() {
                     attributes: ["switch": attrVal]
                 ])
             } catch (e) {
-                log.error("Error Occurred Parsing ${item} ${type} ${name}, Error " + e.message)
+                logError("Error Occurred Parsing ${item} ${type} ${name}, Error: ${ex}")
             }
         }
     }
@@ -1027,7 +1028,7 @@ def deviceCapabilityList(device) {
     List remKeys = settings?.findAll { it?.key?.toString()?.startsWith("remove") && it?.value != null }?.collect { it?.key as String } ?: []
     remKeys?.each { k->
         String capName = k?.replaceAll("remove", "")
-        if(remCaps[capName] && capItems[remCaps[capName]] && isDeviceInInput(k, device?.id)) { capItems?.remove(remCaps[capName]);  if(showDebugLogs) { log.debug "Filtering ${capName}"; } }
+        if(remCaps[capName] && capItems[remCaps[capName]] && isDeviceInInput(k, device?.id)) { capItems?.remove(remCaps[capName]);  if(showDebugLogs) { logDebug("Filtering ${capName}"); } }
     }
     return capItems
 }
@@ -1118,7 +1119,7 @@ private registerDevicesTest() {
         state?.remove("pendingDeviceRegistrationRnd")
 
         if(settings?.restartService == true) {
-            log.warn "Sent Request to Homebridge Service to Stop... Service should restart automatically"
+            logWarn("Sent Request to Homebridge Service to Stop... Service should restart automatically")
             attemptServiceRestart()
             settingUpdate("restartService", "false", "bool")
         }
@@ -1130,7 +1131,7 @@ private registerDevicesTest() {
 def registerDevices() {
     //This has to be done at startup because it takes too long for a normal command.
     ["lightList": "Light Devices", "fanList": "Fan Devices", "fan3SpdList": "Fans (3SPD) Devices", "fan4SpdList": "Fans (4SPD) Devices", "buttonList": "Button Devices"]?.each { k,v->
-        if(showDebugLogs) log.debug "Registering (${settings?."${k}"?.size() ?: 0}) ${v}"
+        logDebug("Registering (${settings?."${k}"?.size() ?: 0}) ${v}")
         registerChangeHandler(settings?."${k}")
     }
     runIn(3, "registerDevices2")
@@ -1139,7 +1140,7 @@ def registerDevices() {
 def registerDevices2() {
     //This has to be done at startup because it takes too long for a normal command.
     ["sensorList": "Sensor Devices", "speakerList": "Speaker Devices", "deviceList": "Other Devices"]?.each { k,v->
-        if(showDebugLogs) log.debug "Registering (${settings?."${k}"?.size() ?: 0}) ${v}"
+        logDebug("Registering (${settings?."${k}"?.size() ?: 0}) ${v}")
         registerChangeHandler(settings?."${k}")
     }
     runIn(3, "registerDevices3")
@@ -1148,14 +1149,14 @@ def registerDevices2() {
 def registerDevices3() {
     //This has to be done at startup because it takes too long for a normal command.
     ["switchList": "Switch Devices", "shadesList": "Window Shade Devices", "garageList": "Garage Door Devices", "tstatList": "Thermostat Devices", "tstatHeatList": "Thermostat (HeatOnly) Devices"]?.each { k,v->
-        if(showDebugLogs) log.debug "Registering (${settings?."${k}"?.size() ?: 0}) ${v}"
+        logDebug("Registering (${settings?."${k}"?.size() ?: 0}) ${v}")
         registerChangeHandler(settings?."${k}")
     }
-    log.info "Registered (${getDeviceCnt(true)} Devices)"
-    if(showDebugLogs) log.info "-----------------------------------------------"
+    logDebug("Registered (${getDeviceCnt(true)} Devices)")
+    logDebug("-----------------------------------------------")
 
     if(settings?.restartService == true) {
-        log.warn "Sent Request to Homebridge Service to Stop... Service should restart automatically"
+        logWarn("Sent Request to Homebridge Service to Stop... Service should restart automatically")
         attemptServiceRestart()
         settingUpdate("restartService", "false", "bool")
     }
@@ -1273,7 +1274,7 @@ def changeHandler(evt) {
                         unitStr = "${send?.evtUnit}"
                         break
                 }
-                log.debug "Sending${" ${send?.evtSource}" ?: ""} Event (${send?.evtDeviceName} | ${send?.evtAttr.toUpperCase()}: ${send?.evtValue}${unitStr}) ${send?.evtData ? "Data: ${send?.evtData}" : ""} to Homebridge at (${state?.pluginDetails?.directIP}:${state?.pluginDetails?.directPort})"
+                logDebug("Sending${" ${send?.evtSource}" ?: ""} Event (${send?.evtDeviceName} | ${send?.evtAttr.toUpperCase()}: ${send?.evtValue}${unitStr}) ${send?.evtData ? "Data: ${send?.evtData}" : ""} to Homebridge at (${state?.pluginDetails?.directIP}:${state?.pluginDetails?.directPort})")
             }
             sendHttpPost("update", [
                 change_name: send?.evtDeviceName,
@@ -1364,7 +1365,7 @@ Boolean devMode() {
 }
 
 private activateDirectUpdates(isLocal=false) {
-    log.trace "activateDirectUpdates: ${getServerAddress()}${isLocal ? " | (Local)" : ""}"
+    logTrace("activateDirectUpdates: ${getServerAddress()}${isLocal ? " | (Local)" : ""}")
     sendHttpPost("initial", [
         app_id: app?.getId(),
         access_token: atomicState?.accessToken
@@ -1372,7 +1373,7 @@ private activateDirectUpdates(isLocal=false) {
 }
 
 private attemptServiceRestart(isLocal=false) {
-    log.trace "attemptServiceRestart: ${getServerAddress()}${isLocal ? " | (Local)" : ""}"
+    logTrace("attemptServiceRestart: ${getServerAddress()}${isLocal ? " | (Local)" : ""}")
     sendHttpPost("restart", [
         app_id: app?.getId(),
         access_token: atomicState?.accessToken
@@ -1380,7 +1381,7 @@ private attemptServiceRestart(isLocal=false) {
 }
 
 private sendDeviceRefreshCmd(isLocal=false) {
-    log.trace "sendDeviceRefreshCmd: ${getServerAddress()}${isLocal ? " | (Local)" : ""}"
+    logTrace("sendDeviceRefreshCmd: ${getServerAddress()}${isLocal ? " | (Local)" : ""}")
     sendHttpPost("refreshDevices", [
         app_id: app?.getId(),
         access_token: atomicState?.accessToken
@@ -1388,7 +1389,7 @@ private sendDeviceRefreshCmd(isLocal=false) {
 }
 
 private updateServicePrefs(isLocal=false) {
-    log.trace "updateServicePrefs: ${getServerAddress()}${isLocal ? " | (Local)" : ""}"
+    logTrace("updateServicePrefs: ${getServerAddress()}${isLocal ? " | (Local)" : ""}")
     sendHttpPost("updateprefs", [
         app_id: app?.getId(),
         access_token: atomicState?.accessToken,
@@ -1505,7 +1506,7 @@ private Map getMinVerUpdsRequired() {
         try {
             if(codeItems?.containsKey(k as String) && v != null && (versionStr2Int(v) < minVersions()[k as String])) { updRequired = true; updItems?.push(codeItems[k]); }
         } catch (ex) {
-            log.error "getMinVerUpdsRequired Error: ${ex}"
+            logError("getMinVerUpdsRequired Error: ${ex}")
         }
     }
     return [updRequired: updRequired, updItems: updItems]
@@ -1592,7 +1593,7 @@ private getConfigData() {
     if(data) {
         state?.appData = data
         updTsVal("lastAppDataUpdDt")
-        if(showDebugLogs) log.debug("Successfully Retrieved (v${data?.appDataVer}) of AppData Content from GitHub Repo...")
+        logDebug("Successfully Retrieved (v${data?.appDataVer}) of AppData Content from GitHub Repo...")
     }
 }
 
@@ -1607,8 +1608,8 @@ private getWebData(params, desc, text=true) {
     } catch (ex) {
         incrementCntByKey("appErrorCnt")
         if(ex instanceof groovyx.net.http.HttpResponseException) {
-            log.warn("${desc} file not found")
-        } else { log.error("getWebData(params: $params, desc: $desc, text: $text) Exception: ${ex}") }
+            logWarn("${desc} file not found")
+        } else { logError("getWebData(params: $params, desc: $desc, text: $text) Exception: ${ex}") }
         return "${label} info not found"
     }
 }
@@ -1637,7 +1638,7 @@ def GetTimeDiffSeconds(lastDate, sender=null) {
         def diff = (int) (long) (stop - start) / 1000
         return diff?.abs()
     } catch (ex) {
-        log.error("GetTimeDiffSeconds Exception: (${sender ? "$sender | " : ""}lastDate: $lastDate): ${ex}")
+        logError("GetTimeDiffSeconds Exception: (${sender ? "$sender | " : ""}lastDate: $lastDate): ${ex}")
         return 10000
     }
 }
@@ -1681,6 +1682,32 @@ private addToHistory(String logKey, data, Integer max=10) {
     eData?.push([dt: getDtNow(), data: data])
     if(!ssOk || eData?.size() > max) { eData = eData?.drop( (eData?.size()-max) ) }
     atomicState[logKey as String] = eData
+}
+
+private logDebug(msg) { if(showDebugLogs) { logToServer(msg, "debug"); log.debug "Homebridge (v${appVersion()}) | ${msg}"; } }
+private logInfo(msg) { logToServer(msg, "info"); log.info " Homebridge (v${appVersion()}) | ${msg}"; }
+private logTrace(msg) { logToServer(msg, "trace"); log.trace "Homebridge (v${appVersion()}) | ${msg}"; }
+private logWarn(msg) { logToServer(msg, "warn"); log.warn " Homebridge (v${appVersion()}) | ${msg}"; }
+private logError(msg) { logToServer(msg, "error"); log.error "Homebridge (v${appVersion()}) | ${msg}"; }
+
+public String getLogServerAddr() { return appSettings?.log_address ?: null }
+public logToServer(msg, lvl) {
+    String addr = parent ? parent?.getLogServerAddr() : getLogServerAddr()
+    if(addr) {
+        Map params = [
+            method: "POST",
+            path: "/gelf",
+            headers: [
+                HOST: addr,
+                'Content-Type': "application/json"
+            ],
+            body: [short_message: msg, logLevel: lvl, host: "SmartThings"]
+        ]
+        params?.body?.appVersion = appVersion(); params?.body?.appName = app?.getName(); params?.body?.appLabel = app?.getLabel();
+        // params?.body?.devVersion = devVersion(); params?.body?.deviceHandler = device?.getName(); params?.body?.deviceName = device?.displayName;
+        def result = new physicalgraph.device.HubAction(params)
+        sendHubCommand(result)
+    }
 }
 
 List getCmdHistory() { return atomicState?.cmdHistory ?: [] }
