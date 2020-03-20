@@ -1,6 +1,6 @@
 {
     "dependencies": {
-        "@sentry/node": "^5.12.4",
+        "@sentry/node": "^5.12.5",
         "body-parser": "^1.19.0",
         "chalk": "^3.0.0",
         "compare-versions": "^3.6.0",
