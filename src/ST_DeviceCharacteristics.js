@@ -273,7 +273,7 @@ module.exports = class DeviceCharacteristics {
             _accessory.manageGetSetCharacteristic(_service, _accessory, Characteristic.RotationSpeed, spdAttr, {
                 cmdHasVal: true,
                 props: {
-                    minSteps: spdSteps
+                    minStep: spdSteps
                 }
             });
         } else {
