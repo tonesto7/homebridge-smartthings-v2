@@ -4,8 +4,8 @@
  *  Copyright 2018, 2019, 2020 Anthony Santilli
  */
 
-String appVersion()                     { return "2.3.2" }
-String appModified()                    { return "03-02-2020" }
+String appVersion()                     { return "2.4.0" }
+String appModified()                    { return "04-28-2020" }
 String branch()                         { return "master" }
 String platform()                       { return "SmartThings" }
 String pluginName()                     { return "${platform()}-v2" }
@@ -73,15 +73,17 @@ private Map ignoreLists() {
 }
 
 def startPage() {
-    if(!state?.installData) { state?.installData = [initVer: appVersion(), dt: getDtNow().toString(), updatedDt: getDtNow().toString(), shownDonation: false] }
-    checkVersionData(true)
-    if(showChgLogOk()) { return changeLogPage() }
-    if(showDonationOk()) { return donationPage() }
-    return mainPage()
+    if(!getAccessToken()) { return dynamicPage(name: "mainPage", install: false, uninstall: true) { section() { paragraph title: "OAuth Error", "OAuth is not Enabled for ${app?.getName()}!.\n\nPlease click remove and Enable Oauth under the SmartApp App Settings in the IDE", required: true, state: null } } }
+    else {
+        if(!state?.installData) { state?.installData = [initVer: appVersion(), dt: getDtNow().toString(), updatedDt: getDtNow().toString(), shownDonation: false] }
+        checkVersionData(true)
+        if(showChgLogOk()) { return changeLogPage() }
+        if(showDonationOk()) { return donationPage() }
+        return mainPage()
+    }
 }
 
 def mainPage() {
-    if(!getAccessToken()) { return dynamicPage(name: "mainPage", install: false, uninstall: true) { section() { paragraph title: "OAuth Error", "OAuth is not Enabled for ${app?.getName()}!.\n\nPlease click remove and Enable Oauth under the SmartApp App Settings in the IDE", required: true, state: null } } }
     Boolean isInst = (state?.isInstalled == true)
     return dynamicPage(name: "mainPage", nextPage: (isInst ? "confirmPage" : ""), install: !isInst, uninstall: true) {
         appInfoSect()
@@ -525,7 +527,7 @@ def getAccessToken() {
     try {
         if(!atomicState?.accessToken) {
             atomicState?.accessToken = createAccessToken();
-            logDebug("SmartApp Access Token Missing... Generating New Token!!!")
+            logWarn("SmartApp Access Token Missing... Generating New Token!!!")
             return true;
         }
         return true
