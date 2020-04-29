@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.3.3
+
+- [FIX] Minor bugs and icons squashed.
+
 ## v2.3.2
 
 - [NEW] Added support for bringing acceleration sensors into homekit as motion sensors.
