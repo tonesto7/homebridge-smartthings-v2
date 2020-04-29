@@ -23,7 +23,7 @@
             "iconUrl": "https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/master/images/hb_tonesto7@2x.png",
             "published": true,
             "oAuth": true,
-            "version": "2.3.2",
+            "version": "2.3.3",
             "appSettings": {},
             "appUrl": "smartapps/tonesto7/homebridge-v2.src/homebridge-v2.groovy"
         },
