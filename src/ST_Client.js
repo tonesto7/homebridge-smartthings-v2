@@ -260,4 +260,77 @@ module.exports = class ST_Client {
             }
         });
     }
+
+    initializeWebsocket() {
+        let that = this;
+        return new Promise((resolve) => {
+            if (this.configItems.cloud_token === undefined) {
+                resolve(false);
+            }
+            const config = {
+                method: 'post',
+                url: `https://api.smartthings.com/subscriptions`,
+                headers: {
+                    contentType: 'application/json',
+                    Authentication: `BEARER ${this.configItems.cloud_token}`
+                },
+                data: {
+                    name: "locationSub",
+                    version: 1,
+                    subscriptionFilters: [{
+                        type: "LOCATIONIDS",
+                        value: ["ALL"]
+                    }]
+                },
+                timeout: 10000
+            };
+            that.log.info(`Initializing Websocket Stage 1...`);
+            try {
+                axios(config)
+                    .then((response) => {
+                        // that.log.info('sendStartDirect Resp:', body);
+                        if (response.data) {
+                            const rd = JSON.stringify(response.data);
+                            this.log.debug(`websocketInit_1 Resp: ${rd}`);
+                            if (rd.registrationUrl) {
+                                const config = {
+                                    method: 'get',
+                                    url: rd.registrationUrl,
+                                    headers: {
+                                        contentType: 'application/json',
+                                        Authentication: `BEARER ${this.configItems.cloud_token}`
+                                    },
+                                    timeout: 10000
+                                };
+                                axios(config)
+                                    .then((response) => {
+                                        // that.log.info('sendStartDirect Resp:', body);
+                                        if (response.data) {
+                                            const rd = JSON.stringify(response.data);
+                                            console.log(`websocketInit_2 Resp: ${rd}`);
+
+                                        }
+                                        resolve(true);
+                                    })
+                                    .catch((err) => {
+                                        that.handleError("websocketInit_2", err, true);
+                                        resolve(false);
+                                    });
+                            } else {
+                                resolve(false);
+                            }
+                            // that.localHubErr(false);
+                        } else {
+                            resolve(false);
+                        }
+                    })
+                    .catch((err) => {
+                        that.handleError("websocketInit_1", err, true);
+                        resolve(false);
+                    });
+            } catch (err) {
+                resolve(err);
+            }
+        });
+    }
 };

@@ -126,6 +126,7 @@ module.exports = class ST_Platform {
             app_url: this.config.app_url,
             app_id: this.config.app_id,
             access_token: this.config.access_token,
+            cloud_token: this.config.cloud_token || null,
             update_seconds: this.config.update_seconds || 30,
             direct_port: this.direct_port,
             direct_ip: this.config.direct_ip || this.myUtils.getIPAddress(),
@@ -154,7 +155,10 @@ module.exports = class ST_Platform {
                 that.WebServerInit(that)
                     .catch(err => that.log.error("WebServerInit Error: ", err))
                     .then(resp => {
-                        if (resp && resp.status === "OK") this.appEvts.emit('event:plugin_start_direct');;
+                        if (resp && resp.status === "OK") {
+                            this.appEvts.emit('event:plugin_start_direct');
+                            this.client.initializeWebsocket();
+                        }
                     });
             })
             .catch(err => {
