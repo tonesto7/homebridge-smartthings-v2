@@ -157,7 +157,6 @@ module.exports = class ST_Platform {
                     .then(resp => {
                         if (resp && resp.status === "OK") {
                             this.appEvts.emit('event:plugin_start_direct');
-                            this.client.initializeWebsocket();
                         }
                     });
             })
@@ -200,6 +199,7 @@ module.exports = class ST_Platform {
                             toRemove.forEach(accessory => this.removeAccessory(accessory));
                             toUpdate.forEach(device => this.updateDevice(device));
                             toCreate.forEach(device => this.addDevice(device));
+                            this.client.initializeWebsocket();
                         }
                         that.log.alert(`Total Initialization Time: (${Math.round((new Date() - starttime) / 1000)} seconds)`);
                         that.log.notice(`Unknown Capabilities: ${JSON.stringify(that.unknownCapabilities)}`);

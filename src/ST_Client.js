@@ -4,7 +4,8 @@ const {
     pluginVersion
 } = require("./libs/Constants"),
     axios = require('axios').default,
-    url = require("url");
+    url = require("url"),
+    EventSource = require('eventsource');
 
 module.exports = class ST_Client {
     constructor(platform) {
@@ -267,64 +268,101 @@ module.exports = class ST_Client {
             if (this.configItems.cloud_token === undefined) {
                 resolve(false);
             }
-            const config = {
+            const eventTypes = [
+                "CONTROL_EVENT",
+                "DEVICE_EVENT",
+                "DEVICE_LIFECYCLE_EVENT",
+                "DEVICE_JOIN_EVENT",
+                "MODE_EVENT",
+                "SMART_APP_EVENT",
+                "SECURITY_ARM_STATE_EVENT",
+                "SECURITY_ARM_FAILURE_EVENT",
+                "HUB_HEALTH_EVENT",
+                "DEVICE_HEALTH_EVENT",
+                "LOCATION_LIFECYCLE_EVENT",
+                // "INSTALLED_APP_LIFECYCLE_EVENT",
+                "PAID_SUBSCRIPTIONS_EVENT",
+                "HUB_LIFECYCLE_EVENT",
+                // "EXECUTION_RESULT_EVENT",
+                "HUB_ZWAVE_STATUS",
+                "HUB_ZWAVE_EXCEPTION",
+                "HUB_ZWAVE_S2_AUTH_REQUEST",
+                "HUB_ZWAVE_SECURE_JOIN_RESULT"
+            ];
+            const cfg1 = {
                 method: 'post',
                 url: `https://api.smartthings.com/subscriptions`,
                 headers: {
-                    contentType: 'application/json',
-                    Authentication: `BEARER ${this.configItems.cloud_token}`
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.configItems.cloud_token}`
                 },
                 data: {
                     name: "locationSub",
                     version: 1,
                     subscriptionFilters: [{
-                        type: "LOCATIONIDS",
-                        value: ["ALL"]
+                        type: "LOCATIONIDS", // Options are "LOCATIONIDS","ROOMIDS","DEVICEIDS","INSTALLEDSMARTAPPIDS","SMARTAPPIDS"
+                        value: ["ALL"],
+                        eventType: null, // This can be array of the events
+                        attribute: null, // This can be array of the attributes
+                        capability: null, // This can be array of the capabilities
+                        component: null
                     }]
                 },
                 timeout: 10000
             };
             that.log.info(`Initializing Websocket Stage 1...`);
             try {
-                axios(config)
+                axios(cfg1)
                     .then((response) => {
                         // that.log.info('sendStartDirect Resp:', body);
                         if (response.data) {
-                            const rd = JSON.stringify(response.data);
-                            this.log.debug(`websocketInit_1 Resp: ${rd}`);
-                            if (rd.registrationUrl) {
-                                const config = {
-                                    method: 'get',
-                                    url: rd.registrationUrl,
-                                    headers: {
-                                        contentType: 'application/json',
-                                        Authentication: `BEARER ${this.configItems.cloud_token}`
-                                    }
-                                };
-                                axios(config)
-                                    .then((response) => {
-                                        // that.log.info('sendStartDirect Resp:', body);
-                                        if (response.data) {
-                                            const rd = JSON.stringify(response.data);
-                                            console.log(`websocketInit_2 Resp: ${rd}`);
-
-                                        }
-                                        resolve(true);
-                                    })
-                                    .catch((err) => {
-                                        console.log("websocketInit_2 Error:", err);
-                                        resolve(false);
+                            console.log(response.data);
+                            // const rd = JSON.parse(response.data);
+                            this.log.debug(`websocketInit_1 Resp: ${response.data}`);
+                            if (response.data && response.data.registrationUrl) {
+                                try {
+                                    const opts = {
+                                        initialRetryDelayMillis: 2000, // sets initial retry delay to 2 seconds
+                                        maxBackoffMillis: 30000, // enables backoff, with a maximum of 30 seconds
+                                        retryResetIntervalMillis: 60000, // backoff will reset to initial level if stream got an event at least 60 seconds before failing
+                                        jitterRatio: 0.5,
+                                        withCredentials: true,
+                                        headers: { Authorization: `Bearer ${this.configItems.cloud_token}` },
+                                        skipDefaultHeaders: true
+                                    };
+                                    var es = new EventSource(response.data.registrationUrl, opts);
+                                    eventTypes.forEach((evtType) => {
+                                        es.addEventListener(evtType, function(evt) {
+                                            console.log(evt);
+                                            let data = evt.data;
+                                            try {
+                                                data = JSON.parse(data);
+                                                console.log(data);
+                                            } catch (e) {
+                                                // some events like CONTROL_EVENT don't send json
+                                            }
+                                        });
                                     });
+                                    es.addEventListener("error", function(e) {
+                                        console.log("Close: " + JSON.stringify(e));
+                                    });
+                                    es.addEventListener("open", function(e) {
+                                        console.log("Open: " + JSON.stringify(e));
+                                        resolve(true);
+                                    });
+                                } catch (ex) {
+                                    console.error(`Error creating subscription:`, ex);
+                                    resolve(false);
+                                };
                             } else {
                                 resolve(false);
                             }
-                            // that.localHubErr(false);
                         } else {
                             resolve(false);
                         }
                     })
                     .catch((err) => {
-                        console.log("websocketInit_1 Error:", err);
+                        console.log("websocketInit_1 Error:", err.message);
                         resolve(false);
                     });
             } catch (err) {
