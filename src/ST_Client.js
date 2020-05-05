@@ -299,8 +299,7 @@ module.exports = class ST_Client {
                                     headers: {
                                         contentType: 'application/json',
                                         Authentication: `BEARER ${this.configItems.cloud_token}`
-                                    },
-                                    timeout: 10000
+                                    }
                                 };
                                 axios(config)
                                     .then((response) => {
@@ -313,7 +312,7 @@ module.exports = class ST_Client {
                                         resolve(true);
                                     })
                                     .catch((err) => {
-                                        that.handleError("websocketInit_2", err, true);
+                                        console.log("websocketInit_2 Error:", err);
                                         resolve(false);
                                     });
                             } else {
@@ -325,7 +324,7 @@ module.exports = class ST_Client {
                         }
                     })
                     .catch((err) => {
-                        that.handleError("websocketInit_1", err, true);
+                        console.log("websocketInit_1 Error:", err);
                         resolve(false);
                     });
             } catch (err) {
