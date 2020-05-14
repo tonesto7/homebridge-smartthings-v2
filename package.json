@@ -1,6 +1,5 @@
 {
     "dependencies": {
-        "@sentry/node": "^5.15.5",
         "axios": "^0.19.2",
         "body-parser": "^1.19.0",
         "chalk": "^4.0.0",
@@ -14,7 +13,7 @@
         "request": "^2.88.2",
         "winston": "^3.2.1",
         "winston-daily-rotate-file": "^4.4.2",
-        "snyk": "^1.319.0",
+        "snyk": "^1.321.0",
         "eventsource": "^1.0.7"
     },
     "devDependencies": {

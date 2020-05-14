@@ -1,3 +1,7 @@
+## v2.3.4
+
+- [FIX] Removed Sentry library.
+
 ## v2.3.3
 
 - [FIX] Packages updates.

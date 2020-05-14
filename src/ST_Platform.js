@@ -13,13 +13,10 @@ const {
     chalk = require('chalk'),
     Logging = require("./libs/Logger"),
     webApp = express(),
-    os = require('os'),
-    Sentry = require('@sentry/node'),
-    machineId = require('node-machine-id').machineIdSync(),
+    // os = require('os'),
     portFinderSync = require('portfinder-sync');
 
 var PlatformAccessory;
-var sentryEnabled = false;
 
 module.exports = class ST_Platform {
     constructor(log, config, api) {
@@ -33,8 +30,6 @@ module.exports = class ST_Platform {
             log(`${platformName} Plugin is not Configured | Skipping...`);
             return;
         }
-        sentryEnabled = this.getSentryAllowed();
-        this.Sentry = this.initializeErrorReporting(config);
         this.ok2Run = true;
         this.direct_port = this.findDirectPort();
         this.logConfig = this.getLogConfig();
@@ -43,7 +38,6 @@ module.exports = class ST_Platform {
         this.log = this.logging.getLogger();
         this.log.info(`Homebridge Version: ${api.version}`);
         this.log.info(`${platformName} Plugin Version: ${pluginVersion}`);
-        if (sentryEnabled) this.log.info(`Sentry MachineId: ${machineId}`);
         this.polling_seconds = config.polling_seconds || 3600;
         this.excludedAttributes = this.config.excluded_attributes || [];
         this.excludedCapabilities = this.config.excluded_capabilities || [];
@@ -58,41 +52,6 @@ module.exports = class ST_Platform {
         this.SmartThingsAccessories = new SmartThingsAccessories(this);
         this.homebridge.on("didFinishLaunching", this.didFinishLaunching.bind(this));
         this.appEvts.emit('event:plugin_upd_status');
-    }
-
-    initializeErrorReporting(cfg) {
-        if (sentryEnabled && cfg.disableErrorReporting !== false) {
-            Sentry.init({
-                dsn: 'https://c126c2d965e84da8af105d80c5e92474@sentry.io/1878896',
-                release: `${pluginName}@${pluginVersion}`,
-                attachStacktrace: true
-            });
-            Sentry.configureScope((scope) => {
-                scope.setUser({
-                    id: machineId
-                });
-                scope.setTag("username", os.userInfo().username);
-                scope.setTag("node", process.version);
-                scope.setTag("version", pluginVersion);
-                scope.setTag("platform", os.platform());
-                scope.setTag("type", os.type());
-                scope.setTag("arch", os.arch());
-                scope.setTag("release", os.release());
-                scope.setTag("CommunityUser", cfg.communityUserName || "Unknown");
-            });
-            Sentry.Integrations.Dedupe;
-            Sentry.Integrations.ExtraErrorData;
-            return Sentry;
-        } else {
-            sentryEnabled = false;
-            return undefined;
-        }
-    }
-
-    sentryErrorEvent(err) {
-        if (this.sentryEnabled && this.Sentry) {
-            this.Sentry.captureException(err);
-        }
     }
 
     getLogConfig() {
@@ -162,7 +121,6 @@ module.exports = class ST_Platform {
             })
             .catch(err => {
                 that.log.error(`didFinishLaunching | refreshDevices Exception:`, err);
-                this.sentryErrorEvent(err);
             });
     }
 
@@ -175,7 +133,6 @@ module.exports = class ST_Platform {
                 this.client.getDevices()
                     .catch(err => {
                         that.log.error('getDevices Exception:', err);
-                        this.sentryErrorEvent(err);
                         reject(err.message);
                     })
                     .then(resp => {
@@ -210,7 +167,6 @@ module.exports = class ST_Platform {
 
             } catch (ex) {
                 this.log.error("refreshDevices Error: ", ex);
-                this.sentryErrorEvent(ex);
                 resolve(false);
             }
         });
@@ -264,26 +220,6 @@ module.exports = class ST_Platform {
                 that.processDeviceAttributeUpdate(data.attributes[i], that);
             }
         }
-    }
-
-    getSentryAllowed() {
-        return new Promise((resolve) => {
-            const axios = require('axios').default;
-            axios({
-                    method: 'get',
-                    url: `https://raw.githubusercontent.com/tonesto7/homebridge-smartthings-v2/master/appData.json`,
-                    timeout: 10000
-                })
-                .then((response) => {
-                    sentryEnabled = (response && response.data && response.data.settings && response.data.settings.disableSentry === false);
-                    resolve(sentryEnabled);
-                })
-                .catch((err) => {
-                    this.handleError('getDevice', err);
-                    sentryEnabled = false;
-                    resolve(false);
-                });
-        });
     }
 
     isValidRequestor(access_token, app_id, src) {
@@ -475,7 +411,6 @@ module.exports = class ST_Platform {
                 });
             } catch (ex) {
                 that.log.error('WebServerInit Exception: ', ex.message);
-                this.sentryErrorEvent(ex);
                 resolve({
                     status: ex.message
                 });
