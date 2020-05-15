@@ -1,9 +1,9 @@
 const knownCapabilities = require("./libs/Constants").knownCapabilities,
-    pluginVersion = require('./libs/Constants').pluginVersion,
+    pluginVersion = require("./libs/Constants").pluginVersion,
     _ = require("lodash"),
-    ServiceTypes = require('./ST_ServiceTypes'),
-    Transforms = require('./ST_Transforms'),
-    DeviceTypes = require('./ST_DeviceCharacteristics');
+    ServiceTypes = require("./ST_ServiceTypes"),
+    Transforms = require("./ST_Transforms"),
+    DeviceTypes = require("./ST_DeviceCharacteristics");
 var Service, Characteristic, appEvts;
 
 module.exports = class ST_Accessories {
@@ -33,7 +33,7 @@ module.exports = class ST_Accessories {
         if (!fromCache) {
             accessory.deviceid = accessory.context.deviceData.deviceid;
             accessory.name = accessory.context.deviceData.name;
-            accessory.context.deviceData.excludedCapabilities.forEach(cap => {
+            accessory.context.deviceData.excludedCapabilities.forEach((cap) => {
                 if (cap !== undefined) {
                     this.log.debug(`Removing capability: ${cap} from Device: ${accessory.context.deviceData.name}`);
                     delete accessory.context.deviceData.capabilities[cap];
@@ -68,7 +68,6 @@ module.exports = class ST_Accessories {
             return this.configureCharacteristics(accessory);
         } catch (err) {
             this.log.error(`initializeAccessory (fromCache: ${fromCache}) Error:`, err);
-            this.mainPlatform.sentryErrorEvent(err);
             // console.error(err);
             return accessory;
         }
@@ -87,24 +86,23 @@ module.exports = class ST_Accessories {
             .getOrAddService(Service.AccessoryInformation)
             .setCharacteristic(Characteristic.FirmwareRevision, accessory.context.deviceData.firmwareVersion)
             .setCharacteristic(Characteristic.Manufacturer, accessory.context.deviceData.manufacturerName)
-            .setCharacteristic(Characteristic.Model, accessory.context.deviceData.modelName ? `${this.myUtils.toTitleCase(accessory.context.deviceData.modelName)}` : 'Unknown')
+            .setCharacteristic(Characteristic.Model, accessory.context.deviceData.modelName ? `${this.myUtils.toTitleCase(accessory.context.deviceData.modelName)}` : "Unknown")
             .setCharacteristic(Characteristic.Name, accessory.context.deviceData.name)
             .setCharacteristic(Characteristic.HardwareRevision, pluginVersion);
         accessory.servicesToKeep.push(Service.AccessoryInformation.UUID);
 
         if (!accessoryInformation.listeners("identify")) {
-            accessoryInformation
-                .on('identify', function(paired, callback) {
-                    this.log.info("%s - identify", accessory.displayName);
-                    callback();
-                });
+            accessoryInformation.on("identify", function(paired, callback) {
+                this.log.info("%s - identify", accessory.displayName);
+                callback();
+            });
         }
 
         let svcTypes = this.serviceTypes.getServiceTypes(accessory);
         if (svcTypes) {
             svcTypes.forEach((svc) => {
                 if (svc.name && svc.type) {
-                    this.log.debug(accessory.name, ' | ', svc.name);
+                    this.log.debug(accessory.name, " | ", svc.name);
                     accessory.servicesToKeep.push(svc.type.UUID);
                     this.device_types[svc.name](accessory, svc.type);
                 }
@@ -123,16 +121,16 @@ module.exports = class ST_Accessories {
             // console.log(characteristics);
             if (!characteristics || !accessory) resolve(false);
             if (characteristics instanceof Array) {
-                characteristics.forEach(char => {
+                characteristics.forEach((char) => {
                     accessory.context.deviceData.attributes[change.attribute] = change.value;
                     accessory.context.lastUpdate = new Date().toLocaleString();
                     switch (change.attribute) {
-                        case 'thermostatSetpoint':
+                        case "thermostatSetpoint":
                             char.getValue();
                             break;
-                        case 'button':
+                        case "button":
                             // console.log(characteristics);
-                            var btnNum = (change.data && change.data.buttonNumber) ? change.data.buttonNumber : 1;
+                            var btnNum = change.data && change.data.buttonNumber ? change.data.buttonNumber : 1;
                             if (btnNum && accessory.buttonEvent !== undefined) {
                                 accessory.buttonEvent(btnNum, change.value, change.deviceid, this._buttonMap);
                             }
@@ -181,9 +179,9 @@ module.exports = class ST_Accessories {
         }
 
         if (b) {
-            appEvts.emit('event:device_command', dev, cmd, vals);
+            appEvts.emit("event:device_command", dev, cmd, vals);
         } else {
-            let lastTS = (acc.commandTimersTS[id] && tsNow) ? (tsNow - acc.commandTimersTS[id]) : undefined;
+            let lastTS = acc.commandTimersTS[id] && tsNow ? tsNow - acc.commandTimersTS[id] : undefined;
             // console.log("lastTS: " + lastTS, ' | ts:', acc.commandTimersTS[id]);
             if (acc.commandTimers[id] && acc.commandTimers[id] !== null) {
                 acc.commandTimers[id].cancel();
@@ -194,10 +192,14 @@ module.exports = class ST_Accessories {
                     d = d2 || 0;
                 }
             }
-            acc.commandTimers[id] = _.debounce(async() => {
-                acc.commandTimersTS[id] = tsNow;
-                appEvts.emit('event:device_command', dev, cmd, vals);
-            }, d, o);
+            acc.commandTimers[id] = _.debounce(
+                async() => {
+                    acc.commandTimersTS[id] = tsNow;
+                    appEvts.emit("event:device_command", dev, cmd, vals);
+                },
+                d,
+                o,
+            );
             acc.commandTimers[id]();
         }
         if (callback) {
@@ -207,18 +209,15 @@ module.exports = class ST_Accessories {
     }
 
     log_change(attr, char, acc, chgObj) {
-        if (this.logConfig.debug === true)
-            this.log.notice(`[CHARACTERISTIC (${char}) CHANGE] ${attr} (${acc.displayName}) | LastUpdate: (${acc.context.lastUpdate}) | NewValue: (${chgObj.newValue}) | OldValue: (${chgObj.oldValue})`);
+        if (this.logConfig.debug === true) this.log.notice(`[CHARACTERISTIC (${char}) CHANGE] ${attr} (${acc.displayName}) | LastUpdate: (${acc.context.lastUpdate}) | NewValue: (${chgObj.newValue}) | OldValue: (${chgObj.oldValue})`);
     }
 
     log_get(attr, char, acc, val) {
-        if (this.logConfig.debug === true)
-            this.log.good(`[CHARACTERISTIC (${char}) GET] ${attr} (${acc.displayName}) | LastUpdate: (${acc.context.lastUpdate}) | Value: (${val})`);
+        if (this.logConfig.debug === true) this.log.good(`[CHARACTERISTIC (${char}) GET] ${attr} (${acc.displayName}) | LastUpdate: (${acc.context.lastUpdate}) | Value: (${val})`);
     }
 
     log_set(attr, char, acc, val) {
-        if (this.logConfig.debug === true)
-            this.log.warn(`[CHARACTERISTIC (${char}) SET] ${attr} (${acc.displayName}) | LastUpdate: (${acc.context.lastUpdate}) | Value: (${val})`);
+        if (this.logConfig.debug === true) this.log.warn(`[CHARACTERISTIC (${char}) SET] ${attr} (${acc.displayName}) | LastUpdate: (${acc.context.lastUpdate}) | Value: (${val})`);
     }
 
     hasCapability(obj) {
@@ -244,7 +243,7 @@ module.exports = class ST_Accessories {
     }
 
     hasService(service) {
-        return this.services.map(s => s.UUID).includes(service.UUID) || false;
+        return this.services.map((s) => s.UUID).includes(service.UUID) || false;
     }
 
     hasCharacteristic(svc, char) {
@@ -269,11 +268,11 @@ module.exports = class ST_Accessories {
     }
 
     getOrAddService(svc) {
-        return (this.getService(svc) || this.addService(svc));
+        return this.getService(svc) || this.addService(svc);
     }
 
     getOrAddServiceByName(service, dName, sType) {
-        let svc = this.services.find(s => s.displayName === dName);
+        let svc = this.services.find((s) => s.displayName === dName);
         if (svc) {
             // console.log('service found');
             return svc;
@@ -285,7 +284,7 @@ module.exports = class ST_Accessories {
     }
 
     getOrAddCharacteristic(service, characteristic) {
-        return (service.getCharacteristic(characteristic) || service.addCharacteristic(characteristic));
+        return service.getCharacteristic(characteristic) || service.addCharacteristic(characteristic);
     }
 
     getServices() {
@@ -295,11 +294,11 @@ module.exports = class ST_Accessories {
     removeUnusedServices(acc) {
         // console.log('servicesToKeep:', acc.servicesToKeep);
         let newSvcUuids = acc.servicesToKeep || [];
-        let svcs2rmv = acc.services.filter(s => !newSvcUuids.includes(s.UUID));
+        let svcs2rmv = acc.services.filter((s) => !newSvcUuids.includes(s.UUID));
         if (Object.keys(svcs2rmv).length) {
-            svcs2rmv.forEach(s => {
+            svcs2rmv.forEach((s) => {
                 acc.removeService(s);
-                this.log.info('Removing Unused Service:', s.UUID);
+                this.log.info("Removing Unused Service:", s.UUID);
             });
         }
         return acc;

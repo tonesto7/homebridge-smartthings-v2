@@ -1,3 +1,7 @@
+## v2.3.4
+
+- [REMOVE] Removing Sentry error reporting module prior to submitting plugin for verification under homebridge.
+
 ## v2.3.3
 
 - [FIX] Packages updates.

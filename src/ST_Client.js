@@ -80,7 +80,6 @@ module.exports = class ST_Client {
                 } else {
                     // console.error(err);
                     this.log.error(`${src} Error: ${err.response} | Message: ${err.message}`);
-                    this.platform.sentryErrorEvent(err);
                 }
                 break;
         }
