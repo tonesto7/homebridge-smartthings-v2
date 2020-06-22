@@ -149,7 +149,7 @@ def mainPage() {
         section("Plugin Options & Review:") {
             // paragraph "Turn off if you are having issues sending commands"
             // input "sendCmdViaHubaction", "bool", title: "Send HomeKit Commands Locally?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("command")
-            input "temp_unit", "enum", title: "Temperature Unit?", required: true, defaultValue: location?.temperatureScale, options: ["F":"Fahrenheit", "C":"Celcius"], submitOnChange: true, image: getAppImg("command")
+            input "temp_unit", "enum", title: "Temperature Unit?", required: true, defaultValue: location?.temperatureScale, options: ["F":"Fahrenheit", "C":"Celsius"], submitOnChange: true, image: getAppImg("command")
             Integer devCnt = getDeviceCnt()
             href url: getAppEndpointUrl("config"), style: "embedded", required: false, title: "Render the platform data for Homebridge config.json", description: "Tap, select, copy, then click \"Done\"", state: "complete", image: getAppImg("info")
             if(devCnt > 148) {
